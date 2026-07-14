@@ -61,7 +61,7 @@
     <div id="onedrive-safety-banner" class="bg-rose-950 border-b border-rose-800 p-4 text-center hidden z-50">
         <div class="max-w-md mx-auto flex flex-col items-center gap-2">
             <i class="fa-solid fa-triangle-exclamation text-2xl text-rose-400"></i>
-            <h4 class="font-bold text-sm text-rose-200">OneDrive-Sicherheitsblockade active!</h4>
+            <h4 class="font-bold text-sm text-rose-200">OneDrive-Sicherheitsblockade aktiv!</h4>
             <p class="text-[11px] text-rose-300 leading-normal">
                 Microsoft blockiert die Funktionen in dieser Online-Vorschau. 
                 Bitte klicke oben links auf das <strong>Herunterladen-Symbol (Pfeil nach unten)</strong> und öffne die Datei anschließend aus deinen Downloads in <strong>Safari oder Chrome</strong>!
@@ -74,7 +74,7 @@
     <!-- ========================================== -->
     <div id="student-view" class="container mx-auto px-4 py-8 max-w-md flex-grow flex flex-col justify-center animate-fadeIn">
         
-        <div class="text-center mb-6">
+        <div class="text-center mb-8">
             <div class="inline-block p-4 bg-violet-600/20 rounded-3xl border border-violet-500/30 mb-3 shadow-lg shadow-violet-950/40">
                 <i class="fa-solid fa-mobile-screen-button text-4xl text-violet-400"></i>
             </div>
@@ -109,13 +109,6 @@
                         class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 font-sans"
                     >
                 </div>
-                <div>
-                    <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Wähle dein Team-Logo:</label>
-                    <div class="grid grid-cols-5 gap-2" id="emoji-picker-container">
-                        <!-- Wird dynamisch mit Emojis befüllt -->
-                    </div>
-                    <input type="hidden" id="student-emoji-input" value="🎵">
-                </div>
                 
                 <button 
                     onclick="joinQuizRoom()" 
@@ -132,7 +125,7 @@
                 <div class="flex items-center gap-2 flex-wrap">
                     <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span id="student-badge-info" class="text-xs font-bold text-slate-300">Verbunden: </span>
-                    <span id="student-round-badge" class="hidden text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30 px-2.5 py-0.5 rounded-full">Runde -</span>
+                    <span id="student-round-badge" class="hidden text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30 px-2 py-0.5 rounded-full">Runde -</span>
                 </div>
                 <button 
                     onclick="leaveQuizRoom()" 
@@ -153,21 +146,6 @@
                     ></textarea>
                 </div>
 
-                <!-- Joker Button inside student-buzzer-card -->
-                <div class="border-t border-slate-800/60 pt-3 mt-1 flex flex-col items-center">
-                    <div class="text-[9px] text-slate-500 mb-1.5 flex items-center gap-1 text-center font-bold">
-                        <span>🃏 JOKER (Doppelte Punkte bei Erfolg, aber -1 Punkt bei Fehler!)</span>
-                    </div>
-                    <button 
-                        type="button" 
-                        id="student-joker-btn"
-                        onclick="toggleStudentJoker()"
-                        class="w-full bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95"
-                    >
-                        <span>🃏 Doppel-Joker aktivieren</span>
-                    </button>
-                </div>
-
                 <button 
                     onclick="sendStudentAnswer()" 
                     id="student-submit-btn"
@@ -177,7 +155,7 @@
                     <span>Antwort abschicken! 🚀</span>
                 </button>
 
-                <!-- Feedback-Status-Box (auch für Runden-Limiter und Timer genutzt) -->
+                <!-- Feedback-Status-Box (auch für Runden-Limiter genutzt) -->
                 <div id="student-feedback" class="hidden p-3 rounded-xl border text-center text-xs font-semibold"></div>
             </div>
         </div>
@@ -374,24 +352,6 @@
                         <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
                     </label>
                 </div>
-
-                <!-- Countdown Timer Einblendung im Lehrer-Interface -->
-                <div class="border-t border-slate-700/40 pt-1.5 mt-0.5 space-y-1">
-                    <span class="text-slate-300 text-[10px] font-bold flex items-center gap-1">
-                        <i class="fa-solid fa-hourglass-start text-amber-500"></i> Countdown-Timer (Buzzer-Sperre)
-                    </span>
-                    <div class="flex gap-1.5 items-center">
-                        <input type="number" id="timer-duration" value="30" min="5" max="120" class="w-12 bg-slate-900 border border-slate-700 text-slate-100 rounded text-[10px] px-1 py-0.5 text-center focus:outline-none">
-                        <span class="text-slate-400 text-[10px]">Sek.</span>
-                        <button id="start-timer-btn" onclick="startTimer()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-0.5 rounded text-[10px] active:scale-95 transition-all flex-grow">
-                            Starten ⏱️
-                        </button>
-                        <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-3 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">
-                            Stop 🛑
-                        </button>
-                        <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-2 py-0.5 rounded">30s</div>
-                    </div>
-                </div>
                 
                 <!-- Klassen-Speicher (Dropdown & Sichern) -->
                 <div class="border-t border-slate-700/40 pt-1.5 mt-0.5 space-y-1">
@@ -500,23 +460,9 @@
                 <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5">
                     <i class="fa-solid fa-play-circle text-emerald-400 animate-pulse"></i> Runden-Manager
                 </span>
-                
-                <!-- Neue, hochsichtbare Rundenanzeige direkt im Rundenmanager -->
-                <span class="bg-violet-500/25 text-violet-300 border border-violet-500/45 px-3 py-1 rounded-lg font-bold font-mono flex items-center gap-1">
-                    Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400">1</span>
-                </span>
-                
-                <span class="text-slate-400 text-[11px] hidden sm:inline">Nutze das +1, +2, +3 System oder werte die iPad-Buzzer aus.</span>
+                <span class="text-slate-400 text-[11px] hidden sm:inline">Klicke Teams auf den Karten an (+1), nutze deren +2/+3 Knöpfe oder werte die iPad-Buzzer aus.</span>
             </div>
             <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <button 
-                    onclick="prevRound()" 
-                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1"
-                    title="Gehe eine Spielrunde zurück"
-                >
-                    <i class="fa-solid fa-arrow-left"></i>
-                    <span>Runde zurück</span>
-                </button>
                 <button 
                     onclick="markAllActive()" 
                     class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5"
@@ -584,22 +530,6 @@
                 Trage über das <strong>Massen-Import Tool</strong> oben deine Schülergruppen ein oder lass sie über ihre iPads mitspielen!
             </p>
         </div>
-
-        <!-- ========================================== -->
-        <!-- ARCHIVIERTER ANTWORT-VERLAUF (NEU!)        -->
-        <!-- ========================================== -->
-        <div id="history-archive-panel" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 mt-6 animate-fadeIn">
-            <h3 class="text-xs font-bold text-slate-400 flex items-center gap-1.5 border-b border-slate-800 pb-2 mb-2.5">
-                <i class="fa-solid fa-box-archive text-slate-500"></i> Antwort-Verlauf (Echtzeit-Backup dieser Runde)
-            </h3>
-            <div id="history-archive-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-48 overflow-y-auto">
-                <!-- Wird dynamisch befüllt -->
-            </div>
-            <div id="history-archive-empty" class="text-center py-2 text-[10px] text-slate-600">
-                Noch keine archivierten Antworten vorhanden. Wenn du Punkte bei den iPad-Antworten vergibst, landen sie hier als Backup!
-            </div>
-        </div>
-
     </div>
 
     <!-- Toast Benachrichtigungen -->
@@ -734,7 +664,6 @@
 
         let sseSource = null;
         let incomingAnswers = [];
-        let answerHistory = []; // Neues Backupsystem für alte Antworten
 
         let confettiInterval = null;
         let isConfettiActive = false;
@@ -745,13 +674,9 @@
         // Schüler Runden Synchronisierung Variablen
         let studentCurrentRound = 1;
         let studentSse = null;
-        let studentJokerActive = false;
         
         // Audio Synthesizer Context (Lazy Loading)
         let audioCtx = null;
-
-        // Emojis für Team-Logos
-        const emojis = ["🦁", "🍕", "🚀", "🦊", "🐼", "🎸", "👑", "🎈", "🛸", "👻"];
 
         /* Sicherer Elementzugriff mit Fallback */
         function getEl(id) {
@@ -781,8 +706,7 @@
                     autoSort: autoSortEl ? autoSortEl.checked : true,
                     soundEnabled: soundEl ? soundEl.checked : true,
                     geminiKey: apiKeyEl ? apiKeyEl.value.trim() : "",
-                    beamerProtectionActive: beamerProtectionActive,
-                    answerHistory: answerHistory
+                    beamerProtectionActive: beamerProtectionActive
                 };
                 
                 localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys', JSON.stringify(saveDataObj));
@@ -800,7 +724,7 @@
             try {
                 await fetch(`https://ntfy.sh/mq-ntfy-${roomCode}-control`, {
                     method: 'POST',
-                    body: JSON.stringify({ round: currentRound, timer: -1 }) // Timer beim Rundenübergang sofort zurücksetzen
+                    body: JSON.stringify({ round: currentRound })
                 });
             } catch(e) {
                 console.error("Fehler beim Senden des Runden-Updates:", e);
@@ -809,8 +733,6 @@
 
         function loadState() {
             try {
-                initEmojiPicker();
-
                 if (window.PREBAKED_TEAMS && window.PREBAKED_TEAMS.length > 0) {
                     teams = window.PREBAKED_TEAMS;
                     currentRound = window.PREBAKED_ROUND || 1;
@@ -819,17 +741,12 @@
                     teams.forEach(t => {
                         t.activeThisRound = false;
                         t.pendingPoints = 0;
-                        t.streak = t.streak || 0;
-                        t.jokerActiveThisRound = t.jokerActiveThisRound || false;
                     });
                     const roundDisplay = getEl('header-round-display');
                     if (roundDisplay) roundDisplay.innerText = currentRound;
-                    const managerRoundDisplay = getEl('manager-round-display');
-                    if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
                     
                     updateActiveBadge();
                     renderScoreboard();
-                    renderHistoryArchive();
                     showToast("Exportierter Spielstand erfolgreich geladen!", "success");
                     switchView('teacher'); 
                     return;
@@ -843,7 +760,6 @@
                         activeClass = parsed.activeClass || "Standard-Sitzung";
                         teacherPassword = parsed.teacherPassword || "musik";
                         beamerProtectionActive = parsed.beamerProtectionActive !== false;
-                        answerHistory = parsed.answerHistory || [];
                         
                         const autoSortEl = getEl('auto-sort-toggle');
                         if (autoSortEl) autoSortEl.checked = parsed.autoSort !== false;
@@ -859,7 +775,6 @@
                         "Standard-Sitzung": { teams: [], currentRound: 1 }
                     };
                     activeClass = "Standard-Sitzung";
-                    answerHistory = [];
                 }
 
                 classes["Standard-Sitzung"] = { teams: [], currentRound: 1 };
@@ -875,14 +790,10 @@
                 teams.forEach(t => {
                     t.activeThisRound = false;
                     t.pendingPoints = 0;
-                    t.streak = t.streak || 0;
-                    t.jokerActiveThisRound = false;
                 });
 
                 const roundDisplay = getEl('header-round-display');
                 if (roundDisplay) roundDisplay.innerText = currentRound;
-                const managerRoundDisplay = getEl('manager-round-display');
-                if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
 
                 const storedStudentName = localStorage.getItem('student_team_name');
                 const storedStudentRoom = localStorage.getItem('student_room_code');
@@ -894,7 +805,6 @@
                 updateClassDropdown();
                 updateActiveBadge();
                 renderScoreboard();
-                renderHistoryArchive();
                 
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get('role') === 'teacher') {
@@ -906,36 +816,6 @@
                 console.error("Fehler beim Laden des Zustands:", err);
                 showToast("Fehler beim Laden der Spieldaten.", "danger");
             }
-        }
-
-        /* Emoji Picker Initialisierung auf Schüler-Join-Modul */
-        function initEmojiPicker() {
-            const container = getEl('emoji-picker-container');
-            if (!container) return;
-            container.innerHTML = '';
-            emojis.forEach((emoji, idx) => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = `p-2 text-xl rounded-xl bg-slate-950 border border-slate-800 hover:border-violet-500/50 transition-all ${idx === 0 ? 'ring-2 ring-violet-500' : ''}`;
-                btn.innerHTML = emoji;
-                btn.onclick = () => selectEmoji(emoji, btn);
-                container.appendChild(btn);
-            });
-            const hiddenInput = getEl('student-emoji-input');
-            if (hiddenInput) hiddenInput.value = emojis[0];
-        }
-
-        function selectEmoji(emoji, element) {
-            const hiddenInput = getEl('student-emoji-input');
-            if (hiddenInput) hiddenInput.value = emoji;
-            
-            const container = getEl('emoji-picker-container');
-            if (container) {
-                container.querySelectorAll('button').forEach(btn => {
-                    btn.classList.remove('ring-2', 'ring-violet-500');
-                });
-            }
-            element.classList.add('ring-2', 'ring-violet-500');
         }
 
         function switchView(view) {
@@ -963,15 +843,6 @@
                     if (badge) badge.innerText = `Verbunden: ${registeredName}`;
                     if (studentBuzzerCard) studentBuzzerCard.classList.remove('hidden');
                     connectStudentControlChannel(registeredRoom);
-                    
-                    // Joker Zustand laden
-                    const jokerUsedKey = `joker_used_${registeredRoom}`;
-                    const btn = getEl('student-joker-btn');
-                    if (localStorage.getItem(jokerUsedKey) && btn) {
-                        btn.disabled = true;
-                        btn.className = "w-full bg-slate-950/40 border border-slate-900 text-slate-600 py-2.5 rounded-xl text-xs cursor-not-allowed text-center";
-                        btn.innerHTML = `<span>🃏 Joker verbraucht / nicht verfügbar</span>`;
-                    }
                 } else {
                     if (studentJoinCard) studentJoinCard.classList.remove('hidden');
                     if (studentBuzzerCard) studentBuzzerCard.classList.add('hidden');
@@ -1075,12 +946,12 @@
             }
         }
 
-        /* Echtzeit-Kopplung mit Control Channel für Timer und Rundenübergänge */
         function connectStudentControlChannel(room) {
             if (studentSse) {
                 studentSse.close();
             }
 
+            // Letzten Stand abfragen (NDJSON von ntfy parsen)
             fetch(`https://ntfy.sh/mq-ntfy-${room}-control/json?poll=1`)
                 .then(r => r.text())
                 .then(text => {
@@ -1099,26 +970,21 @@
                     }
                 }).catch(e => console.error(e));
 
+            // Live-Kanal abonnieren
             studentSse = new EventSource(`https://ntfy.sh/mq-ntfy-${room}-control/sse`);
             studentSse.onmessage = function(event) {
                 try {
                     const rawData = JSON.parse(event.data);
                     if (rawData && rawData.message) {
                         const payload = JSON.parse(rawData.message);
-                        if (payload) {
-                            if (payload.round !== undefined) {
-                                updateStudentRound(payload.round);
-                            }
-                            if (payload.timer !== undefined) {
-                                updateStudentTimer(payload.timer);
-                            }
+                        if (payload && payload.round !== undefined) {
+                            updateStudentRound(payload.round);
                         }
                     }
                 } catch(e) {}
             };
         }
 
-        /* Rundenzustand auf dem Schülergerät anwenden (und Buttons anpassen!) */
         function updateStudentRound(newRound) {
             studentCurrentRound = newRound;
             const roundBadge = getEl('student-round-badge');
@@ -1127,6 +993,7 @@
                 roundBadge.classList.remove('hidden');
             }
             
+            // Checken ob für diese Runde bereits eine Antwort vom Schüler abgegeben wurde
             const room = localStorage.getItem('student_room_code');
             const lastSubmitted = localStorage.getItem(`last_sub_round_${room}`);
             const btn = getEl('student-submit-btn');
@@ -1134,66 +1001,17 @@
             const textarea = getEl('student-answer-input');
 
             if (lastSubmitted && parseInt(lastSubmitted) === newRound) {
-                if (btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = `<i class="fa-solid fa-check"></i> Antwort gesendet! ✔`;
-                    btn.className = "w-full bg-emerald-950/40 border border-emerald-800/30 text-emerald-400 font-bold py-4 rounded-2xl cursor-not-allowed text-sm flex items-center justify-center gap-2 transition-all";
-                }
+                if (btn) btn.disabled = true;
                 if (textarea) textarea.disabled = true;
                 if (feedback) {
                     feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-850 text-amber-200 animate-scaleIn";
-                    feedback.innerHTML = `<i class="fa-solid fa-circle-info text-amber-400"></i> Du hast für Runde ${newRound} bereits geantwortet. Warte auf die nächste Runde!`;
+                    feedback.innerHTML = `<i class="fa-solid fa-circle-info text-amber-400"></i> Du hast für Runde ${newRound} bereits eine Antwort abgegeben. Bitte warte auf die nächste Runde!`;
                     feedback.classList.remove('hidden');
                 }
             } else {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Antwort abschicken! 🚀</span>`;
-                    btn.className = "w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2";
-                }
+                if (btn) btn.disabled = false;
                 if (textarea) textarea.disabled = false;
                 if (feedback) {
-                    feedback.classList.add('hidden');
-                }
-            }
-        }
-
-        /* Echtzeit Countdown Timer auf den iPads einblenden & sperren */
-        function updateStudentTimer(seconds) {
-            const room = localStorage.getItem('student_room_code');
-            const lastSubmitted = localStorage.getItem(`last_sub_round_${room}`);
-            const submitBtn = getEl('student-submit-btn');
-            const textarea = getEl('student-answer-input');
-            const feedback = getEl('student-feedback');
-
-            const alreadySubmitted = lastSubmitted && parseInt(lastSubmitted) === studentCurrentRound;
-
-            if (seconds > 0) {
-                if (!alreadySubmitted) {
-                    if (feedback) {
-                        feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-850 text-amber-200 animate-pulse";
-                        feedback.innerHTML = `<i class="fa-solid fa-hourglass-half text-amber-400"></i> Noch ${seconds} Sekunden zum Raten! Schnell abgeben! ⏱️`;
-                        feedback.classList.remove('hidden');
-                    }
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.className = "w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2";
-                    }
-                    if (textarea) textarea.disabled = false;
-                }
-            } else if (seconds === 0) {
-                if (feedback) {
-                    feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-rose-950/40 border-rose-850 text-rose-200";
-                    feedback.innerHTML = `<i class="fa-solid fa-clock text-rose-400 animate-bounce"></i> Zeit abgelaufen! Keine Antwort mehr möglich! ⏰`;
-                    feedback.classList.remove('hidden');
-                }
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.className = "w-full bg-rose-950/30 border border-rose-900/30 text-rose-400 font-bold py-4 rounded-2xl cursor-not-allowed text-sm flex items-center justify-center gap-2";
-                }
-                if (textarea) textarea.disabled = true;
-            } else {
-                if (feedback && feedback.innerHTML.includes('Sekunden')) {
                     feedback.classList.add('hidden');
                 }
             }
@@ -1203,10 +1021,8 @@
         function joinQuizRoom() {
             const roomEl = getEl('student-room-input');
             const nameEl = getEl('student-name-input');
-            const emojiEl = getEl('student-emoji-input');
             const room = roomEl ? roomEl.value.trim().toLowerCase() : "";
             const name = nameEl ? nameEl.value.trim() : "";
-            const emoji = emojiEl ? emojiEl.value : "🎵";
 
             if (!room || !name) {
                 showToast("Raum-Code und Teamname sind erforderlich!", "danger");
@@ -1215,14 +1031,13 @@
 
             localStorage.setItem('student_team_name', name);
             localStorage.setItem('student_room_code', room);
-            localStorage.setItem('student_team_emoji', emoji);
 
             const studentJoinCard = getEl('student-join-card');
             const studentBuzzerCard = getEl('student-buzzer-card');
             if (studentJoinCard) studentJoinCard.classList.add('hidden');
             
             const badge = getEl('student-badge-info');
-            if (badge) badge.innerText = `Verbunden: ${emoji} ${name}`;
+            if (badge) badge.innerText = `Verbunden: ${name}`;
             if (studentBuzzerCard) studentBuzzerCard.classList.remove('hidden');
             
             connectStudentControlChannel(room);
@@ -1234,7 +1049,6 @@
         function leaveQuizRoom() {
             localStorage.removeItem('student_team_name');
             localStorage.removeItem('student_room_code');
-            localStorage.removeItem('student_team_emoji');
             if (studentSse) {
                 studentSse.close();
                 studentSse = null;
@@ -1246,31 +1060,9 @@
             showToast("Raum verlassen.", "info");
         }
 
-        function toggleStudentJoker() {
-            const room = localStorage.getItem('student_room_code');
-            const jokerUsedKey = `joker_used_${room}`;
-            if (localStorage.getItem(jokerUsedKey)) {
-                showToast("Du hast deinen Doppel-Joker in diesem Spiel bereits verbraucht!", "danger");
-                return;
-            }
-
-            studentJokerActive = !studentJokerActive;
-            const btn = getEl('student-joker-btn');
-            if (btn) {
-                if (studentJokerActive) {
-                    btn.className = "w-full bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-500 text-amber-300 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-95 animate-pulse";
-                    btn.innerHTML = `<span>🃏 Doppel-Joker AKTIV! (Risikorunde)</span>`;
-                } else {
-                    btn.className = "w-full bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95";
-                    btn.innerHTML = `<span>🃏 Doppel-Joker aktivieren</span>`;
-                }
-            }
-        }
-
         async function sendStudentAnswer() {
             const room = localStorage.getItem('student_room_code');
             const name = localStorage.getItem('student_team_name');
-            const emoji = localStorage.getItem('student_team_emoji') || "🎵";
             const answerEl = getEl('student-answer-input');
             const answer = answerEl ? answerEl.value.trim() : "";
             const btn = getEl('student-submit-btn');
@@ -1289,9 +1081,7 @@
                 const topic = `mq-ntfy-${room}`;
                 const payload = {
                     team: name,
-                    emoji: emoji,
                     answer: answer,
-                    joker: studentJokerActive,
                     time: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                     timestamp: Date.now()
                 };
@@ -1306,20 +1096,9 @@
                 });
 
                 if (res.ok) {
+                    // Abgabe für diese Runde lokal speichern
                     localStorage.setItem(`last_sub_round_${room}`, studentCurrentRound);
-                    
-                    if (studentJokerActive) {
-                        localStorage.setItem(`joker_used_${room}`, 'true');
-                        studentJokerActive = false;
-                        const jokerBtn = getEl('student-joker-btn');
-                        if (jokerBtn) {
-                            jokerBtn.disabled = true;
-                            jokerBtn.className = "w-full bg-slate-950/40 border border-slate-900 text-slate-600 py-2.5 rounded-xl text-xs cursor-not-allowed text-center";
-                            jokerBtn.innerHTML = `<span>🃏 Joker verbraucht / nicht verfügbar</span>`;
-                        }
-                    }
-
-                    updateStudentRound(studentCurrentRound); 
+                    updateStudentRound(studentCurrentRound); // UI direkt sperren
                     
                     const statusBox = getEl('student-feedback');
                     if (statusBox) {
@@ -1341,6 +1120,35 @@
                     btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Antwort abschicken! 🚀</span>`;
                 }
             }
+        }
+
+        /* Team manuell hinzufügen (von Lehrerseite) */
+        function handleManualTeamAdd(e) {
+            if (e) e.preventDefault();
+            const input = getEl('manual-team-input');
+            const name = input ? input.value.trim() : "";
+            if (!name) return;
+            
+            const formattedName = name.substring(0, 12);
+            if (teams.some(t => t.name.toLowerCase() === formattedName.toLowerCase())) {
+                showToast(`Das Team "${formattedName}" existiert bereits!`, 'danger');
+                return;
+            }
+
+            const newTeam = {
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                name: formattedName,
+                score: 0,
+                activeThisRound: false,
+                pendingPoints: 0
+            };
+
+            teams.push(newTeam);
+            showToast(`Team "${formattedName}" manuell hinzugefügt!`, 'success');
+            playSound('up');
+            if (input) input.value = '';
+            saveState();
+            renderScoreboard();
         }
 
         /* Lehrer Live-Empfang (SSE) */
@@ -1370,7 +1178,7 @@
                 const livePanel = getEl('live-answers-panel');
                 if (livePanel) livePanel.classList.remove('hidden');
                 generateQRCode();
-                broadcastRoundUpdate(); 
+                broadcastRoundUpdate(); // Runden-Info direkt an die verbundenen Geräte schicken
             };
 
             sseSource.onerror = function() {
@@ -1472,17 +1280,10 @@
                         </span>`;
                 }
 
-                // Falls Joker aktiv war
-                let jokerBadge = '';
-                if (ans.joker) {
-                    jokerBadge = `<span class="bg-amber-500 text-slate-950 text-[8px] font-black px-1.5 py-0.5 rounded animate-pulse flex items-center gap-0.5"><i class="fa-solid fa-masks-theater"></i> JOKER!</span>`;
-                }
-
                 let answerTextContent = '';
                 let teamHeader = '';
                 let actionButtons = '';
                 const teamNameEscaped = ans.team.replace(/'/g, "\\'");
-                const hasJoker = ans.joker ? true : false;
 
                 if (beamerProtectionActive) {
                     teamHeader = `
@@ -1500,18 +1301,15 @@
                         </div>
                     `;
                     actionButtons = `
-                        <div class="text-center text-[9px] text-slate-600 font-bold py-1 border-t border-slate-800/30 flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-eye-slash"></i> Erst aufdecken ${jokerBadge}
+                        <div class="text-center text-[9px] text-slate-600 font-bold py-1 border-t border-slate-800/30">
+                            <i class="fa-solid fa-eye-slash mr-1"></i> Erst aufdecken
                         </div>
                     `;
                 } else {
                     teamHeader = `
                         <div class="flex justify-between items-center gap-1.5">
-                            <span class="font-bold text-violet-400 text-xs truncate max-w-[90px]" title="${ans.team}">${ans.emoji || '🎵'} ${ans.team}</span>
-                            <div class="flex items-center gap-1">
-                                ${jokerBadge}
-                                ${placementBadge}
-                            </div>
+                            <span class="font-bold text-violet-400 text-xs truncate max-w-[90px]" title="${ans.team}">${ans.team}</span>
+                            ${placementBadge}
                         </div>
                     `;
                     answerTextContent = `
@@ -1522,19 +1320,19 @@
                     actionButtons = `
                         <div class="flex gap-1 justify-end font-bold pt-1 border-t border-slate-800/30">
                             <button 
-                                onclick="applyLiveAnswer('${teamNameEscaped}', 3, ${index}, ${hasJoker})"
+                                onclick="applyLiveAnswer('${teamNameEscaped}', 3, ${index})"
                                 class="bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95 flex items-center gap-0.5"
                             >
                                 +3
                             </button>
                             <button 
-                                onclick="applyLiveAnswer('${teamNameEscaped}', 2, ${index}, ${hasJoker})"
+                                onclick="applyLiveAnswer('${teamNameEscaped}', 2, ${index})"
                                 class="bg-emerald-500 hover:bg-emerald-400 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95"
                             >
                                 +2
                             </button>
                             <button 
-                                onclick="applyLiveAnswer('${teamNameEscaped}', 1, ${index}, ${hasJoker})"
+                                onclick="applyLiveAnswer('${teamNameEscaped}', 1, ${index})"
                                 class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[9px] font-bold px-2 py-1 rounded transition-all active:scale-95"
                             >
                                 +1
@@ -1561,159 +1359,44 @@
             });
         }
 
-        /* Einloggen der Punkte von der Live-Antwort und Archivierung im Backup-System */
-        function applyLiveAnswer(teamName, pointsToAdd, index, hasJoker = false) {
+        /* Einloggen der Punkte von der Live-Antwort (Wie bei der Scorecard) */
+        function applyLiveAnswer(teamName, pointsToAdd, index) {
             let team = teams.find(t => t.name.toLowerCase() === teamName.toLowerCase());
-            const incomingAns = incomingAnswers[index];
-            const emoji = incomingAns ? incomingAns.emoji : "🎵";
-
+            
             if (!team) {
+                // Team automatisch erzeugen, falls es noch nicht existierte
                 const newTeam = {
                     id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                     name: teamName.substring(0, 12),
                     score: 0,
                     activeThisRound: true,
-                    pendingPoints: pointsToAdd,
-                    emoji: emoji,
-                    streak: 0,
-                    jokerActiveThisRound: hasJoker
+                    pendingPoints: pointsToAdd
                 };
                 teams.push(newTeam);
                 team = newTeam;
+                showToast(`Team "${teamName}" automatisch angelegt und für Runde markiert!`, "info");
             } else {
+                // Team für die laufende Runde grün voreinstellen / markieren
                 team.activeThisRound = true;
                 team.pendingPoints = pointsToAdd;
-                team.jokerActiveThisRound = hasJoker;
-                if (!team.emoji || team.emoji === "🎵") {
-                    team.emoji = emoji;
-                }
+                showToast(`Punkte für "${team.name}" wurden vorgemerkt (+${pointsToAdd})!`, "success");
             }
 
-            // Neues Backup-Archiv befüllen
-            answerHistory.push({
-                round: currentRound,
-                teamName: team.name,
-                answer: incomingAns ? incomingAns.answer : "Manuelle Wertung",
-                points: pointsToAdd,
-                hasJoker: hasJoker,
-                emoji: team.emoji,
-                timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-            });
-
-            showToast(`Punkte für "${team.name}" wurden vorgemerkt (+${pointsToAdd})!`, "success");
             playSound('up');
             removeLiveAnswerByIndex(index);
             saveState();
             renderScoreboard();
-            renderHistoryArchive();
         }
 
-        /* Verlauf-Archiv rendern */
-        function renderHistoryArchive() {
-            const list = getEl('history-archive-list');
-            const empty = getEl('history-archive-empty');
-            if (!list) return;
-            list.innerHTML = '';
-
-            // Filtert den Verlauf für die aktuell gewählte Runden-Ansicht
-            const currentHistory = answerHistory.filter(h => h.round === currentRound);
-
-            if (currentHistory.length === 0) {
-                if (empty) empty.classList.remove('hidden');
-                return;
-            } else {
-                if (empty) empty.classList.add('hidden');
-            }
-
-            currentHistory.forEach(item => {
-                const card = document.createElement('div');
-                card.className = "bg-slate-950/50 border border-slate-800/80 p-2 rounded-xl flex flex-col gap-1 text-[11px] text-slate-400 animate-fadeIn";
-                
-                let jokerLabel = item.hasJoker ? ' <span class="text-amber-400 font-bold">[🃏 Joker]</span>' : '';
-                
-                card.innerHTML = `
-                    <div class="flex justify-between items-center font-bold border-b border-slate-850 pb-1">
-                        <span class="text-slate-200 flex items-center gap-1.5">
-                            <span>${item.emoji}</span>
-                            <span class="truncate max-w-[90px]">${item.teamName}</span>
-                        </span>
-                        <span class="text-emerald-400 font-sans">+${item.points} Pkt${jokerLabel}</span>
-                    </div>
-                    <div class="italic text-[10px] text-slate-500 truncate mt-0.5" title="${item.answer}">"${item.answer}"</div>
-                    <div class="flex justify-between items-center text-[8px] text-slate-600 mt-0.5 font-sans">
-                        <span>Runde ${item.round}</span>
-                        <span>${item.timestamp} Uhr</span>
-                    </div>
-                `;
-                list.appendChild(card);
-            });
+        function removeLiveAnswerByIndex(idx) {
+            incomingAnswers.splice(idx, 1);
+            renderIncomingAnswersList();
         }
 
-        /* Countdown Timer Logik (Lehrer) */
-        let timerInterval = null;
-        function startTimer() {
-            const durationInput = getEl('timer-duration');
-            const duration = parseInt(durationInput ? durationInput.value : 30) || 30;
-            
-            stopTimer(); // Laufenden Timer zuerst löschen
-
-            let secondsLeft = duration;
-            const display = getEl('teacher-timer-display');
-            if (display) {
-                display.innerText = `${secondsLeft}s`;
-                display.classList.remove('hidden');
-            }
-            
-            broadcastTimer(secondsLeft);
-
-            timerInterval = setInterval(() => {
-                secondsLeft--;
-                if (display) display.innerText = `${secondsLeft}s`;
-                
-                broadcastTimer(secondsLeft);
-
-                if (secondsLeft <= 0) {
-                    stopTimer();
-                    if (display) display.innerText = "Zeit um! ⏰";
-                    playSound('down');
-                }
-            }, 1000);
-
-            const startBtn = getEl('start-timer-btn');
-            const stopBtn = getEl('stop-timer-btn');
-            if (startBtn) startBtn.classList.add('hidden');
-            if (stopBtn) stopBtn.classList.remove('hidden');
-        }
-
-        function stopTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            const startBtn = getEl('start-timer-btn');
-            const stopBtn = getEl('stop-timer-btn');
-            if (startBtn) startBtn.classList.remove('hidden');
-            if (stopBtn) stopBtn.classList.add('hidden');
-            
-            const display = getEl('teacher-timer-display');
-            if (display) display.classList.add('hidden');
-
-            broadcastTimer(-1); // Löscht Timer auf den iPads
-        }
-
-        async function broadcastTimer(seconds) {
-            const codeInput = getEl('room-code-input');
-            const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "7c";
-            if (!roomCode) return;
-            
-            try {
-                await fetch(`https://ntfy.sh/mq-ntfy-${roomCode}-control`, {
-                    method: 'POST',
-                    body: JSON.stringify({ timer: seconds })
-                });
-            } catch(e) {
-                console.error("Fehler beim Senden des Timers:", e);
-            }
+        function clearIncomingAnswers() {
+            incomingAnswers = [];
+            renderIncomingAnswersList();
+            showToast("Antworten-Liste geleert.", "info");
         }
 
         /* QR-Code Generator */
@@ -1752,6 +1435,35 @@
             }
         }
 
+        /* Vollbild-Modus */
+        function toggleFullscreen() {
+            const btn = getEl('fullscreen-btn');
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen()
+                    .then(() => {
+                        if (btn) btn.innerHTML = `<i class="fa-solid fa-compress text-lg"></i>`;
+                        showToast("Vollbildmodus aktiviert", "success");
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast("Vollbildmodus blockiert.", "danger");
+                    });
+            } else {
+                document.exitFullscreen();
+                if (btn) btn.innerHTML = `<i class="fa-solid fa-expand text-lg"></i>`;
+                showToast("Vollbildmodus beendet", "info");
+            }
+        }
+
+        if (getEl('fullscreen-btn')) {
+            document.addEventListener('fullscreenchange', () => {
+                const btn = getEl('fullscreen-btn');
+                if (btn && !document.fullscreenElement) {
+                    btn.innerHTML = `<i class="fa-solid fa-expand text-lg"></i>`;
+                }
+            });
+        }
+
         /* Klassen- und Spielstand-Manager */
         function updateClassDropdown() {
             const select = getEl('class-select');
@@ -1786,12 +1498,10 @@
             
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
-            const managerRoundDisplay = getEl('manager-round-display');
-            if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
             updateActiveBadge();
             renderScoreboard();
-            broadcastRoundUpdate(); 
+            broadcastRoundUpdate(); // Synchronisierung anstossen
             showToast(`Klasse "${activeClass}" geladen.`, 'success');
             saveState();
         }
@@ -2020,26 +1730,6 @@
             showToast(anyActive ? "Auswahl zurückgesetzt!" : "Alle Teams ausgewählt (+1)!", "success");
         }
 
-        /* Spielrunde zurücksetzen (Runde zurück Button) */
-        function prevRound() {
-            if (currentRound > 1) {
-                currentRound--;
-                const roundDisplay = getEl('header-round-display');
-                if (roundDisplay) roundDisplay.innerText = currentRound;
-                const managerRoundDisplay = getEl('manager-round-display');
-                if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
-                
-                saveState();
-                renderScoreboard();
-                broadcastRoundUpdate();
-                renderHistoryArchive();
-                showToast(`Zurück auf Runde ${currentRound}!`, "info");
-            } else {
-                showToast("Du bist bereits in Runde 1!", "danger");
-            }
-        }
-
-        /* RUNDEN-MANAGER & SCORE Gutschrift mit Joker Logic */
         function nextRound() {
             if (teams.length === 0) {
                 showToast("Bitte füge zuerst Teams hinzu!", "danger");
@@ -2048,48 +1738,31 @@
 
             const activeTeams = teams.filter(t => t.activeThisRound);
             activeTeams.forEach(t => {
-                let pts = t.pendingPoints || 1;
-                
-                // JOKER-LOGIC: Bei Erfolg werden die Punkte verdoppelt!
-                if (t.jokerActiveThisRound) {
-                    pts = pts * 2;
-                    showToast(`🃏 Joker-Erfolg für "${t.name}"! Punkte verdoppelt: +${pts}!`, "success");
-                }
-
+                const pts = t.pendingPoints || 1;
                 t.score += pts;
-                t.streak = (t.streak || 0) + 1; // Streak erhöhen
             });
 
-            // Joker Misserfolg & Streak Zurücksetzen
+            // Status für diese Runde resetten
             teams.forEach(t => {
-                if (!t.activeThisRound) {
-                    t.streak = 0; // Streak gerissen!
-                    
-                    // JOKER-LOGIC: Bei Fehler oder Ausbleiben verliert das Team 1 Punkt
-                    if (t.jokerActiveThisRound) {
-                        t.score = Math.max(0, t.score - 1);
-                        showToast(`💀 Joker-Risiko fehlgeschlagen! "${t.name}" verliert 1 Punkt!`, "danger");
-                        playSound('down');
-                    }
-                }
-                
-                // Zurücksetzen für neue Runde
                 t.activeThisRound = false;
                 t.pendingPoints = 0;
-                t.jokerActiveThisRound = false;
             });
 
             currentRound++;
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
-            const managerRoundDisplay = getEl('manager-round-display');
-            if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
             playSound('next');
             saveState();
             renderScoreboard();
-            broadcastRoundUpdate(); 
-            renderHistoryArchive();
+            broadcastRoundUpdate(); // Schüler-iPads freischalten & Runde aktualisieren
+
+            if (activeTeams.length > 0) {
+                const names = activeTeams.map(t => `${t.name} (+${t.pendingPoints || 1})`).join(", ");
+                showToast(`Runde beendet! Neue Runde ${currentRound} gestartet!`, "success");
+            } else {
+                showToast(`Nächste Runde ${currentRound} gestartet!`, "info");
+            }
         }
 
         function deleteTeam(id, name) {
@@ -2099,21 +1772,11 @@
             renderScoreboard();
         }
 
-        /* Scoreboard rendern mit FLIP-Methode für fließenden Platzwechsel (Smooth CSS Reordering) */
         function renderScoreboard() {
             const container = getEl('scoreboard-container');
             const emptyState = getEl('empty-state');
             
             if (!container) return;
-
-            // FLIP Animation: Vorherige Positionen sichern
-            const cards = container.querySelectorAll('[data-team-id]');
-            const firstPositions = {};
-            cards.forEach(card => {
-                const id = card.getAttribute('data-team-id');
-                firstPositions[id] = card.getBoundingClientRect();
-            });
-
             container.innerHTML = '';
 
             if (teams.length === 0) {
@@ -2139,8 +1802,6 @@
                 const isSelected = team.activeThisRound;
                 
                 const card = document.createElement('div');
-                card.setAttribute('data-team-id', team.id); // Wichtig für den FLIP-Effekt!
-                
                 let borderStyle = 'border-slate-800/80 bg-slate-900/40 hover:bg-slate-800/40 hover:border-slate-700/60';
                 let cardOverlay = '';
 
@@ -2155,32 +1816,14 @@
                     borderStyle = 'leader-card bg-slate-900/60';
                 }
 
-                // Streak Flame Icon
-                let streakBadge = '';
-                if (team.streak >= 3) {
-                    streakBadge = `
-                        <span class="bg-orange-500/15 text-orange-400 border border-orange-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
-                            <i class="fa-solid fa-fire text-[10px]"></i> ${team.streak}x Streak
-                        </span>`;
-                }
-
-                // Joker Badge
-                let jokerCardBadge = '';
-                if (team.jokerActiveThisRound) {
-                    jokerCardBadge = `
-                        <div class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black px-1.5 py-0.5 rounded animate-pulse text-center mt-1">
-                            <i class="fa-solid fa-masks-theater"></i> JOKER AKTIV (Doppelt / Risiko!)
-                        </div>`;
-                }
-
                 card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-48 select-none ${borderStyle}`;
+                
                 card.onclick = () => toggleTeamActive(team.id);
 
                 card.innerHTML = `
                     ${cardOverlay}
-                    <div class="flex items-start justify-between gap-1">
+                    <div class="flex items-start justify-between">
                         <span class="text-[10px] text-slate-500 font-bold tracking-wider">PLATZ ${index + 1}</span>
-                        ${streakBadge}
                         <button 
                             onclick="event.stopPropagation(); deleteTeam('${team.id}', '${team.name.replace(/'/g, "\\'")}')" 
                             class="text-slate-600 hover:text-rose-400 p-1 rounded transition-all"
@@ -2192,12 +1835,11 @@
 
                     <div class="text-center flex-grow flex flex-col justify-center">
                         <h3 class="text-sm font-black text-slate-200 tracking-wide truncate px-1" title="${team.name}">
-                            <span class="text-lg">${team.emoji || '🎵'}</span> ${team.name}
+                            ${team.name}
                         </h3>
                         <span class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-b ${isLeader ? 'from-amber-200 to-amber-500' : 'from-slate-100 to-slate-400'}">
                             ${team.score}
                         </span>
-                        ${jokerCardBadge}
                     </div>
 
                     <!-- Runden-Optionen für nächste Runde (+1, +2, +3) -->
@@ -2246,25 +1888,32 @@
 
                 container.appendChild(card);
             });
+        }
 
-            // FLIP Animation: Neuer Ort berechnen und sanft verschieben
-            const newCards = container.querySelectorAll('[data-team-id]');
-            newCards.forEach(card => {
-                const id = card.getAttribute('data-team-id');
-                const first = firstPositions[id];
-                if (first) {
-                    const last = card.getBoundingClientRect();
-                    const deltaX = first.left - last.left;
-                    const deltaY = first.top - last.top;
-                    if (deltaX !== 0 || deltaY !== 0) {
-                        card.style.transition = 'none';
-                        card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                        card.getBoundingClientRect(); // Repaint erzwingen
-                        card.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
-                        card.style.transform = 'none';
-                    }
-                }
-            });
+        function confirmReset() {
+            showCustomConfirm(
+                "Wirklich zurücksetzen?",
+                "Alle Teams und Punkte der aktuellen Klasse werden gelöscht. Die Runde startet wieder bei 1.",
+                executeReset
+            );
+        }
+
+        function executeReset() {
+            teams = [];
+            currentRound = 1;
+            const roundDisplay = getEl('header-round-display');
+            if (roundDisplay) roundDisplay.innerText = currentRound;
+            
+            classes[activeClass] = {
+                teams: [],
+                currentRound: 1
+            };
+            
+            saveState();
+            closeModal();
+            renderScoreboard();
+            broadcastRoundUpdate(); // Synchronisierung senden
+            showToast("Sitzung komplett zurückgesetzt!", "danger");
         }
 
         /* Massen-Import / KI Parser */
@@ -2335,9 +1984,7 @@
                                 name: formattedName,
                                 score: 0,
                                 activeThisRound: false,
-                                pendingPoints: 0,
-                                emoji: "🎵",
-                                streak: 0
+                                pendingPoints: 0
                             });
                             importedCount++;
                         }
@@ -2606,9 +2253,7 @@
                         name: name,
                         score: 0,
                         activeThisRound: false,
-                        pendingPoints: 0,
-                        emoji: "🎵",
-                        streak: 0
+                        pendingPoints: 0
                     });
                     addedCount++;
                 }
@@ -2621,10 +2266,50 @@
             closeImportModal();
         }
 
-        /* Konfetti Code */
+        /* Stand als HTML exportieren */
+        function exportCurrentStand() {
+            const className = prompt("Für welche Klasse möchtest du diesen Stand sichern?", activeClass);
+            if (className === null) return;
+            
+            const sanitizedClassName = className.trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+            const fileName = `scoreboard_${sanitizedClassName}.html`;
+            
+            const docClone = document.documentElement.cloneNode(true);
+            
+            const oldLoader = docClone.querySelector('#state-loader');
+            if (oldLoader) oldLoader.remove();
+            
+            const stateScript = document.createElement('script');
+            stateScript.id = 'state-loader';
+            stateScript.innerHTML = `
+                window.PREBAKED_TEAMS = ${JSON.stringify(teams)};
+                window.PREBAKED_ROUND = ${currentRound};
+            `;
+            
+            docClone.querySelector('head').appendChild(stateScript);
+            
+            const confirmModal = docClone.querySelector('#confirm-modal');
+            if (confirmModal) confirmModal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50";
+            const importModal = docClone.querySelector('#import-modal');
+            if (importModal) importModal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50";
+
+            const htmlContent = "<!DOCTYPE html>\n<html lang=\"de\">" + docClone.innerHTML + "</html>";
+            
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast(`Sicherung als "${fileName}" heruntergeladen!`, 'success');
+        }
+
         const canvas = getEl("confetti-canvas");
         const ctx = canvas ? canvas.getContext("2d") : null;
         let particles = [];
+        const colors = ["#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#ef4444"];
 
         function resizeCanvas() {
             if (!canvas) return;
@@ -2633,6 +2318,57 @@
         }
 
         window.addEventListener("resize", resizeCanvas);
+
+        class ConfettiParticle {
+            constructor() {
+                this.x = Math.random() * (canvas ? canvas.width : 500);
+                this.y = Math.random() * -(canvas ? canvas.height : 500) - 20;
+                this.size = Math.random() * 8 + 6;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.speedX = Math.random() * 4 - 2;
+                this.speedY = Math.random() * 5 + 3;
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = Math.random() * 4 - 2;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.rotation += this.rotationSpeed;
+
+                if (canvas && this.y > canvas.height) {
+                    this.y = -20;
+                    this.x = Math.random() * canvas.width;
+                }
+            }
+
+            draw() {
+                if (!ctx) return;
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate((this.rotation * Math.PI) / 180);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                ctx.restore();
+            }
+        }
+
+        function initConfetti() {
+            particles = [];
+            for (let i = 0; i < 150; i++) {
+                particles.push(new ConfettiParticle());
+            }
+        }
+
+        function animateConfetti() {
+            if (!isConfettiActive || !ctx || !canvas) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p) => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateConfetti);
+        }
 
         function triggerWinConfetti() {
             let winnerName = "Niemand";
