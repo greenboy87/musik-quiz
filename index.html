@@ -304,8 +304,8 @@
                             <input 
                                 type="text" 
                                 id="room-code-input" 
-                                value="7c" 
-                                placeholder="Raum-Code..." 
+                                value="" 
+                                placeholder="Raum-Code (z.B. 7c)..." 
                                 maxlength="8"
                                 class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500 font-mono font-bold"
                             >
@@ -742,8 +742,15 @@
         // Audio Synthesizer Context (Lazy Loading)
         let audioCtx = null;
 
-        // Emojis für Team-Logos
-        const emojis = ["🦁", "🍕", "🚀", "🦊", "🐼", "🎸", "👑", "🎈", "🛸", "👻"];
+        // Emojis für Team-Logos (Erweitert auf 6 Reihen / 30 Emojis)
+        const emojis = [
+            "🦁", "🍕", "🚀", "🦊", "🐼", 
+            "🎸", "👑", "🎈", "🛸", "👻", 
+            "🦄", "🌮", "👾", "🍩", "🦕", 
+            "🍿", "🥑", "🐯", "🎨", "🧩", 
+            "⚽", "🎮", "🎤", "🍦", " Pineapple", 
+            "🐸", "🐱", "🐶", "🦉", "🐨"
+        ];
 
         /* Sicherer Elementzugriff mit Fallback */
         function getEl(id) {
@@ -1260,6 +1267,23 @@
             
             connectStudentControlChannel(room);
             
+            // NEU: Sende ein "Join"-Signal über den ntfy-Kanal, damit die Lehrkraft das Team sofort mit 0 Punkten sieht
+            try {
+                const topic = `mq-ntfy-${room}`;
+                const payload = {
+                    action: "join",
+                    team: name,
+                    emoji: emoji,
+                    timestamp: Date.now()
+                };
+                fetch(`https://ntfy.sh/${topic}`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+            } catch(e) {
+                console.error("Fehler beim Senden des Beitritts-Signals:", e);
+            }
+            
             showToast(`Raum ${room.toUpperCase()} erfolgreich beigetreten!`, "success");
             playSound('up');
         }
@@ -1395,10 +1419,14 @@
 
         function connectLiveRoom() {
             const codeInput = getEl('room-code-input');
-            const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "7c";
+            const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "";
 
             if (!roomCode) {
                 showToast("Bitte gib einen Raum-Code ein!", "danger");
+                const statusDiv = getEl('connection-status');
+                if (statusDiv) {
+                    statusDiv.innerHTML = `<span class="h-2 w-2 rounded-full bg-rose-500"></span> Bitte Code eingeben und Starten klicken`;
+                }
                 return;
             }
 
@@ -1431,8 +1459,12 @@
                     const rawData = JSON.parse(event.data);
                     if (rawData && rawData.message) {
                         const quizPayload = JSON.parse(rawData.message);
-                        if (quizPayload && quizPayload.team && quizPayload.answer) {
-                            addIncomingAnswer(quizPayload);
+                        if (quizPayload && quizPayload.team) {
+                            if (quizPayload.action === "join") {
+                                handleLiveJoin(quizPayload.team, quizPayload.emoji || "🎵");
+                            } else if (quizPayload.answer) {
+                                addIncomingAnswer(quizPayload);
+                            }
                         }
                     }
                 } catch (e) {
@@ -1453,6 +1485,36 @@
             playSound('up');
         }
 
+        /* NEU: Verarbeitet das Beitritts-Signal eines Schülergeräts und legt das Team sofort mit 0 Punkten an */
+        function handleLiveJoin(teamName, emoji) {
+            let team = teams.find(t => t.name.toLowerCase() === teamName.toLowerCase());
+            if (!team) {
+                const newTeam = {
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                    name: teamName.substring(0, 12),
+                    score: 0,
+                    activeThisRound: false,
+                    pendingPoints: 0,
+                    streak: 0,
+                    jokerUsed: false,
+                    jokerActiveThisRound: false,
+                    emoji: emoji || "🎵"
+                };
+                teams.push(newTeam);
+                saveState();
+                renderScoreboard();
+                showToast(`🚀 "${teamName}" ist dem Spiel beigetreten!`, "success");
+                playSound('up');
+            } else {
+                // Falls sie bereits existieren, aktualisieren wir ggf. das Emoji
+                if (emoji && emoji !== "🎵" && team.emoji !== emoji) {
+                    team.emoji = emoji;
+                    saveState();
+                    renderScoreboard();
+                }
+            }
+        }
+
         /* Beamer Sichtschutz steuern */
         function toggleBeamerProtection() {
             beamerProtectionActive = !beamerProtectionActive;
@@ -1467,6 +1529,18 @@
 
             if (!list) return;
             list.innerHTML = '';
+
+            // Sichtschutz Button-Status (Auge / Durchgestrichen) dynamisch aktualisieren
+            const toggleBtn = getEl('beamer-protection-toggle-btn');
+            if (toggleBtn) {
+                if (beamerProtectionActive) {
+                    toggleBtn.innerHTML = `<i class="fa-solid fa-eye-slash mr-1"></i> Sichtschutz: AN 🔒`;
+                    toggleBtn.className = "text-[9px] bg-rose-950/70 hover:bg-rose-900 border border-rose-800/40 text-rose-200 px-2.5 py-1 rounded transition-all font-bold font-sans";
+                } else {
+                    toggleBtn.innerHTML = `<i class="fa-solid fa-eye mr-1"></i> Sichtschutz: AUS 🔓`;
+                    toggleBtn.className = "text-[9px] bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-800/40 text-emerald-200 px-2.5 py-1 rounded transition-all font-bold font-sans";
+                }
+            }
 
             if (incomingAnswers.length === 0) {
                 if (emptyDiv) emptyDiv.classList.remove('hidden');
