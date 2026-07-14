@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Musik-Quiz Live Scoreboard</title>
+    <title>greenboys Scoreboard</title>
     <!-- Tailwind CSS für modernes UI -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome für Icons -->
@@ -79,7 +79,7 @@
                 <i class="fa-solid fa-mobile-screen-button text-4xl text-violet-400"></i>
             </div>
             <h1 class="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-pink-400 to-amber-300">
-                Musik-Quiz Buzzer 📱
+                greenboys Buzzer 📱
             </h1>
             <p class="text-slate-400 text-xs mt-1">Tritt einem Raum bei und schicke deine Antworten live an die Leinwand!</p>
         </div>
@@ -227,7 +227,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-pink-400 to-amber-300 flex items-center gap-2">
-                        Musik-Quiz Scoreboard 🏆
+                        greenboys Scoreboard 🏆
                     </h1>
                     <span id="active-class-badge" class="inline-block mt-1 text-[11px] bg-violet-500/20 text-violet-300 border border-violet-500/35 px-2.5 py-0.5 rounded-full font-sans font-medium tracking-wide">
                         <i class="fa-solid fa-graduation-cap text-violet-400 mr-1"></i> Aktiv: Standard-Sitzung
@@ -288,7 +288,7 @@
                 </div>
                 <p class="text-[11px] text-slate-400 leading-tight">
                     <i class="fa-solid fa-lightbulb text-amber-400"></i> 
-                    Klicke auf die <strong>Teams unten</strong>, um sie grün zu markieren. Ein Klick auf <strong>Nächste Runde</strong> vergibt die Punkte!
+                    Klicke auf den <strong>Teamnamen</strong> für ein einfaches +1, oder nutze die <strong>+1, +2, +3 Tasten</strong> auf der Karte.
                 </p>
             </div>
 
@@ -391,13 +391,23 @@
                     <div class="flex gap-1.5 items-center justify-between font-medium">
                         <span class="text-slate-400 text-[10px]"><i class="fa-solid fa-key text-violet-400"></i> Lehrer-Passwort:</span>
                         <div class="flex gap-1">
-                            <input 
-                                type="text" 
-                                id="change-password-input" 
-                                value="musik" 
-                                placeholder="Neu..." 
-                                class="w-20 bg-slate-900/60 border border-slate-700/50 text-slate-200 text-[10px] rounded px-1.5 py-0.5 focus:outline-none"
-                            >
+                            <div class="relative flex items-center">
+                                <input 
+                                    type="password" 
+                                    id="change-password-input" 
+                                    value="musik" 
+                                    placeholder="Neu..." 
+                                    class="w-24 bg-slate-900/60 border border-slate-700/50 text-slate-200 text-[10px] rounded pl-1.5 pr-6 py-0.5 focus:outline-none"
+                                >
+                                <button 
+                                    type="button" 
+                                    onclick="togglePasswordVisibility('change-password-input', 'toggle-pw-icon')" 
+                                    class="absolute right-1 text-slate-500 hover:text-slate-300 text-[10px] p-0.5"
+                                    title="Passwort anzeigen/verbergen"
+                                >
+                                    <i class="fa-solid fa-eye" id="toggle-pw-icon"></i>
+                                </button>
+                            </div>
                             <button onclick="changeTeacherPassword()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all">
                                 Sichern
                             </button>
@@ -476,7 +486,7 @@
         </div>
 
         <!-- SCOREBOARD GRID -->
-        <div id="scoreboard-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 my-2">
+        <div id="scoreboard-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 my-2">
             <!-- Wird dynamisch mit Javascript befüllt -->
         </div>
 
@@ -602,7 +612,7 @@
 
     <!-- Kompakter Footer -->
     <footer class="text-center py-2.5 text-slate-600 text-[10px] border-t border-slate-800/30 bg-slate-950/20 select-none">
-        <p>🎵 Drücke auf eine Team-Karte, um sie für diese Runde auszuwählen • Mentimeter Musik-Quiz Helfer</p>
+        <p>🎵 greenboys Scoreboard • Mentimeter Musik-Quiz Helfer</p>
     </footer>
 
     <!-- ========================================== -->
@@ -677,7 +687,10 @@
                     currentRound = window.PREBAKED_ROUND || 1;
                     activeClass = "Geladener Stand";
                     
-                    teams.forEach(t => t.activeThisRound = false);
+                    teams.forEach(t => {
+                        t.activeThisRound = false;
+                        t.pendingPoints = 0;
+                    });
                     const roundDisplay = getEl('header-round-display');
                     if (roundDisplay) roundDisplay.innerText = currentRound;
                     
@@ -725,7 +738,10 @@
                 currentRound = currentData.currentRound || 1;
 
                 // Markierungen für diese Runde immer sauber abwählen
-                teams.forEach(t => t.activeThisRound = false);
+                teams.forEach(t => {
+                    t.activeThisRound = false;
+                    t.pendingPoints = 0;
+                });
 
                 const roundDisplay = getEl('header-round-display');
                 if (roundDisplay) roundDisplay.innerText = currentRound;
@@ -835,6 +851,22 @@
             showToast("Lehrer-Passwort erfolgreich geändert!", "success");
         }
 
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = getEl(inputId);
+            const icon = getEl(iconId);
+            if (input && icon) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+        }
+
         /* Custom Modal Controller */
         function showCustomConfirm(title, description, onConfirm) {
             const modal = getEl('confirm-modal');
@@ -934,7 +966,7 @@
                     method: 'POST',
                     body: JSON.stringify(payload),
                     headers: {
-                        'Title': 'Musik-Quiz Antwort',
+                        'Title': 'greenboys Scoreboard Antwort',
                         'Tags': 'musical_note'
                     }
                 });
@@ -1099,7 +1131,8 @@
                     id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                     name: teamName.substring(0, 12),
                     score: 0,
-                    activeThisRound: false
+                    activeThisRound: false,
+                    pendingPoints: 0
                 };
                 teams.push(newTeam);
                 team = newTeam;
@@ -1217,7 +1250,10 @@
             teams = targetData.teams || [];
             currentRound = targetData.currentRound || 1;
             
-            teams.forEach(t => t.activeThisRound = false);
+            teams.forEach(t => {
+                t.activeThisRound = false;
+                t.pendingPoints = 0;
+            });
             
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
@@ -1396,11 +1432,37 @@
             }, 3000);
         }
 
+        /* TEAM INTERAKTIONEN UND PUNKT-REGELUNG */
         function toggleTeamActive(id) {
             const team = teams.find(t => t.id === id);
             if (team) {
                 team.activeThisRound = !team.activeThisRound;
-                playSound(team.activeThisRound ? 'up' : 'down');
+                if (team.activeThisRound) {
+                    team.pendingPoints = 1; // Standardmäßig +1 bei Namensklick
+                    playSound('up');
+                } else {
+                    team.pendingPoints = 0;
+                    playSound('down');
+                }
+                saveState();
+                renderScoreboard();
+            }
+        }
+
+        function setPendingRoundPoints(id, points) {
+            const team = teams.find(t => t.id === id);
+            if (team) {
+                if (team.activeThisRound && team.pendingPoints === points) {
+                    // Erneut geklickt -> Abwählen
+                    team.activeThisRound = false;
+                    team.pendingPoints = 0;
+                    playSound('down');
+                } else {
+                    // Punkte setzen und aktivieren
+                    team.activeThisRound = true;
+                    team.pendingPoints = points;
+                    playSound('up');
+                }
                 saveState();
                 renderScoreboard();
             }
@@ -1419,13 +1481,17 @@
         function markAllActive() {
             if (teams.length === 0) return;
             const anyActive = teams.some(t => t.activeThisRound);
-            teams.forEach(t => t.activeThisRound = !anyActive);
+            teams.forEach(t => {
+                t.activeThisRound = !anyActive;
+                t.pendingPoints = !anyActive ? 1 : 0;
+            });
             playSound('up');
             saveState();
             renderScoreboard();
-            showToast(anyActive ? "Auswahl zurückgesetzt!" : "Alle Teams ausgewählt!", "success");
+            showToast(anyActive ? "Auswahl zurückgesetzt!" : "Alle Teams ausgewählt (+1)!", "success");
         }
 
+        /* RUNDENÜBERGANG UND VERGABE DER AUSGEWÄHLTEN PUNKTE */
         function nextRound() {
             if (teams.length === 0) {
                 showToast("Bitte füge zuerst Teams hinzu!", "danger");
@@ -1434,11 +1500,14 @@
 
             const activeTeams = teams.filter(t => t.activeThisRound);
             activeTeams.forEach(t => {
-                t.score += 1;
+                const pts = t.pendingPoints || 1;
+                t.score += pts;
             });
 
+            // Status für diese Runde sauber resetten
             teams.forEach(t => {
                 t.activeThisRound = false;
+                t.pendingPoints = 0;
             });
 
             currentRound++;
@@ -1450,8 +1519,8 @@
             renderScoreboard();
 
             if (activeTeams.length > 0) {
-                const names = activeTeams.map(t => t.name).join(", ");
-                showToast(`Runde beendet! +1 Punkt für: ${names}. Runde ${currentRound} gestartet!`, "success");
+                const names = activeTeams.map(t => `${t.name} (+${t.pendingPoints || 1})`).join(", ");
+                showToast(`Runde beendet! Punkte addiert für: ${names}. Runde ${currentRound} gestartet!`, "success");
             } else {
                 showToast(`Nächste Runde gestartet! Keine Punkte vergeben.`, "info");
             }
@@ -1464,7 +1533,7 @@
             renderScoreboard();
         }
 
-        /* Scoreboard rendern */
+        /* SCOREBOARD RENDERN MIT NEUEN AUSWAHL-BUTTONS */
         function renderScoreboard() {
             const container = getEl('scoreboard-container');
             const emptyState = getEl('empty-state');
@@ -1509,7 +1578,9 @@
                     borderStyle = 'leader-card bg-slate-900/60';
                 }
 
-                card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-40 select-none ${borderStyle}`;
+                card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-48 select-none ${borderStyle}`;
+                
+                // Wir machen die gesamte Karte per Klick als standardmäßig Richtig (+1) wählbar
                 card.onclick = () => toggleTeamActive(team.id);
 
                 card.innerHTML = `
@@ -1529,31 +1600,51 @@
                         <h3 class="text-sm font-black text-slate-200 tracking-wide truncate px-1" title="${team.name}">
                             ${team.name}
                         </h3>
-                        <span class="text-3xl md:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-b ${isLeader ? 'from-amber-200 to-amber-500' : 'from-slate-100 to-slate-400'}">
+                        <span class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-b ${isLeader ? 'from-amber-200 to-amber-500' : 'from-slate-100 to-slate-400'}">
                             ${team.score}
                         </span>
                     </div>
 
-                    <div class="flex gap-1 justify-center mt-1 pt-1 border-t border-slate-800/40" onclick="event.stopPropagation();">
+                    <!-- NEU: Runden-Optionen für nächste Runde (+1, +2, +3) -->
+                    <div class="flex gap-1 justify-center my-1" onclick="event.stopPropagation();">
                         <button 
-                            onclick="adjustScore('${team.id}', -1)" 
-                            class="bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 w-8 py-1 rounded text-[10px] font-bold transition-all active:scale-90"
-                            title="Minus 1 Punkt"
+                            onclick="setPendingRoundPoints('${team.id}', 1)"
+                            class="flex-grow py-1 rounded text-[10px] font-black transition-all ${isSelected && team.pendingPoints === 1 ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}"
+                            title="Nächste Runde +1 Punkt"
                         >
-                            -1
+                            +1
                         </button>
                         <button 
-                            onclick="toggleTeamActive('${team.id}')"
-                            class="flex-grow rounded text-[10px] font-black tracking-wide transition-all active:scale-95 ${isSelected ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}"
+                            onclick="setPendingRoundPoints('${team.id}', 2)"
+                            class="flex-grow py-1 rounded text-[10px] font-black transition-all ${isSelected && team.pendingPoints === 2 ? 'bg-emerald-600 text-white font-bold animate-pulse' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}"
+                            title="Nächste Runde +2 Punkte"
                         >
-                            ${isSelected ? 'Richtig ✔' : 'Richtig?'}
+                            +2
+                        </button>
+                        <button 
+                            onclick="setPendingRoundPoints('${team.id}', 3)"
+                            class="flex-grow py-1 rounded text-[10px] font-black transition-all ${isSelected && team.pendingPoints === 3 ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}"
+                            title="Nächste Runde +3 Punkte"
+                        >
+                            +3
+                        </button>
+                    </div>
+
+                    <!-- Direkt-Änderungstasten (-1 Pkt, +1 Pkt) -->
+                    <div class="flex gap-1 justify-center pt-1 border-t border-slate-800/40" onclick="event.stopPropagation();">
+                        <button 
+                            onclick="adjustScore('${team.id}', -1)" 
+                            class="flex-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 py-1 rounded text-[10px] font-bold transition-all active:scale-90"
+                            title="Sofort minus 1"
+                        >
+                            -1 Pkt
                         </button>
                         <button 
                             onclick="adjustScore('${team.id}', 1)" 
-                            class="bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 w-8 py-1 rounded text-[10px] font-bold transition-all active:scale-90"
-                            title="Plus 1 Punkt"
+                            class="flex-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 py-1 rounded text-[10px] font-bold transition-all active:scale-90"
+                            title="Sofort plus 1"
                         >
-                            +1
+                            +1 Pkt
                         </button>
                     </div>
                 `;
@@ -1654,7 +1745,8 @@
                                 id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                                 name: formattedName,
                                 score: 0,
-                                activeThisRound: false
+                                activeThisRound: false,
+                                pendingPoints: 0
                             });
                             importedCount++;
                         }
@@ -1922,7 +2014,8 @@
                         id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                         name: name,
                         score: 0,
-                        activeThisRound: false
+                        activeThisRound: false,
+                        pendingPoints: 0
                     });
                     addedCount++;
                 }
@@ -2068,9 +2161,7 @@
         // Automatische Erkennung für ungestylte OneDrive-Vorschau
         function checkOneDriveEnvironment() {
             try {
-                // Tailwind CSS prüft, ob Stylesheets injiziert wurden. Falls nicht, fehlt das Styling komplett.
                 const hasStyles = document.styleSheets.length > 0;
-                // ntfy.sh oder JavaScript wird in der SharePoint/OneDrive Sandbox oft komplett blockiert
                 if (!hasStyles || typeof EventSource === "undefined") {
                     const banner = getEl('onedrive-safety-banner');
                     if (banner) banner.classList.remove('hidden');
