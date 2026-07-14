@@ -61,7 +61,7 @@
     <div id="onedrive-safety-banner" class="bg-rose-950 border-b border-rose-800 p-4 text-center hidden z-50">
         <div class="max-w-md mx-auto flex flex-col items-center gap-2">
             <i class="fa-solid fa-triangle-exclamation text-2xl text-rose-400"></i>
-            <h4 class="font-bold text-sm text-rose-200">OneDrive-Sicherheitsblockade aktiv!</h4>
+            <h4 class="font-bold text-sm text-rose-200">OneDrive-Sicherheitsblockade active!</h4>
             <p class="text-[11px] text-rose-300 leading-normal">
                 Microsoft blockiert die Funktionen in dieser Online-Vorschau. 
                 Bitte klicke oben links auf das <strong>Herunterladen-Symbol (Pfeil nach unten)</strong> und öffne die Datei anschließend aus deinen Downloads in <strong>Safari oder Chrome</strong>!
@@ -125,7 +125,7 @@
                 <div class="flex items-center gap-2 flex-wrap">
                     <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span id="student-badge-info" class="text-xs font-bold text-slate-300">Verbunden: </span>
-                    <span id="student-round-badge" class="hidden text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30 px-2 py-0.5 rounded-full">Runde -</span>
+                    <span id="student-round-badge" class="hidden text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30 px-2.5 py-0.5 rounded-full">Runde -</span>
                 </div>
                 <button 
                     onclick="leaveQuizRoom()" 
@@ -460,6 +460,12 @@
                 <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5">
                     <i class="fa-solid fa-play-circle text-emerald-400 animate-pulse"></i> Runden-Manager
                 </span>
+                
+                <!-- Neue, hochsichtbare Rundenanzeige direkt im Rundenmanager -->
+                <span class="bg-violet-500/25 text-violet-300 border border-violet-500/45 px-3 py-1 rounded-lg font-bold font-mono flex items-center gap-1">
+                    Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400">1</span>
+                </span>
+                
                 <span class="text-slate-400 text-[11px] hidden sm:inline">Klicke Teams auf den Karten an (+1), nutze deren +2/+3 Knöpfe oder werte die iPad-Buzzer aus.</span>
             </div>
             <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
@@ -744,6 +750,8 @@
                     });
                     const roundDisplay = getEl('header-round-display');
                     if (roundDisplay) roundDisplay.innerText = currentRound;
+                    const managerRoundDisplay = getEl('manager-round-display');
+                    if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
                     
                     updateActiveBadge();
                     renderScoreboard();
@@ -794,6 +802,8 @@
 
                 const roundDisplay = getEl('header-round-display');
                 if (roundDisplay) roundDisplay.innerText = currentRound;
+                const managerRoundDisplay = getEl('manager-round-display');
+                if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
 
                 const storedStudentName = localStorage.getItem('student_team_name');
                 const storedStudentRoom = localStorage.getItem('student_room_code');
@@ -985,6 +995,7 @@
             };
         }
 
+        /* Rundenzustand auf dem Schülergerät anwenden (und Buttons anpassen!) */
         function updateStudentRound(newRound) {
             studentCurrentRound = newRound;
             const roundBadge = getEl('student-round-badge');
@@ -1001,15 +1012,23 @@
             const textarea = getEl('student-answer-input');
 
             if (lastSubmitted && parseInt(lastSubmitted) === newRound) {
-                if (btn) btn.disabled = true;
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = `<i class="fa-solid fa-check"></i> Antwort gesendet! ✔`;
+                    btn.className = "w-full bg-emerald-950/40 border border-emerald-800/30 text-emerald-400 font-bold py-4 rounded-2xl cursor-not-allowed text-sm flex items-center justify-center gap-2 transition-all";
+                }
                 if (textarea) textarea.disabled = true;
                 if (feedback) {
                     feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-850 text-amber-200 animate-scaleIn";
-                    feedback.innerHTML = `<i class="fa-solid fa-circle-info text-amber-400"></i> Du hast für Runde ${newRound} bereits eine Antwort abgegeben. Bitte warte auf die nächste Runde!`;
+                    feedback.innerHTML = `<i class="fa-solid fa-circle-info text-amber-400"></i> Du hast für Runde ${newRound} bereits geantwortet. Warte auf die nächste Runde!`;
                     feedback.classList.remove('hidden');
                 }
             } else {
-                if (btn) btn.disabled = false;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Antwort abschicken! 🚀</span>`;
+                    btn.className = "w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2";
+                }
                 if (textarea) textarea.disabled = false;
                 if (feedback) {
                     feedback.classList.add('hidden');
@@ -1498,6 +1517,8 @@
             
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
+            const managerRoundDisplay = getEl('manager-round-display');
+            if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
             updateActiveBadge();
             renderScoreboard();
@@ -1751,6 +1772,8 @@
             currentRound++;
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
+            const managerRoundDisplay = getEl('manager-round-display');
+            if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
             playSound('next');
             saveState();
@@ -1903,6 +1926,8 @@
             currentRound = 1;
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
+            const managerRoundDisplay = getEl('manager-round-display');
+            if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
             classes[activeClass] = {
                 teams: [],
