@@ -21,7 +21,7 @@
             background: linear-gradient(135deg, #090d16 0%, #111026 100%);
             min-height: 100vh;
         }
-        h1, h2, h3 {
+        h1, h2, h3, h4 {
             font-family: 'Comfortaa', sans-serif;
         }
         
@@ -39,6 +39,15 @@
             border-color: #8b5cf6 !important;
             background-color: rgba(139, 92, 246, 0.1) !important;
         }
+
+        /* Sanfte Einblendung */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
     </style>
 </head>
 <body class="text-slate-100 flex flex-col justify-between overflow-x-hidden relative selection:bg-violet-500/30">
@@ -47,9 +56,153 @@
     <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none z-50 w-full h-full"></canvas>
 
     <!-- ========================================== -->
-    <!-- 1. LEHRER-ANSICHT (SCOREBOARD)             -->
+    <!-- SCHÜLER-ANSICHT (DEFAULT VIEW)             -->
     <!-- ========================================== -->
-    <div id="teacher-view" class="container mx-auto px-4 py-4 max-w-7xl flex-grow flex flex-col justify-between hidden">
+    <div id="student-view" class="container mx-auto px-4 py-8 max-w-md flex-grow flex flex-col justify-center animate-fadeIn">
+        
+        <div class="text-center mb-8">
+            <div class="inline-block p-4 bg-violet-600/20 rounded-3xl border border-violet-500/30 mb-3 shadow-lg shadow-violet-950/40">
+                <i class="fa-solid fa-mobile-screen-button text-4xl text-violet-400"></i>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-pink-400 to-amber-300">
+                Musik-Quiz Buzzer 📱
+            </h1>
+            <p class="text-slate-400 text-xs mt-1">Tritt einem Raum bei und schicke deine Antworten live an die Leinwand!</p>
+        </div>
+
+        <!-- 1. SCHÜLER REGISTRIERUNG -->
+        <div id="student-join-card" class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+            <h3 class="text-base font-bold text-slate-200 border-b border-slate-800 pb-2"><i class="fa-solid fa-right-to-bracket text-violet-400 mr-1"></i> Spiel beitreten</h3>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Raum-Code der Lehrkraft:</label>
+                    <input 
+                        type="text" 
+                        id="student-room-input" 
+                        placeholder="z. B. 7c" 
+                        maxlength="8"
+                        class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 font-mono font-bold"
+                    >
+                </div>
+                <div>
+                    <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Dein Teamname (oder Vorname):</label>
+                    <input 
+                        type="text" 
+                        id="student-name-input" 
+                        placeholder="z. B. Kiwi, Team Alpha..." 
+                        maxlength="12"
+                        class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 font-sans"
+                    >
+                </div>
+                
+                <button 
+                    onclick="joinQuizRoom()" 
+                    class="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-violet-900/30 active:scale-95 transition-all text-xs flex items-center justify-center gap-2"
+                >
+                    <span>Raum beitreten 🚀</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. SCHÜLER BUZZER EINGABE (Nach Join sichtbar) -->
+        <div id="student-buzzer-card" class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 hidden">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="student-badge-info" class="text-xs font-bold text-slate-300">Verbunden als: </span>
+                </div>
+                <button 
+                    onclick="leaveQuizRoom()" 
+                    class="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                    Wechseln <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Deine Antwort:</label>
+                    <textarea 
+                        id="student-answer-input" 
+                        placeholder="Tippe hier den Songnamen, Interpreten oder deine Vermutung ein..." 
+                        rows="3"
+                        class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 font-sans placeholder-slate-600 resize-none"
+                    ></textarea>
+                </div>
+
+                <button 
+                    onclick="sendStudentAnswer()" 
+                    id="student-submit-btn"
+                    class="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2"
+                >
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>Antwort abschicken! 🚀</span>
+                </button>
+
+                <!-- Feedback-Status-Box -->
+                <div id="student-feedback" class="hidden p-3 rounded-xl border text-center text-xs font-semibold animate-scaleIn">
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer / Passwort-geschützter Zugang für die Lehrkraft -->
+        <div class="text-center mt-8">
+            <button 
+                onclick="promptTeacherLogin()" 
+                class="text-xs text-slate-500 hover:text-violet-400 transition-colors font-medium flex items-center justify-center gap-1.5 mx-auto"
+            >
+                <i class="fa-solid fa-circle-user"></i>
+                <span>Ich bin die Lehrkraft (Scoreboard öffnen)</span>
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- TEACHER PASSWORD DIALOG MODAL              -->
+    <!-- ========================================== -->
+    <div id="teacher-password-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-sm w-full shadow-2xl animate-fadeIn space-y-4 text-center">
+            <div class="inline-block p-4 bg-violet-600/20 rounded-3xl border border-violet-500/30 shadow-lg shadow-violet-950/40">
+                <i class="fa-solid fa-lock text-3xl text-violet-400"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-white">Lehrer-Bereich geschützt</h3>
+                <p class="text-slate-400 text-xs mt-1">Bitte gib das Passwort ein, um das Live-Scoreboard freizuschalten.</p>
+            </div>
+            
+            <div class="space-y-3">
+                <input 
+                    type="password" 
+                    id="teacher-password-input" 
+                    placeholder="Lehrer-Passwort..." 
+                    class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 text-center font-sans tracking-widest"
+                    onkeydown="if(event.key === 'Enter') checkTeacherPassword()"
+                >
+                <div class="flex gap-2">
+                    <button 
+                        onclick="closeTeacherLogin()" 
+                        class="w-1/2 px-4 py-3 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-2xl text-xs font-bold transition-all active:scale-95"
+                    >
+                        Abbrechen
+                    </button>
+                    <button 
+                        onclick="checkTeacherPassword()" 
+                        class="w-1/2 px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-lg shadow-violet-900/30"
+                    >
+                        Freischalten 🔑
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- LEHRER-ANSICHT (SCOREBOARD)                -->
+    <!-- ========================================== -->
+    <div id="teacher-view" class="container mx-auto px-4 py-4 max-w-7xl flex-grow flex flex-col justify-between hidden animate-fadeIn">
         
         <!-- Header minimaler & kompakter -->
         <header class="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-800/60 pb-3 mb-4">
@@ -77,7 +230,7 @@
                     title="Zu den Schüler-Buzzer-Eingaben wechseln"
                 >
                     <i class="fa-solid fa-mobile-screen-button"></i>
-                    <span>Als Schüler beitreten 📱</span>
+                    <span>Buzzer-Ansicht 📱</span>
                 </button>
                 
                 <!-- Vollbild Button -->
@@ -226,7 +379,7 @@
 
                 <!-- Passwort ändern Bereich -->
                 <div class="border-t border-slate-700/40 pt-1.5 space-y-1">
-                    <div class="flex gap-1.5 items-center justify-between">
+                    <div class="flex gap-1.5 items-center justify-between font-medium">
                         <span class="text-slate-400 text-[10px]"><i class="fa-solid fa-key text-violet-400"></i> Lehrer-Passwort:</span>
                         <div class="flex gap-1">
                             <input 
@@ -234,17 +387,17 @@
                                 id="change-password-input" 
                                 value="musik" 
                                 placeholder="Neu..." 
-                                class="w-20 bg-slate-900/60 border border-slate-700/50 text-slate-200 text-[10px] rounded px-1.5 py-0.5 focus:outline-none"
+                                class="w-20 bg-slate-900/60 border-slate-700/50 text-slate-200 text-[10px] rounded px-1.5 py-0.5 focus:outline-none"
                             >
                             <button onclick="changeTeacherPassword()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all">
-                                OK
+                                Sichern
                             </button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Reset, Finale & Export -->
-                <div class="flex flex-col gap-1 mt-1 pt-1 border-t border-slate-700/40">
+                <div class="flex flex-col gap-1 mt-1 pt-1 border-t border-slate-700/40 font-bold">
                     <div class="grid grid-cols-2 gap-1.5">
                         <button onclick="confirmReset()" class="bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 border border-rose-900/40 font-bold py-1 rounded-lg text-[10px] transition-all">
                             <i class="fa-solid fa-trash-can"></i> Reset
@@ -272,10 +425,10 @@
                     <i class="fa-solid fa-qrcode"></i> iPads verbinden – So geht's:
                 </h4>
                 <ul class="text-xs text-slate-300 list-disc list-inside space-y-1">
-                    <li>Lade diese HTML-Datei auf deine Schulplattform (Moodle, Teams, OneDrive, IServ, etc.) hoch.</li>
+                    <li>Veröffentliche diese Seite auf GitHub Pages (wie in der Anleitung beschrieben).</li>
                     <li>Lass die Schüler den links angezeigten <strong>QR-Code</strong> mit ihren iPads einscannen.</li>
-                    <li><strong>Alternativ ohne QR-Code:</strong> Schüler können die Datei einfach direkt aus Teams/OneDrive auf ihren iPads öffnen und oben rechts auf <strong>„Als Schüler beitreten 📱“</strong> klicken!</li>
                     <li>Gib ihnen dann einfach deinen oben eingestellten Raum-Code (z. B. <strong class="text-violet-400 font-mono font-bold" id="qr-room-code-display">7c</strong>) durch!</li>
+                    <li>Sobald sie absenden, landen die Antworten live und sortiert auf dieser Tafel!</li>
                 </ul>
                 <div class="pt-2 text-[10px] text-slate-400 flex flex-col md:flex-row md:items-center gap-2">
                     <span>Manuelle URL (falls im Internet gehostet):</span>
@@ -293,7 +446,7 @@
         <!-- ========================================== -->
         <!-- CHRONOLOGISCHE LIVE ANTWORTEN VOM IPAD       -->
         <!-- ========================================== -->
-        <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-4 mb-4 hidden">
+        <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-4 mb-4 hidden animate-fadeIn">
             <div class="flex justify-between items-center mb-3">
                 <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2">
                     <i class="fa-solid fa-clock-rotate-left animate-pulse"></i> Eingegangene iPad-Antworten (Chronologisch sortiert - älteste zuerst)
@@ -306,7 +459,6 @@
                 </button>
             </div>
             <div id="live-answers-list" class="flex flex-col gap-2 max-h-72 overflow-y-auto p-1">
-                <!-- Wird dynamisch chronologisch per SSE befüllt -->
             </div>
             <div id="live-answers-empty" class="text-center py-6 text-xs text-slate-500">
                 <i class="fa-solid fa-spinner animate-spin text-slate-600 mr-1.5"></i> Warte auf Antworten von den Schüler-iPads... (Beamerbild kann pausiert werden 🖥️🔒)
@@ -315,8 +467,317 @@
 
         <!-- SCOREBOARD GRID -->
         <div id="scoreboard-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 my-2">
-            <!-- Wird dynamisch mit Javascript befüllt -->
         </div>
 
         <!-- Leerer Zustand -->
-        <div id="empty-state" class="hidden text-center py-10 px-4 bg-slate-800/20 border border-slate-700/20 rounded-3xl mt-
+        <div id="empty-state" class="hidden text-center py-10 px-4 bg-slate-800/20 border border-slate-700/20 rounded-3xl mt-2">
+            <i class="fa-solid fa-people-group text-4xl text-slate-600 mb-2 block"></i>
+            <h4 class="text-base font-bold text-slate-400">Keine Teams in dieser Sitzung</h4>
+            <p class="text-slate-500 text-xs mt-1 max-w-sm mx-auto">
+                Trage über das <strong>Massen-Import Tool</strong> oben deine Schülergruppen ein oder lass sie über ihre iPads mitspielen!
+            </p>
+        </div>
+    </div>
+
+    <!-- Toast Benachrichtigungen -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+    <!-- Bestätigungs-Modal für Reset & Deletion (Eigene, schicke Modals) -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl max-w-xs w-full shadow-2xl animate-scaleIn">
+            <h3 id="confirm-title" class="text-lg font-bold text-white mb-2">Wirklich zurücksetzen?</h3>
+            <p id="confirm-desc" class="text-slate-400 text-xs mb-4">Alle Teams und Punkte der aktuellen Klasse werden gelöscht. Die Runde startet wieder bei 1.</p>
+            <div class="flex gap-3 justify-end">
+                <button onclick="closeModal()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700 transition-all">Abbrechen</button>
+                <button id="confirm-action-btn" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs transition-all font-bold">Ja, ausführen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MASSEN-IMPORT / KI MODAL -->
+    <div id="import-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-700/80 p-5 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col gap-4 animate-scaleIn">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <h3 class="text-lg font-bold text-violet-400 flex items-center gap-2">
+                    <i class="fa-solid fa-file-import"></i> Teamnamen-Importer & KI-Erkennung
+                </h3>
+                <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-200 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Optionaler API-Key Config -->
+            <div class="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs">
+                <span class="text-slate-400 font-medium leading-tight">
+                    <i class="fa-solid fa-key text-amber-500"></i> Gemini API-Schlüssel (für lokale KI-Bilderkennung):
+                </span>
+                <input 
+                    type="password" 
+                    id="api-key-input" 
+                    placeholder="API-Key hier eintragen (optional)..." 
+                    class="bg-slate-900 border border-slate-700/60 rounded px-2.5 py-1 text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-violet-500 text-[11px]"
+                >
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="flex border-b border-slate-800 text-xs">
+                <button id="tab-btn-text" onclick="switchImportTab('text')" class="py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400">
+                    <i class="fa-solid fa-align-left mr-1"></i> Text kopieren & einfügen
+                </button>
+                <button id="tab-btn-file" onclick="switchImportTab('file')" class="py-2 px-4 font-medium text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-magic mr-1"></i> KI Dokumenten-/Bild-Scanner 🤖✨
+                </button>
+            </div>
+
+            <!-- Tab 1: Manual Text Input -->
+            <div id="tab-content-text" class="space-y-3">
+                <p class="text-xs text-slate-400">Gib hier deine Teamnamen ein (jeder Name in einer neuen Zeile oder getrennt durch Kommas):</p>
+                <textarea 
+                    id="bulk-text-input" 
+                    rows="6" 
+                    placeholder="Team Alpha&#10;Team Beta&#10;BLJ, Didi, Nugget"
+                    class="w-full bg-slate-950/60 border border-slate-700/60 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500 font-mono"
+                ></textarea>
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-amber-400/80"><i class="fa-solid fa-info-circle"></i> Doppelte Namen werden automatisch ignoriert.</span>
+                    <button onclick="processTextImport()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold py-2 px-5 rounded-xl text-xs active:scale-95 transition-all">
+                        Teams hinzufügen
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 2: Drag and Drop & AI File Parsing -->
+            <div id="tab-content-file" class="hidden space-y-3">
+                <p class="text-xs text-slate-400">Ziehe ein Foto deiner Tafel, deines Rosters, eine Textdatei (.txt) oder eine PDF-Datei hierhin. Die KI liest die Namen für dich aus!</p>
+                
+                <div 
+                    id="dropzone"
+                    class="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center hover:border-slate-500 transition-all cursor-pointer bg-slate-950/20 flex flex-col items-center justify-center gap-3"
+                    onclick="document.getElementById('file-input').click()"
+                >
+                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-violet-500"></i>
+                    <div>
+                        <p class="text-xs font-bold text-slate-300">Datei hierher ziehen oder klicken zum Auswählen</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Unterstützt Fotos (PNG, JPG), TXT & PDF</p>
+                    </div>
+                    <input type="file" id="file-input" accept="image/*,text/plain,.pdf" class="hidden" onchange="handleFileSelect(event)">
+                </div>
+
+                <!-- AI Loading Spinner -->
+                <div id="ai-loading" class="hidden flex-col items-center justify-center p-4 bg-slate-950/55 rounded-xl border border-slate-800">
+                    <svg class="animate-spin h-7 w-7 text-violet-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="text-xs text-violet-300 font-bold">Künstliche Intelligenz liest Teamnamen aus... ✨</p>
+                    <p class="text-[9px] text-slate-500 mt-0.5">Gemini analysiert das Dokument auf Textmuster</p>
+                </div>
+
+                <!-- Preview of Extracted Teams -->
+                <div id="preview-container" class="hidden space-y-2 bg-slate-950/40 p-3 rounded-xl border border-slate-800">
+                    <h4 class="text-xs font-bold text-emerald-400"><i class="fa-solid fa-square-check"></i> Erkannte Teams (uncheck zum Ausschließen):</h4>
+                    <div id="extracted-teams-list" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-1">
+                    </div>
+                    <div class="flex justify-end pt-2 border-t border-slate-800/40">
+                        <button onclick="commitExtractedImport()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs active:scale-95 transition-all">
+                            Ausgewählte Teams importieren
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kompakter Footer -->
+    <footer class="text-center py-2.5 text-slate-600 text-[10px] border-t border-slate-800/30 bg-slate-950/20 select-none">
+        <p>🎵 Drücke auf eine Team-Karte, um sie für diese Runde auszuwählen • Mentimeter Musik-Quiz Helfer</p>
+    </footer>
+
+    <!-- ========================================== -->
+    <!-- LOGIK & SPEICHERSYSTEM (LAZY-LOAD SOUNDS)   -->
+    <!-- ========================================== -->
+    <script>
+        /* State-Variablen */
+        let currentView = "student"; 
+        let activeClass = "Standard-Sitzung";
+        let teacherPassword = "musik"; 
+        
+        let classes = {
+            "Standard-Sitzung": { teams: [], currentRound: 1 }
+        };
+        let teams = [];
+        let currentRound = 1;
+
+        let sseSource = null;
+        let incomingAnswers = [];
+
+        let confettiInterval = null;
+        let isConfettiActive = false;
+        let activeImportTab = 'text';
+        let extractedTeams = [];
+        let confirmActionCallback = null;
+        
+        // Audio Synthesizer Context (wird für iOS Safari erst bei Knopfdruck erzeugt!)
+        let audioCtx = null;
+
+        /* LocalStorage Speicher-Funktionen (Sicher & zuverlässig) */
+        function saveState() {
+            try {
+                // Den aktuellen Arbeitsstand sichern (außer die Standard-Sitzung, diese bleibt immer ungespeichert!)
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1 };
+                
+                if (activeClass !== "Standard-Sitzung") {
+                    classes[activeClass] = {
+                        teams: teams,
+                        currentRound: currentRound
+                    };
+                }
+                
+                const saveDataObj = {
+                    activeClass: activeClass,
+                    classes: classes,
+                    teacherPassword: teacherPassword,
+                    autoSort: document.getElementById('auto-sort-toggle') ? document.getElementById('auto-sort-toggle').checked : true,
+                    soundEnabled: document.getElementById('sound-toggle') ? document.getElementById('sound-toggle').checked : true,
+                    geminiKey: document.getElementById('api-key-input') ? document.getElementById('api-key-input').value.trim() : ""
+                };
+                
+                localStorage.setItem('quiz_scoreboard_master_data_v5', JSON.stringify(saveDataObj));
+            } catch (err) {
+                console.error("Fehler beim Speichern des Zustands:", err);
+            }
+        }
+
+        /* Defensives Laden der Zustände (Kollisionsschutz für älteren Cache) */
+        function loadState() {
+            try {
+                // Zurücksetzen auf sicheren Standardzustand
+                classes = {
+                    "Standard-Sitzung": { teams: [], currentRound: 1 }
+                };
+                activeClass = "Standard-Sitzung";
+                teams = [];
+                currentRound = 1;
+
+                // 1. Checken, ob eine voreingestellte Klasse fest in die HTML-Datei gebacken wurde
+                if (window.PREBAKED_TEAMS && window.PREBAKED_TEAMS.length > 0) {
+                    teams = window.PREBAKED_TEAMS;
+                    currentRound = window.PREBAKED_ROUND || 1;
+                    activeClass = "Geladener Stand";
+                    
+                    teams.forEach(t => t.activeThisRound = false);
+                    const disp = document.getElementById('header-round-display');
+                    if (disp) disp.innerText = currentRound;
+                    
+                    updateActiveBadge();
+                    renderScoreboard();
+                    showToast("Exportierter Spielstand erfolgreich geladen!", "success");
+                    switchView('teacher'); 
+                    return;
+                }
+
+                // 2. Normalen Spielstand aus LocalStorage abrufen
+                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5');
+                if (savedData) {
+                    const parsed = JSON.parse(savedData);
+                    if (parsed) {
+                        classes = parsed.classes || { "Standard-Sitzung": { teams: [], currentRound: 1 } };
+                        activeClass = parsed.activeClass || "Standard-Sitzung";
+                        teacherPassword = parsed.teacherPassword || "musik";
+                        
+                        const autoSortToggle = document.getElementById('auto-sort-toggle');
+                        if (autoSortToggle) autoSortToggle.checked = parsed.autoSort !== false;
+
+                        const soundToggle = document.getElementById('sound-toggle');
+                        if (soundToggle) soundToggle.checked = parsed.soundEnabled !== false;
+
+                        const apiKeyInput = document.getElementById('api-key-input');
+                        if (apiKeyInput) apiKeyInput.value = parsed.geminiKey || "";
+
+                        const changePassInput = document.getElementById('change-password-input');
+                        if (changePassInput) changePassInput.value = teacherPassword;
+                    }
+                }
+
+                // WICHTIG: Standard-Sitzung soll immer leer sein!
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1 };
+
+                // Stellen wir sicher, dass die aktive Klasse existiert
+                if (!classes[activeClass]) {
+                    classes[activeClass] = { teams: [], currentRound: 1 };
+                }
+
+                // Daten der aktiven Klasse laden
+                const currentData = classes[activeClass];
+                teams = currentData.teams || [];
+                currentRound = currentData.currentRound || 1;
+
+                // Markierungen für diese Runde immer sauber abwählen
+                teams.forEach(t => t.activeThisRound = false);
+
+                const disp = document.getElementById('header-round-display');
+                if (disp) disp.innerText = currentRound;
+
+                // Schülerdaten aus lokalem Speicher laden
+                const storedStudentName = localStorage.getItem('student_team_name');
+                const storedStudentRoom = localStorage.getItem('student_room_code');
+                const studentNameInput = document.getElementById('student-name-input');
+                const studentRoomInput = document.getElementById('student-room-input');
+                if (storedStudentName && studentNameInput) studentNameInput.value = storedStudentName;
+                if (storedStudentRoom && studentRoomInput) studentRoomInput.value = storedStudentRoom;
+
+                updateClassDropdown();
+                updateActiveBadge();
+                renderScoreboard();
+            } catch (err) {
+                console.error("Fehler beim Laden des Zustands:", err);
+            }
+
+            // Defensives Routing der Ansicht (Verhindert Bluescreen, falls oben ein Fehler auftrat!)
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('role') === 'teacher') {
+                    promptTeacherLogin();
+                } else {
+                    switchView('student');
+                }
+            } catch (err) {
+                console.error("Routing Fehler:", err);
+                switchView('student');
+            }
+        }
+
+        /* Navigations- & Ansichts-Router */
+        function switchView(view) {
+            currentView = view;
+            const studentSection = document.getElementById('student-view');
+            const teacherSection = document.getElementById('teacher-view');
+
+            if (view === 'student') {
+                if (studentSection) studentSection.classList.remove('hidden');
+                if (teacherSection) teacherSection.classList.add('hidden');
+                
+                // SSE-Verbindung kappen, falls auf Schüler-Ansicht gewechselt wird
+                if (sseSource) {
+                    sseSource.close();
+                    sseSource = null;
+                }
+                
+                // Beigetretenen Zustand prüfen
+                const registeredName = localStorage.getItem('student_team_name');
+                const registeredRoom = localStorage.getItem('student_room_code');
+                const joinCard = document.getElementById('student-join-card');
+                const buzzerCard = document.getElementById('student-buzzer-card');
+                const badge = document.getElementById('student-badge-info');
+
+                if (registeredName && registeredRoom) {
+                    if (joinCard) joinCard.classList.add('hidden');
+                    if (badge) badge.innerText = `Verbunden: ${registeredName} (Raum ${registeredRoom})`;
+                    if (buzzerCard) buzzerCard.classList.remove('hidden');
+                } else {
+                    if (joinCard) joinCard.classList.remove('hidden');
+                    if (buzzerCard) buzzerCard.classList.add('hidden');
+                }
+            } else if (view === 'teacher') {
+                if (studentSection) studentSection.classList.add('hidden');
+                if (teacherSection) teacherSection
