@@ -374,24 +374,6 @@
                         <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
                     </label>
                 </div>
-
-                <!-- Countdown Timer Einblendung im Lehrer-Interface -->
-                <div class="border-t border-slate-700/40 pt-1.5 mt-0.5 space-y-1">
-                    <span class="text-slate-300 text-[10px] font-bold flex items-center gap-1">
-                        <i class="fa-solid fa-hourglass-start text-amber-500"></i> Countdown-Timer (Buzzer-Sperre)
-                    </span>
-                    <div class="flex gap-1.5 items-center">
-                        <input type="number" id="timer-duration" value="30" min="5" max="120" class="w-12 bg-slate-900 border border-slate-700 text-slate-100 rounded text-[10px] px-1 py-0.5 text-center focus:outline-none font-sans font-bold">
-                        <span class="text-slate-400 text-[10px]">Sek.</span>
-                        <button id="start-timer-btn" onclick="startTimer()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-0.5 rounded text-[10px] active:scale-95 transition-all flex-grow font-sans">
-                            Starten ⏱️
-                        </button>
-                        <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-3 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">
-                            Stop 🛑
-                        </button>
-                        <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-2 py-0.5 rounded">30s</div>
-                    </div>
-                </div>
                 
                 <!-- Klassen-Speicher (Dropdown & Sichern) -->
                 <div class="border-t border-slate-700/40 pt-1.5 mt-0.5 space-y-1">
