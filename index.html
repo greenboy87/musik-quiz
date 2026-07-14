@@ -327,6 +327,26 @@
                     </div>
                 </div>
 
+                <!-- Team manuell hinzufügen mit Enter-Taste -->
+                <div class="border-t border-slate-700/30 pt-1.5 mt-0.5">
+                    <label class="text-[10px] text-slate-400 block mb-0.5">Team manuell hinzufügen (Enter drücken):</label>
+                    <form onsubmit="handleManualTeamAdd(event)" class="flex gap-1.5">
+                        <input 
+                            type="text" 
+                            id="manual-team-input" 
+                            placeholder="z. B. Kiwi, Team Alpha..." 
+                            maxlength="12"
+                            class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        >
+                        <button 
+                            type="submit" 
+                            class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1 rounded-xl text-xs active:scale-95 transition-all"
+                        >
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </form>
+                </div>
+
                 <!-- Live Verbindung Status & QR Code Trigger -->
                 <div class="flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t border-slate-700/30">
                     <div id="connection-status" class="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
@@ -468,14 +488,24 @@
         <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-4 mb-4 hidden animate-fadeIn">
             <div class="flex justify-between items-center mb-3">
                 <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2">
-                    <i class="fa-solid fa-clock-rotate-left animate-pulse"></i> Eingegangene iPad-Antworten (Chronologisch sortiert - älteste zuerst)
+                    <i class="fa-solid fa-clock-rotate-left animate-pulse"></i> Eingegangene iPad-Antworten (Chronologisch sortiert)
                 </h3>
-                <button 
-                    onclick="clearIncomingAnswers()" 
-                    class="text-[10px] bg-slate-700 hover:bg-rose-950 hover:text-rose-300 border border-slate-600/40 text-slate-300 px-2 py-0.5 rounded transition-all font-bold"
-                >
-                    Liste leeren 🗑️
-                </button>
+                <div class="flex gap-2">
+                    <!-- Beamer Sichtschutz Toggle im Header -->
+                    <button 
+                        id="beamer-protection-toggle-btn" 
+                        onclick="toggleBeamerProtection()" 
+                        class="text-[10px] bg-slate-700 hover:bg-violet-600 border border-slate-600/40 text-slate-300 px-2 py-0.5 rounded transition-all font-bold"
+                    >
+                        <i class="fa-solid fa-user-secret mr-1"></i> Sichtschutz umschalten
+                    </button>
+                    <button 
+                        onclick="clearIncomingAnswers()" 
+                        class="text-[10px] bg-slate-700 hover:bg-rose-950 hover:text-rose-300 border border-slate-600/40 text-slate-300 px-2 py-0.5 rounded transition-all font-bold"
+                    >
+                        Liste leeren 🗑️
+                    </button>
+                </div>
             </div>
             <div id="live-answers-list" class="flex flex-col gap-2 max-h-72 overflow-y-auto p-1">
                 <!-- Wird dynamisch chronologisch per SSE befüllt -->
@@ -619,10 +649,10 @@
     <!-- LOGIK & SPEICHERSYSTEM (STABIL)             -->
     <!-- ========================================== -->
     <script>
-        /* State-Variablen */
         let currentView = "student"; 
         let activeClass = "Standard-Sitzung";
         let teacherPassword = "musik"; 
+        let beamerProtectionActive = true; // Beamer Schutz standardmäßig aktivieren!
         
         let classes = {
             "Standard-Sitzung": { teams: [], currentRound: 1 }
@@ -642,15 +672,14 @@
         // Audio Synthesizer Context (Lazy Loading)
         let audioCtx = null;
 
-        /* Sicherer Elementzugriff mit Fallback (DOM-Defensiv-Schutz) */
+        /* Sicherer Elementzugriff mit Fallback */
         function getEl(id) {
             return document.getElementById(id) || null;
         }
 
-        /* LocalStorage Speicher-Funktionen (Sicher & zuverlässig) */
+        /* LocalStorage Speicher-Funktionen */
         function saveState() {
             try {
-                // Die Standard-Sitzung soll ungespeichert & immer frisch bleiben beim Neuladen!
                 classes["Standard-Sitzung"] = { teams: [], currentRound: 1 };
                 
                 if (activeClass !== "Standard-Sitzung") {
@@ -670,10 +699,11 @@
                     teacherPassword: teacherPassword,
                     autoSort: autoSortEl ? autoSortEl.checked : true,
                     soundEnabled: soundEl ? soundEl.checked : true,
-                    geminiKey: apiKeyEl ? apiKeyEl.value.trim() : ""
+                    geminiKey: apiKeyEl ? apiKeyEl.value.trim() : "",
+                    beamerProtectionActive: beamerProtectionActive
                 };
                 
-                localStorage.setItem('quiz_scoreboard_master_data_v5', JSON.stringify(saveDataObj));
+                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys', JSON.stringify(saveDataObj));
             } catch (err) {
                 console.error("Fehler beim Speichern des Zustands:", err);
             }
@@ -681,7 +711,6 @@
 
         function loadState() {
             try {
-                // 1. Checken, ob eine voreingestellte Klasse fest in die HTML-Datei gebacken wurde
                 if (window.PREBAKED_TEAMS && window.PREBAKED_TEAMS.length > 0) {
                     teams = window.PREBAKED_TEAMS;
                     currentRound = window.PREBAKED_ROUND || 1;
@@ -701,14 +730,14 @@
                     return;
                 }
 
-                // 2. Normalen Spielstand aus LocalStorage abrufen
-                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5');
+                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys');
                 if (savedData) {
                     const parsed = JSON.parse(savedData);
                     if (parsed) {
                         classes = parsed.classes || { "Standard-Sitzung": { teams: [], currentRound: 1 } };
                         activeClass = parsed.activeClass || "Standard-Sitzung";
                         teacherPassword = parsed.teacherPassword || "musik";
+                        beamerProtectionActive = parsed.beamerProtectionActive !== false;
                         
                         const autoSortEl = getEl('auto-sort-toggle');
                         if (autoSortEl) autoSortEl.checked = parsed.autoSort !== false;
@@ -726,7 +755,6 @@
                     activeClass = "Standard-Sitzung";
                 }
 
-                // Standard-Sitzung ist immer leer
                 classes["Standard-Sitzung"] = { teams: [], currentRound: 1 };
 
                 if (!classes[activeClass]) {
@@ -737,7 +765,6 @@
                 teams = currentData.teams || [];
                 currentRound = currentData.currentRound || 1;
 
-                // Markierungen für diese Runde immer sauber abwählen
                 teams.forEach(t => {
                     t.activeThisRound = false;
                     t.pendingPoints = 0;
@@ -746,7 +773,6 @@
                 const roundDisplay = getEl('header-round-display');
                 if (roundDisplay) roundDisplay.innerText = currentRound;
 
-                // Schülerdaten aus lokalem Speicher laden
                 const storedStudentName = localStorage.getItem('student_team_name');
                 const storedStudentRoom = localStorage.getItem('student_room_code');
                 const studentNameEl = getEl('student-name-input');
@@ -758,7 +784,6 @@
                 updateActiveBadge();
                 renderScoreboard();
                 
-                // Url Parameter checken für direkte Navigation
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get('role') === 'teacher') {
                     promptTeacherLogin();
@@ -771,7 +796,6 @@
             }
         }
 
-        /* Navigations- & Ansichts-Router */
         function switchView(view) {
             currentView = view;
             const studentSection = getEl('student-view');
@@ -995,6 +1019,35 @@
             }
         }
 
+        /* Team manuell hinzufügen (von Lehrerseite) */
+        function handleManualTeamAdd(e) {
+            if (e) e.preventDefault();
+            const input = getEl('manual-team-input');
+            const name = input ? input.value.trim() : "";
+            if (!name) return;
+            
+            const formattedName = name.substring(0, 12);
+            if (teams.some(t => t.name.toLowerCase() === formattedName.toLowerCase())) {
+                showToast(`Das Team "${formattedName}" existiert bereits!`, 'danger');
+                return;
+            }
+
+            const newTeam = {
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                name: formattedName,
+                score: 0,
+                activeThisRound: false,
+                pendingPoints: 0
+            };
+
+            teams.push(newTeam);
+            showToast(`Team "${formattedName}" manuell hinzugefügt!`, 'success');
+            playSound('up');
+            if (input) input.value = '';
+            saveState();
+            renderScoreboard();
+        }
+
         /* Lehrer Live-Empfang (SSE) */
         function connectLiveRoom() {
             const codeInput = getEl('room-code-input');
@@ -1055,6 +1108,14 @@
             playSound('up');
         }
 
+        /* Beamer Sichtschutz steuern */
+        function toggleBeamerProtection() {
+            beamerProtectionActive = !beamerProtectionActive;
+            saveState();
+            renderIncomingAnswersList();
+            showToast(beamerProtectionActive ? "Beamer-Sichtschutz aktiv (Antworten verdeckt)" : "Sichtschutz deaktiviert (Antworten aufgedeckt)", "info");
+        }
+
         /* Chronologische Live-Antworten rendern */
         function renderIncomingAnswersList() {
             const list = getEl('live-answers-list');
@@ -1069,6 +1130,36 @@
             } else {
                 if (emptyDiv) emptyDiv.classList.add('hidden');
             }
+
+            // Beamer Sichtschutz Banner einfügen
+            const protectionBanner = document.createElement('div');
+            protectionBanner.className = "w-full";
+            if (beamerProtectionActive) {
+                protectionBanner.innerHTML = `
+                    <div class="bg-violet-950/40 border border-violet-800/60 p-3 rounded-2xl mb-2 flex flex-col sm:flex-row gap-3 justify-between items-center animate-scaleIn">
+                        <span class="text-xs text-violet-300 font-bold flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-secret text-violet-400 text-base animate-pulse"></i> 
+                            Beamer-Sichtschutz aktiv! Antworten sind an der Leinwand unsichtbar.
+                        </span>
+                        <button onclick="toggleBeamerProtection()" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-black px-4 py-2 rounded-xl transition-all shadow-lg active:scale-95">
+                            <i class="fa-solid fa-eye mr-1"></i> Antworten aufdecken 🔓
+                        </button>
+                    </div>
+                `;
+            } else {
+                protectionBanner.innerHTML = `
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl mb-2 flex flex-col sm:flex-row gap-3 justify-between items-center animate-scaleIn">
+                        <span class="text-xs text-slate-300 font-bold flex items-center gap-1.5">
+                            <i class="fa-solid fa-eye text-emerald-400 text-base"></i> 
+                            Antworten sind aufgedeckt und für Schüler sichtbar.
+                        </span>
+                        <button onclick="toggleBeamerProtection()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-4 py-2 rounded-xl transition-all active:scale-95">
+                            <i class="fa-solid fa-eye-slash mr-1"></i> Antworten verbergen 🔒
+                        </button>
+                    </div>
+                `;
+            }
+            list.appendChild(protectionBanner);
 
             incomingAnswers.forEach((ans, index) => {
                 const item = document.createElement('div');
@@ -1085,34 +1176,57 @@
                         </span>`;
                 }
 
+                // Sichtschutz Auswertung für das Beamer-Projektorbild
+                let answerTextContent = '';
+                if (beamerProtectionActive) {
+                    answerTextContent = `
+                        <p class="text-sm text-slate-500 bg-slate-950/80 p-3 rounded-xl border border-slate-850 font-mono text-center py-3 select-none flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-lock text-violet-500 text-base"></i> 
+                            <span class="text-slate-400 font-semibold tracking-wide text-xs">Inhalt verdeckt (Beamer-Schutz)</span>
+                        </p>
+                    `;
+                } else {
+                    answerTextContent = `
+                        <p class="text-sm text-slate-200 bg-slate-950/60 p-2.5 rounded-xl border border-slate-850 font-medium">
+                            ${ans.answer}
+                        </p>
+                    `;
+                }
+
+                const teamNameEscaped = ans.team.replace(/'/g, "\\'");
+
                 item.innerHTML = `
-                    <div class="flex-grow space-y-1">
-                        <div class="flex items-center gap-2">
+                    <div class="flex-grow space-y-1 w-full md:w-auto">
+                        <div class="flex items-center gap-2 flex-wrap">
                             <span class="font-bold text-violet-400 text-xs">${ans.team}</span>
                             ${placementBadge}
                             <span class="text-[10px] text-slate-500 font-mono">${ans.time} Uhr</span>
                         </div>
-                        <p class="text-sm text-slate-200 bg-slate-950/60 p-2.5 rounded-xl border border-slate-850 font-medium">
-                            ${ans.answer}
-                        </p>
+                        ${answerTextContent}
                     </div>
 
-                    <div class="flex gap-1.5 self-end md:self-center font-bold">
+                    <div class="flex gap-1.5 self-end md:self-center font-bold mt-2 md:mt-0 flex-wrap">
                         <button 
-                            onclick="applyLiveAnswer('${ans.team.replace(/'/g, "\\'")}', 2, ${index})"
+                            onclick="applyLiveAnswer('${teamNameEscaped}', 3, ${index})"
                             class="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95 shadow-md shadow-emerald-950/30 flex items-center gap-1"
                         >
-                            <i class="fa-solid fa-crown text-amber-300"></i> +2 Pkt
+                            <i class="fa-solid fa-crown text-amber-300"></i> +3 Pkt
                         </button>
                         <button 
-                            onclick="applyLiveAnswer('${ans.team.replace(/'/g, "\\'")}', 1, ${index})"
+                            onclick="applyLiveAnswer('${teamNameEscaped}', 2, ${index})"
+                            class="bg-emerald-500 hover:bg-emerald-400 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95 shadow-md shadow-emerald-950/30 flex items-center gap-1"
+                        >
+                            +2 Pkt
+                        </button>
+                        <button 
+                            onclick="applyLiveAnswer('${teamNameEscaped}', 1, ${index})"
                             class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95 flex items-center gap-1"
                         >
                             <i class="fa-solid fa-circle-check text-emerald-400"></i> +1 Pkt
                         </button>
                         <button 
                             onclick="removeLiveAnswerByIndex(${index})"
-                            class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-[11px] px-2 py-1.5 rounded-xl transition-all"
+                            class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-[11px] px-2.5 py-1.5 rounded-xl transition-all"
                             title="Verwerfen"
                         >
                             <i class="fa-solid fa-trash-can"></i>
@@ -1123,25 +1237,30 @@
             });
         }
 
+        /* Einloggen der Punkte von der Live-Antwort (Wie bei der Scorecard) */
         function applyLiveAnswer(teamName, pointsToAdd, index) {
             let team = teams.find(t => t.name.toLowerCase() === teamName.toLowerCase());
             
             if (!team) {
+                // Team automatisch erzeugen, falls es noch nicht existierte
                 const newTeam = {
                     id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                     name: teamName.substring(0, 12),
                     score: 0,
-                    activeThisRound: false,
-                    pendingPoints: 0
+                    activeThisRound: true,
+                    pendingPoints: pointsToAdd
                 };
                 teams.push(newTeam);
                 team = newTeam;
-                showToast(`Team "${teamName}" automatisch angelegt!`, "info");
+                showToast(`Team "${teamName}" automatisch angelegt und für Runde markiert!`, "info");
+            } else {
+                // Team für die laufende Runde grün voreinstellen / markieren
+                team.activeThisRound = true;
+                team.pendingPoints = pointsToAdd;
+                showToast(`Punkte für "${team.name}" wurden vorgemerkt (+${pointsToAdd})!`, "success");
             }
 
-            team.score += pointsToAdd;
             playSound('up');
-            
             removeLiveAnswerByIndex(index);
             saveState();
             renderScoreboard();
@@ -1330,14 +1449,13 @@
             renderScoreboard();
         }
 
-        /* Sound-Effekt Generator (Lazy Loaded) */
+        /* Sound-Effekt Generator */
         function playSound(type) {
             const soundEl = getEl('sound-toggle');
             const soundEnabled = soundEl ? soundEl.checked : true;
             if (!soundEnabled) return;
 
             try {
-                // AudioContext erst beim ersten wirklichen Klick initialisieren (umgeht iOS/Chrome Sperren!)
                 if (!audioCtx) {
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 }
@@ -1453,12 +1571,10 @@
             const team = teams.find(t => t.id === id);
             if (team) {
                 if (team.activeThisRound && team.pendingPoints === points) {
-                    // Erneut geklickt -> Abwählen
                     team.activeThisRound = false;
                     team.pendingPoints = 0;
                     playSound('down');
                 } else {
-                    // Punkte setzen und aktivieren
                     team.activeThisRound = true;
                     team.pendingPoints = points;
                     playSound('up');
@@ -1504,7 +1620,7 @@
                 t.score += pts;
             });
 
-            // Status für diese Runde sauber resetten
+            // Status für diese Runde resetten
             teams.forEach(t => {
                 t.activeThisRound = false;
                 t.pendingPoints = 0;
@@ -1580,7 +1696,6 @@
 
                 card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-48 select-none ${borderStyle}`;
                 
-                // Wir machen die gesamte Karte per Klick als standardmäßig Richtig (+1) wählbar
                 card.onclick = () => toggleTeamActive(team.id);
 
                 card.innerHTML = `
@@ -1605,7 +1720,7 @@
                         </span>
                     </div>
 
-                    <!-- NEU: Runden-Optionen für nächste Runde (+1, +2, +3) -->
+                    <!-- Runden-Optionen für nächste Runde (+1, +2, +3) -->
                     <div class="flex gap-1 justify-center my-1" onclick="event.stopPropagation();">
                         <button 
                             onclick="setPendingRoundPoints('${team.id}', 1)"
