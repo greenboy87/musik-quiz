@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>greenboys Scoreboard</title>
+    <title>greenboys Scoreboard 🏆</title>
     <!-- Tailwind CSS für modernes UI -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome für Icons -->
@@ -56,7 +56,7 @@
     <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none z-50 w-full h-full"></canvas>
 
     <!-- ========================================== -->
-    <!-- DETEKTIERUNG FÜR UNGESTYLTE ANZEIGE (TEAMS/ONEDRIVE) -->
+    <!-- DETEKTIERUNG FÜR UNGESTYLTE ANZEIGE -->
     <!-- ========================================== -->
     <div id="onedrive-safety-banner" class="bg-rose-950 border-b border-rose-800 p-4 text-center hidden z-50">
         <div class="max-w-md mx-auto flex flex-col items-center gap-2">
@@ -155,9 +155,7 @@
                 </button>
 
                 <!-- Feedback-Status-Box -->
-                <div id="student-feedback" class="hidden p-3 rounded-xl border text-center text-xs font-semibold">
-                    <!-- Status wird dynamisch injiziert -->
-                </div>
+                <div id="student-feedback" class="hidden p-3 rounded-xl border text-center text-xs font-semibold"></div>
             </div>
         </div>
 
@@ -217,6 +215,7 @@
     <!-- ========================================== -->
     <!-- LEHRER-ANSICHT (SCOREBOARD)                -->
     <!-- ========================================== -->
+    <!-- STREAMING_CHUNK: Designing the streamlined layout for the teacher scoreboard view... -->
     <div id="teacher-view" class="container mx-auto px-4 py-4 max-w-7xl flex-grow flex flex-col justify-between hidden animate-fadeIn font-sans">
         
         <!-- Header minimaler & kompakter -->
@@ -260,40 +259,11 @@
             </div>
         </header>
 
-        <!-- Kompakter Steuerungsbereich -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-4">
+        <!-- Extrem kompakter zweispaltiger Steuerungsbereich -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             
-            <!-- 1. RUNDEN-STEUERUNG (LINKS) -->
-            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg lg:col-span-4 flex flex-col justify-between gap-3">
-                <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-2">
-                    <i class="fa-solid fa-play-circle"></i> Runden-Manager
-                </h3>
-                <div class="grid grid-cols-2 gap-2">
-                    <button 
-                        onclick="markAllActive()" 
-                        class="bg-slate-700/50 hover:bg-slate-700 border border-slate-600/40 text-slate-200 font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 text-xs"
-                        title="Markiert alle Teams als richtig oder hebt die Auswahl auf"
-                    >
-                        <i class="fa-solid fa-check-double text-emerald-400"></i>
-                        <span>Alle Richtig / Null</span>
-                    </button>
-                    <button 
-                        onclick="nextRound()" 
-                        class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-emerald-600/20 text-xs"
-                        title="Vergibt Punkte an alle grün markierten Teams und startet die nächste Runde"
-                    >
-                        <span>Nächste Runde</span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                </div>
-                <p class="text-[11px] text-slate-400 leading-tight">
-                    <i class="fa-solid fa-lightbulb text-amber-400"></i> 
-                    Klicke auf den <strong>Teamnamen</strong> für ein einfaches +1, oder nutze die <strong>+1, +2, +3 Tasten</strong> auf der Karte.
-                </p>
-            </div>
-
-            <!-- 2. LIVE-BUZZER & IPAD VERBINDUNG (MITTE) -->
-            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg lg:col-span-4 flex flex-col justify-between gap-2">
+            <!-- 1. LIVE-BUZZER & IPAD VERBINDUNG (LINKS) -->
+            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-2">
                 <h3 class="text-sm font-bold text-violet-400 flex items-center justify-between gap-2">
                     <span class="flex items-center gap-2"><i class="fa-solid fa-wifi text-violet-400"></i> iPad Live-Empfänger 📡</span>
                     <button 
@@ -362,8 +332,9 @@
                 </div>
             </div>
 
-            <!-- 3. EINSTELLUNGEN & KLASSEN-SPEICHER (RECHTS) -->
-            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg lg:col-span-4 flex flex-col justify-between gap-2 text-xs">
+            <!-- 2. EINSTELLUNGEN & KLASSEN-SPEICHER (RECHTS) -->
+            <!-- STREAMING_CHUNK: Crafting the settings pane... -->
+            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-2 text-xs">
                 <div class="flex items-center justify-between gap-2">
                     <span class="text-slate-300 flex items-center gap-1">
                         <i class="fa-solid fa-volume-high text-slate-400"></i> Sounds
@@ -483,36 +454,69 @@
         </div>
 
         <!-- ========================================== -->
+        <!-- EINZEILIGER RUNDEN-MANAGER (ÜBER ANTWORTEN)-->
+        <!-- ========================================== -->
+        <!-- STREAMING_CHUNK: Inserting the compact single-line round manager... -->
+        <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 mb-3 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fadeIn">
+            <div class="flex items-center gap-2.5 text-xs">
+                <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5">
+                    <i class="fa-solid fa-play-circle text-emerald-400 animate-pulse"></i> Runden-Manager
+                </span>
+                <span class="text-slate-400 text-[11px] hidden sm:inline">Klicke Teams auf den Karten an (+1), nutze deren +2/+3 Knöpfe oder werte die iPad-Buzzer aus.</span>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button 
+                    onclick="markAllActive()" 
+                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5"
+                    title="Alle Teams aus- oder abwählen"
+                >
+                    <i class="fa-solid fa-check-double text-emerald-400"></i>
+                    <span>Alle Richtig / Null</span>
+                </button>
+                <button 
+                    onclick="nextRound()" 
+                    class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-1.5 px-4.5 rounded-lg text-[11px] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 flex items-center gap-1.5"
+                    title="Punkte für diese Runde gutschreiben und nächste Runde starten"
+                >
+                    <span>Nächste Runde</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
         <!-- CHRONOLOGISCHE LIVE ANTWORTEN VOM IPAD       -->
         <!-- ========================================== -->
-        <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-4 mb-4 hidden animate-fadeIn resize-y overflow-auto min-h-[220px] h-[360px]">
-            <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2">
-                <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2">
-                    <i class="fa-solid fa-clock-rotate-left animate-pulse"></i> Eingegangene iPad-Antworten (Chronologisch sortiert)
+        <!-- STREAMING_CHUNK: Refining the iPad answers live panel with adjustable size... -->
+        <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-3 mb-4 hidden animate-fadeIn resize-y overflow-auto min-h-[160px] h-[240px]">
+            <div class="flex justify-between items-center mb-2.5 border-b border-slate-800 pb-2">
+                <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Eingehende iPad-Antworten (Echtzeit-Anzeige)
                 </h3>
-                <div class="flex gap-2">
+                <div class="flex gap-1.5">
                     <!-- Beamer Sichtschutz Toggle im Header -->
                     <button 
                         id="beamer-protection-toggle-btn" 
                         onclick="toggleBeamerProtection()" 
-                        class="text-[10px] bg-slate-700 hover:bg-violet-600 border border-slate-600/40 text-slate-300 px-2 py-0.5 rounded transition-all font-bold"
+                        class="text-[9px] bg-slate-700 hover:bg-violet-600 border border-slate-600/40 text-slate-300 px-2.5 py-1 rounded transition-all font-bold"
                     >
                         <i class="fa-solid fa-user-secret mr-1"></i> Sichtschutz umschalten
                     </button>
                     <button 
                         onclick="clearIncomingAnswers()" 
-                        class="text-[10px] bg-slate-700 hover:bg-rose-950 hover:text-rose-300 border border-slate-600/40 text-slate-300 px-2 py-0.5 rounded transition-all font-bold"
+                        class="text-[9px] bg-slate-700 hover:bg-rose-950 hover:text-rose-300 border border-slate-600/40 text-slate-300 px-2 py-1 rounded transition-all font-bold"
                     >
                         Liste leeren 🗑️
                     </button>
                 </div>
             </div>
-            <!-- Zweispaltiges Grid-System, dessen Höhe sich an das resizable-Panel anpasst -->
-            <div id="live-answers-list" class="grid grid-cols-1 md:grid-cols-2 gap-2 p-1">
-                <!-- Wird dynamisch chronologisch per SSE befüllt -->
+
+            <!-- Dashboard-Grid für ultra-schmale, kompakte Kärtchen -->
+            <div id="live-answers-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 p-1">
+                <!-- Wird dynamisch chronologisch befüllt -->
             </div>
-            <div id="live-answers-empty" class="text-center py-6 text-xs text-slate-500">
-                <i class="fa-solid fa-spinner animate-spin text-slate-600 mr-1.5"></i> Warte auf Antworten von den Schüler-iPads... (Beamerbild kann pausiert werden 🖥️🔒)
+            <div id="live-answers-empty" class="text-center py-4 text-[11px] text-slate-500">
+                <i class="fa-solid fa-spinner animate-spin text-slate-600 mr-1"></i> Warte auf Antworten von den Schüler-iPads... (Beamerbild ist standardmäßig verdeckt 🖥️🔒)
             </div>
         </div>
 
@@ -649,6 +653,7 @@
     <!-- ========================================== -->
     <!-- LOGIK & SPEICHERSYSTEM (STABIL)             -->
     <!-- ========================================== -->
+    <!-- STREAMING_CHUNK: Initializing logic state variables... -->
     <script>
         let currentView = "student"; 
         let activeClass = "Standard-Sitzung";
@@ -710,6 +715,7 @@
             }
         }
 
+        // STREAMING_CHUNK: Loading state from LocalStorage...
         function loadState() {
             try {
                 if (window.PREBAKED_TEAMS && window.PREBAKED_TEAMS.length > 0) {
@@ -797,6 +803,7 @@
             }
         }
 
+        // STREAMING_CHUNK: Managing routing and views...
         function switchView(view) {
             currentView = view;
             const studentSection = getEl('student-view');
@@ -924,7 +931,7 @@
             }
         }
 
-        /* Schüler-Buzzer-Aktionen */
+        // STREAMING_CHUNK: Managing student-side interactions...
         function joinQuizRoom() {
             const roomEl = getEl('student-room-input');
             const nameEl = getEl('student-name-input');
@@ -1049,7 +1056,7 @@
             renderScoreboard();
         }
 
-        /* Lehrer Live-Empfang (SSE) */
+        // STREAMING_CHUNK: Connecting to the live channel via SSE...
         function connectLiveRoom() {
             const codeInput = getEl('room-code-input');
             const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "7c";
@@ -1114,10 +1121,10 @@
             beamerProtectionActive = !beamerProtectionActive;
             saveState();
             renderIncomingAnswersList();
-            showToast(beamerProtectionActive ? "Beamer-Sichtschutz aktiv (Antworten verdeckt)" : "Sichtschutz deaktiviert (Antworten aufgedeckt)", "info");
+            showToast(beamerProtectionActive ? "Sichtschutz aktiv (Teams & Antworten verdeckt)" : "Sichtschutz deaktiviert (Alles aufgedeckt)", "info");
         }
 
-        /* Chronologische Live-Antworten rendern */
+        // STREAMING_CHUNK: Rendering the list of incoming answers (spoiler-proof!)...
         function renderIncomingAnswersList() {
             const list = getEl('live-answers-list');
             const emptyDiv = getEl('live-answers-empty');
@@ -1132,110 +1139,127 @@
                 if (emptyDiv) emptyDiv.classList.add('hidden');
             }
 
-            // Beamer Sichtschutz Banner einfügen - mit col-span-full damit es sich über beide Spalten erstreckt
+            // Beamer Sichtschutz Banner einfügen
             const protectionBanner = document.createElement('div');
-            protectionBanner.className = "w-full col-span-full";
+            protectionBanner.className = "w-full col-span-full mb-1";
             if (beamerProtectionActive) {
                 protectionBanner.innerHTML = `
-                    <div class="bg-violet-950/40 border border-violet-800/60 p-3 rounded-2xl mb-2 flex flex-col sm:flex-row gap-3 justify-between items-center animate-scaleIn">
-                        <span class="text-xs text-violet-300 font-bold flex items-center gap-1.5">
-                            <i class="fa-solid fa-user-secret text-violet-400 text-base animate-pulse"></i> 
-                            Beamer-Sichtschutz aktiv! Antworten sind an der Leinwand unsichtbar.
+                    <div class="bg-violet-950/40 border border-violet-800/60 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn">
+                        <span class="text-[11px] text-violet-300 font-bold flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-secret text-violet-400 text-sm animate-pulse"></i> 
+                            Sichtschutz aktiv: Teamnamen & Antworten sind auf dem Beamer unsichtbar.
                         </span>
-                        <button onclick="toggleBeamerProtection()" class="bg-violet-600 hover:bg-violet-500 text-white text-xs font-black px-4 py-2 rounded-xl transition-all shadow-lg active:scale-95">
-                            <i class="fa-solid fa-eye mr-1"></i> Antworten aufdecken 🔓
+                        <button onclick="toggleBeamerProtection()" class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black px-3.5 py-1.5 rounded-lg transition-all shadow-lg active:scale-95">
+                            <i class="fa-solid fa-eye mr-1"></i> Alles aufdecken 🔓
                         </button>
                     </div>
                 `;
             } else {
                 protectionBanner.innerHTML = `
-                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl mb-2 flex flex-col sm:flex-row gap-3 justify-between items-center animate-scaleIn">
-                        <span class="text-xs text-slate-300 font-bold flex items-center gap-1.5">
-                            <i class="fa-solid fa-eye text-emerald-400 text-base"></i> 
-                            Antworten sind aufgedeckt und für Schüler sichtbar.
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn">
+                        <span class="text-[11px] text-slate-300 font-bold flex items-center gap-1.5">
+                            <i class="fa-solid fa-eye text-emerald-400 text-sm"></i> 
+                            Antworten und Absender sind vollständig aufgedeckt.
                         </span>
-                        <button onclick="toggleBeamerProtection()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-4 py-2 rounded-xl transition-all active:scale-95">
-                            <i class="fa-solid fa-eye-slash mr-1"></i> Antworten verbergen 🔒
+                        <button onclick="toggleBeamerProtection()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold px-3.5 py-1.5 rounded-lg transition-all active:scale-95">
+                            <i class="fa-solid fa-eye-slash mr-1"></i> Alles verbergen 🔒
                         </button>
                     </div>
                 `;
             }
             list.appendChild(protectionBanner);
 
-            // Chronologische Kärtchen rendern (verteilt sich automatisch im Grid auf 2 Spalten)
+            // Chronologische Kärtchen rendern (Kompakte Kärtchen im mehrspaltigen Grid)
             incomingAnswers.forEach((ans, index) => {
                 const item = document.createElement('div');
-                item.className = "flex flex-col justify-between gap-3 bg-slate-900 border border-slate-800 p-3.5 rounded-2xl animate-scaleIn h-full";
+                item.className = "flex flex-col justify-between gap-1.5 bg-slate-900 border border-slate-800 p-2 rounded-xl animate-scaleIn h-full relative";
                 
                 let placementBadge = `
-                    <span class="bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded text-[10px] font-bold">
+                    <span class="bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded text-[8px] font-bold">
                         ⏱️ ${index + 1}. Antwort
                     </span>`;
                 if (index === 0) {
                     placementBadge = `
-                        <span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-bold animate-pulse">
+                        <span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold animate-pulse">
                             ⚡ 1. Antwort
                         </span>`;
                 }
 
-                // Sichtschutz Auswertung für das Beamer-Projektorbild
+                // Sichtschutz Auswertung für das Beamer-Projektorbild (Vollständige Tarnung!)
                 let answerTextContent = '';
+                let teamHeader = '';
+                let actionButtons = '';
+                const teamNameEscaped = ans.team.replace(/'/g, "\\'");
+
                 if (beamerProtectionActive) {
+                    teamHeader = `
+                        <div class="flex justify-between items-center gap-1.5">
+                            <span class="font-bold text-slate-500 text-[11px] flex items-center gap-1">
+                                <i class="fa-solid fa-user-secret text-violet-500/80"></i> Team verdeckt
+                            </span>
+                            ${placementBadge}
+                        </div>
+                    `;
                     answerTextContent = `
-                        <div class="text-sm text-slate-500 bg-slate-950/80 p-3 rounded-xl border border-slate-850 font-mono text-center py-4 select-none flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-lock text-violet-500 text-sm"></i> 
-                            <span class="text-slate-400 font-semibold tracking-wide text-[11px]">Inhalt verdeckt (Sichtschutz)</span>
+                        <div class="text-[10px] text-slate-500 bg-slate-950/80 p-2 rounded-lg border border-slate-900 font-mono text-center py-2.5 select-none flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-lock text-violet-500 text-[10px]"></i> 
+                            <span class="text-slate-400 font-medium text-[9px]">Inhalt verdeckt</span>
+                        </div>
+                    `;
+                    actionButtons = `
+                        <div class="text-center text-[9px] text-slate-600 font-bold py-1 border-t border-slate-800/30">
+                            <i class="fa-solid fa-eye-slash mr-1"></i> Erst aufdecken
                         </div>
                     `;
                 } else {
+                    teamHeader = `
+                        <div class="flex justify-between items-center gap-1.5">
+                            <span class="font-bold text-violet-400 text-xs truncate max-w-[90px]" title="${ans.team}">${ans.team}</span>
+                            ${placementBadge}
+                        </div>
+                    `;
                     answerTextContent = `
-                        <div class="text-sm text-slate-200 bg-slate-950/60 p-2.5 rounded-xl border border-slate-850 font-medium">
+                        <div class="text-[11px] text-slate-200 bg-slate-950/60 p-2 rounded-lg border border-slate-850 font-medium truncate" title="${ans.answer}">
                             ${ans.answer}
+                        </div>
+                    `;
+                    actionButtons = `
+                        <div class="flex gap-1 justify-end font-bold pt-1 border-t border-slate-800/30">
+                            <button 
+                                onclick="applyLiveAnswer('${teamNameEscaped}', 3, ${index})"
+                                class="bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95 flex items-center gap-0.5"
+                            >
+                                +3
+                            </button>
+                            <button 
+                                onclick="applyLiveAnswer('${teamNameEscaped}', 2, ${index})"
+                                class="bg-emerald-500 hover:bg-emerald-400 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95"
+                            >
+                                +2
+                            </button>
+                            <button 
+                                onclick="applyLiveAnswer('${teamNameEscaped}', 1, ${index})"
+                                class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[9px] font-bold px-2 py-1 rounded transition-all active:scale-95"
+                            >
+                                +1
+                            </button>
+                            <button 
+                                onclick="removeLiveAnswerByIndex(${index})"
+                                class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-[9px] px-1.5 py-1 rounded transition-all"
+                                title="Verwerfen"
+                            >
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
                         </div>
                     `;
                 }
 
-                const teamNameEscaped = ans.team.replace(/'/g, "\\'");
-
                 item.innerHTML = `
-                    <div class="space-y-2 flex-grow">
-                        <div class="flex justify-between items-center gap-2 flex-wrap">
-                            <span class="font-bold text-violet-400 text-xs">${ans.team}</span>
-                            <span class="text-[9px] text-slate-500 font-mono">${ans.time}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            ${placementBadge}
-                        </div>
+                    <div class="space-y-1 flex-grow">
+                        ${teamHeader}
                         ${answerTextContent}
                     </div>
-
-                    <div class="flex gap-1 justify-end font-bold pt-2 border-t border-slate-800/40">
-                        <button 
-                            onclick="applyLiveAnswer('${teamNameEscaped}', 3, ${index})"
-                            class="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg transition-all active:scale-95 shadow-md flex items-center gap-1"
-                        >
-                            <i class="fa-solid fa-crown text-amber-300"></i> +3
-                        </button>
-                        <button 
-                            onclick="applyLiveAnswer('${teamNameEscaped}', 2, ${index})"
-                            class="bg-emerald-500 hover:bg-emerald-400 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg transition-all active:scale-95 shadow-md flex items-center gap-1"
-                        >
-                            +2
-                        </button>
-                        <button 
-                            onclick="applyLiveAnswer('${teamNameEscaped}', 1, ${index})"
-                            class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all active:scale-95 flex items-center gap-1"
-                        >
-                            <i class="fa-solid fa-circle-check text-emerald-400"></i> +1
-                        </button>
-                        <button 
-                            onclick="removeLiveAnswerByIndex(${index})"
-                            class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-[10px] px-2 py-1.5 rounded-lg transition-all"
-                            title="Verwerfen"
-                        >
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                    </div>
+                    ${actionButtons}
                 `;
                 list.appendChild(item);
             });
@@ -1281,7 +1305,7 @@
             showToast("Antworten-Liste geleert.", "info");
         }
 
-        /* QR-Code Generator */
+        // STREAMING_CHUNK: Managing QR Code generation...
         function generateQRCode() {
             const qrImg = getEl('qr-code-img');
             const customUrlInput = getEl('custom-url-input');
@@ -1387,6 +1411,7 @@
             saveState();
         }
 
+        // STREAMING_CHUNK: Setting up sound effects generator...
         function saveNewClass() {
             const input = getEl('class-name-input');
             const name = input ? input.value.trim() : "";
@@ -1521,7 +1546,7 @@
             }
         }
 
-        /* Toast Benachrichtigung */
+        // STREAMING_CHUNK: Setting up toast notifications...
         function showToast(message, type = 'info') {
             const container = getEl('toast-container');
             if (!container) return;
@@ -1640,7 +1665,7 @@
 
             if (activeTeams.length > 0) {
                 const names = activeTeams.map(t => `${t.name} (+${t.pendingPoints || 1})`).join(", ");
-                showToast(`Runde beendet! Punkte addiert für: ${names}. Runde ${currentRound} gestartet!`, "success");
+                showToast("Runde beendet! Punkte addiert. Neue Runde gestartet!", "success");
             } else {
                 showToast(`Nächste Runde gestartet! Keine Punkte vergeben.`, "info");
             }
@@ -1653,7 +1678,7 @@
             renderScoreboard();
         }
 
-        /* SCOREBOARD RENDERN MIT NEUEN AUSWAHL-BUTTONS */
+        // STREAMING_CHUNK: Rendering the scoreboard layout grid dynamically...
         function renderScoreboard() {
             const container = getEl('scoreboard-container');
             const emptyState = getEl('empty-state');
@@ -1797,7 +1822,7 @@
             showToast("Sitzung komplett zurückgesetzt!", "danger");
         }
 
-        /* Massen-Import / KI Parser */
+        // STREAMING_CHUNK: Setting up Mass-Import dialog controls...
         function openImportModal() {
             const modal = getEl('import-modal');
             const input = getEl('bulk-text-input');
@@ -1955,6 +1980,7 @@
             }
         }
 
+        // STREAMING_CHUNK: Parsing PDF content and documents...
         async function parsePDFAndScan(typedarray) {
             try {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
@@ -1981,6 +2007,7 @@
             }
         }
 
+        /* GEMINI AI API CODES */
         async function scanImageWithAI(base64Data, mimeType) {
             const apiKeyInput = getEl('api-key-input');
             const apiKey = apiKeyInput ? apiKeyInput.value.trim() : "";
@@ -2039,6 +2066,7 @@
             await callGeminiAPI(apiUrl, payload);
         }
 
+        // STREAMING_CHUNK: Integrating Gemini AI calls...
         async function callGeminiAPI(apiUrl, payload) {
             let retries = 3;
             let delay = 1000;
@@ -2187,7 +2215,7 @@
             showToast(`Sicherung als "${fileName}" heruntergeladen!`, 'success');
         }
 
-        /* Konfetti Code */
+        // STREAMING_CHUNK: Setting up Confetti celebration particles...
         const canvas = getEl("confetti-canvas");
         const ctx = canvas ? canvas.getContext("2d") : null;
         let particles = [];
