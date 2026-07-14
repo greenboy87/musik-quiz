@@ -72,9 +72,10 @@
     <!-- ========================================== -->
     <!-- SCHÜLER-ANSICHT (DEFAULT VIEW)             -->
     <!-- ========================================== -->
+    <!-- STREAMING_CHUNK: Generating the student view structure... -->
     <div id="student-view" class="container mx-auto px-4 py-8 max-w-md flex-grow flex flex-col justify-center animate-fadeIn">
         
-        <div class="text-center mb-8">
+        <div class="text-center mb-6">
             <div class="inline-block p-4 bg-violet-600/20 rounded-3xl border border-violet-500/30 mb-3 shadow-lg shadow-violet-950/40">
                 <i class="fa-solid fa-mobile-screen-button text-4xl text-violet-400"></i>
             </div>
@@ -122,9 +123,10 @@
         <!-- 2. SCHÜLER BUZZER EINGABE (Nach Join sichtbar) -->
         <div id="student-buzzer-card" class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 hidden font-sans">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                     <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span id="student-badge-info" class="text-xs font-bold text-slate-300">Verbunden als: </span>
+                    <span id="student-badge-info" class="text-xs font-bold text-slate-300">Verbunden: </span>
+                    <span id="student-round-badge" class="hidden text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30 px-2.5 py-0.5 rounded-full">Runde -</span>
                 </div>
                 <button 
                     onclick="leaveQuizRoom()" 
@@ -145,6 +147,21 @@
                     ></textarea>
                 </div>
 
+                <!-- Joker-Button direkt über dem Absenden-Knopf -->
+                <div class="border-t border-slate-800/60 pt-3 mt-1 flex flex-col items-center">
+                    <div class="text-[9px] text-slate-500 mb-1.5 flex items-center gap-1 text-center font-bold">
+                        <span>🃏 DOPPEL-JOKER (Doppelte Punkte bei Erfolg, aber -1 Punkt bei Fehler!)</span>
+                    </div>
+                    <button 
+                        type="button" 
+                        id="student-joker-btn"
+                        onclick="toggleStudentJoker()"
+                        class="w-full bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                    >
+                        <span>🃏 Doppel-Joker aktivieren</span>
+                    </button>
+                </div>
+
                 <button 
                     onclick="sendStudentAnswer()" 
                     id="student-submit-btn"
@@ -154,7 +171,7 @@
                     <span>Antwort abschicken! 🚀</span>
                 </button>
 
-                <!-- Feedback-Status-Box -->
+                <!-- Feedback-Status-Box (auch für Runden-Limiter und Timer genutzt) -->
                 <div id="student-feedback" class="hidden p-3 rounded-xl border text-center text-xs font-semibold"></div>
             </div>
         </div>
@@ -215,7 +232,7 @@
     <!-- ========================================== -->
     <!-- LEHRER-ANSICHT (SCOREBOARD)                -->
     <!-- ========================================== -->
-    <!-- STREAMING_CHUNK: Designing the streamlined layout for the teacher scoreboard view... -->
+    <!-- STREAMING_CHUNK: Designing the teacher scoreboard panel... -->
     <div id="teacher-view" class="container mx-auto px-4 py-4 max-w-7xl flex-grow flex flex-col justify-between hidden animate-fadeIn font-sans">
         
         <!-- Header minimaler & kompakter -->
@@ -333,7 +350,7 @@
             </div>
 
             <!-- 2. EINSTELLUNGEN & KLASSEN-SPEICHER (RECHTS) -->
-            <!-- STREAMING_CHUNK: Crafting the settings pane... -->
+            <!-- STREAMING_CHUNK: Setting up control buttons and custom game settings... -->
             <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-2 text-xs">
                 <div class="flex items-center justify-between gap-2">
                     <span class="text-slate-300 flex items-center gap-1">
@@ -352,6 +369,24 @@
                         <input type="checkbox" id="auto-sort-toggle" checked class="sr-only peer" onchange="handleAutoSortToggle()">
                         <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
                     </label>
+                </div>
+
+                <!-- Countdown Timer Einblendung im Lehrer-Interface -->
+                <div class="border-t border-slate-700/40 pt-1.5 mt-0.5 space-y-1">
+                    <span class="text-slate-300 text-[10px] font-bold flex items-center gap-1">
+                        <i class="fa-solid fa-hourglass-start text-amber-500"></i> Countdown-Timer (Buzzer-Sperre)
+                    </span>
+                    <div class="flex gap-1.5 items-center">
+                        <input type="number" id="timer-duration" value="30" min="5" max="120" class="w-12 bg-slate-900 border border-slate-700 text-slate-100 rounded text-[10px] px-1 py-0.5 text-center focus:outline-none">
+                        <span class="text-slate-400 text-[10px]">Sek.</span>
+                        <button id="start-timer-btn" onclick="startTimer()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-0.5 rounded text-[10px] active:scale-95 transition-all flex-grow">
+                            Starten ⏱️
+                        </button>
+                        <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-3 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">
+                            Stop 🛑
+                        </button>
+                        <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-2 py-0.5 rounded">30s</div>
+                    </div>
                 </div>
                 
                 <!-- Klassen-Speicher (Dropdown & Sichern) -->
@@ -409,7 +444,7 @@
                 <!-- Reset, Finale & Export -->
                 <div class="flex flex-col gap-1 mt-1 pt-1 border-t border-slate-700/40 font-bold">
                     <div class="grid grid-cols-2 gap-1.5">
-                        <button onclick="confirmReset()" class="bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 border border-rose-900/40 font-bold py-1 rounded-lg text-[10px] transition-all">
+                        <button onclick="confirmReset()" class="bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 border border-rose-900/40 font-bold py-1 rounded-lg text-[10px] transition-all font-sans">
                             <i class="fa-solid fa-trash-can"></i> Reset
                         </button>
                         <button onclick="triggerWinConfetti()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-1 rounded-lg text-[10px] transition-all shadow-md">
@@ -456,15 +491,29 @@
         <!-- ========================================== -->
         <!-- EINZEILIGER RUNDEN-MANAGER (ÜBER ANTWORTEN)-->
         <!-- ========================================== -->
-        <!-- STREAMING_CHUNK: Inserting the compact single-line round manager... -->
+        <!-- STREAMING_CHUNK: Integrating the single-line round manager with correct elements... -->
         <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 mb-3 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fadeIn">
             <div class="flex items-center gap-2.5 text-xs">
                 <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5">
                     <i class="fa-solid fa-play-circle text-emerald-400 animate-pulse"></i> Runden-Manager
                 </span>
-                <span class="text-slate-400 text-[11px] hidden sm:inline">Klicke Teams auf den Karten an (+1), nutze deren +2/+3 Knöpfe oder werte die iPad-Buzzer aus.</span>
+                
+                <!-- Neue, hochsichtbare Rundenanzeige direkt im Rundenmanager -->
+                <span class="bg-violet-500/25 text-violet-300 border border-violet-500/45 px-3 py-1 rounded-lg font-bold font-mono flex items-center gap-1">
+                    Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400">1</span>
+                </span>
+                
+                <span class="text-slate-400 text-[11px] hidden sm:inline font-medium">Nutze das +1, +2, +3 System oder werte die iPad-Buzzer aus.</span>
             </div>
             <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button 
+                    onclick="prevRound()" 
+                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1"
+                    title="Gehe eine Spielrunde zurück"
+                >
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Runde zurück</span>
+                </button>
                 <button 
                     onclick="markAllActive()" 
                     class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5"
@@ -533,25 +582,41 @@
                 Trage über das <strong>Massen-Import Tool</strong> oben deine Schülergruppen ein oder lass sie über ihre iPads mitspielen!
             </p>
         </div>
+
+        <!-- ========================================== -->
+        <!-- ARCHIVIERTER ANTWORT-VERLAUF               -->
+        <!-- ========================================== -->
+        <div id="history-archive-panel" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 mt-6 animate-fadeIn font-sans">
+            <h3 class="text-xs font-bold text-slate-400 flex items-center gap-1.5 border-b border-slate-800 pb-2 mb-2.5">
+                <i class="fa-solid fa-box-archive text-slate-500"></i> Antwort-Verlauf (Echtzeit-Backup dieser Runde)
+            </h3>
+            <div id="history-archive-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-48 overflow-y-auto">
+                <!-- Wird dynamisch befüllt -->
+            </div>
+            <div id="history-archive-empty" class="text-center py-2 text-[10px] text-slate-600">
+                Noch keine archivierten Antworten vorhanden. Wenn du Punkte bei den iPad-Antworten vergibst, landen sie hier als Backup!
+            </div>
+        </div>
+
     </div>
 
     <!-- Toast Benachrichtigungen -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
 
     <!-- Bestätigungs-Modal für Reset & Deletion (Eigene, schicke Modals) -->
-    <div id="confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50 font-sans">
         <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl max-w-xs w-full shadow-2xl animate-scaleIn">
             <h3 id="confirm-title" class="text-lg font-bold text-white mb-2">Wirklich zurücksetzen?</h3>
             <p id="confirm-desc" class="text-slate-400 text-xs mb-4">Alle Teams und Punkte der aktuellen Klasse werden gelöscht. Die Runde startet wieder bei 1.</p>
             <div class="flex gap-3 justify-end">
-                <button onclick="closeModal()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700 transition-all">Abbrechen</button>
+                <button onclick="closeModal()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700 transition-all font-bold">Abbrechen</button>
                 <button id="confirm-action-btn" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs transition-all font-bold">Ja, ausführen</button>
             </div>
         </div>
     </div>
 
     <!-- MASSEN-IMPORT / KI MODAL -->
-    <div id="import-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div id="import-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50 font-sans">
         <div class="bg-slate-900 border border-slate-700/80 p-5 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col gap-4 animate-scaleIn">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2">
                 <h3 class="text-lg font-bold text-violet-400 flex items-center gap-2">
@@ -635,7 +700,7 @@
                     <div id="extracted-teams-list" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-1">
                         <!-- Wird befüllt -->
                     </div>
-                    <div class="flex justify-end pt-2 border-t border-slate-800/40">
+                    <div class="flex justify-end pt-2 border-t border-slate-800/40 font-bold">
                         <button onclick="commitExtractedImport()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs active:scale-95 transition-all">
                             Ausgewählte Teams importieren
                         </button>
@@ -653,12 +718,12 @@
     <!-- ========================================== -->
     <!-- LOGIK & SPEICHERSYSTEM (STABIL)             -->
     <!-- ========================================== -->
-    <!-- STREAMING_CHUNK: Initializing logic state variables... -->
+    <!-- STREAMING_CHUNK: Setting up synchronized variables and client events... -->
     <script>
         let currentView = "student"; 
         let activeClass = "Standard-Sitzung";
         let teacherPassword = "musik"; 
-        let beamerProtectionActive = true; // Beamer Schutz standardmäßig aktivieren!
+        let beamerProtectionActive = true; 
         
         let classes = {
             "Standard-Sitzung": { teams: [], currentRound: 1 }
@@ -668,12 +733,18 @@
 
         let sseSource = null;
         let incomingAnswers = [];
+        let answerHistory = []; // Neues Backupsystem für alte Antworten
 
         let confettiInterval = null;
         let isConfettiActive = false;
         let activeImportTab = 'text';
         let extractedTeams = [];
         let confirmActionCallback = null;
+        
+        // Schüler Runden Synchronisierung Variablen
+        let studentCurrentRound = 1;
+        let studentSse = null;
+        let studentJokerActive = false;
         
         // Audio Synthesizer Context (Lazy Loading)
         let audioCtx = null;
@@ -706,7 +777,8 @@
                     autoSort: autoSortEl ? autoSortEl.checked : true,
                     soundEnabled: soundEl ? soundEl.checked : true,
                     geminiKey: apiKeyEl ? apiKeyEl.value.trim() : "",
-                    beamerProtectionActive: beamerProtectionActive
+                    beamerProtectionActive: beamerProtectionActive,
+                    answerHistory: answerHistory
                 };
                 
                 localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys', JSON.stringify(saveDataObj));
@@ -715,7 +787,30 @@
             }
         }
 
-        // STREAMING_CHUNK: Loading state from LocalStorage...
+        /* Echtzeit-Broadcast für Runden, Timer und verbrauchte Joker an die Schüler-iPads */
+        async function broadcastControlState(timerSeconds = -1) {
+            const codeInput = getEl('room-code-input');
+            const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "7c";
+            if (!roomCode) return;
+            
+            // Ermittle alle Teams, die ihren Joker bereits eingelöst/verbraucht haben
+            const jokersUsed = teams.filter(t => t.jokerUsed).map(t => t.name.toLowerCase());
+            
+            try {
+                await fetch(`https://ntfy.sh/mq-ntfy-${roomCode}-control`, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        round: currentRound, 
+                        timer: timerSeconds,
+                        jokersUsed: jokersUsed
+                    })
+                });
+            } catch(e) {
+                console.error("Fehler beim Senden des Updates:", e);
+            }
+        }
+
+        // STREAMING_CHUNK: Restoring state from browser LocalStorage cache...
         function loadState() {
             try {
                 if (window.PREBAKED_TEAMS && window.PREBAKED_TEAMS.length > 0) {
@@ -726,12 +821,18 @@
                     teams.forEach(t => {
                         t.activeThisRound = false;
                         t.pendingPoints = 0;
+                        t.streak = t.streak || 0;
+                        t.jokerUsed = t.jokerUsed || false;
+                        t.jokerActiveThisRound = t.jokerActiveThisRound || false;
                     });
                     const roundDisplay = getEl('header-round-display');
                     if (roundDisplay) roundDisplay.innerText = currentRound;
+                    const managerRoundDisplay = getEl('manager-round-display');
+                    if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
                     
                     updateActiveBadge();
                     renderScoreboard();
+                    renderHistoryArchive();
                     showToast("Exportierter Spielstand erfolgreich geladen!", "success");
                     switchView('teacher'); 
                     return;
@@ -745,6 +846,7 @@
                         activeClass = parsed.activeClass || "Standard-Sitzung";
                         teacherPassword = parsed.teacherPassword || "musik";
                         beamerProtectionActive = parsed.beamerProtectionActive !== false;
+                        answerHistory = parsed.answerHistory || [];
                         
                         const autoSortEl = getEl('auto-sort-toggle');
                         if (autoSortEl) autoSortEl.checked = parsed.autoSort !== false;
@@ -760,6 +862,7 @@
                         "Standard-Sitzung": { teams: [], currentRound: 1 }
                     };
                     activeClass = "Standard-Sitzung";
+                    answerHistory = [];
                 }
 
                 classes["Standard-Sitzung"] = { teams: [], currentRound: 1 };
@@ -775,10 +878,15 @@
                 teams.forEach(t => {
                     t.activeThisRound = false;
                     t.pendingPoints = 0;
+                    t.streak = t.streak || 0;
+                    t.jokerUsed = t.jokerUsed || false;
+                    t.jokerActiveThisRound = false;
                 });
 
                 const roundDisplay = getEl('header-round-display');
                 if (roundDisplay) roundDisplay.innerText = currentRound;
+                const managerRoundDisplay = getEl('manager-round-display');
+                if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
 
                 const storedStudentName = localStorage.getItem('student_team_name');
                 const storedStudentRoom = localStorage.getItem('student_room_code');
@@ -790,6 +898,7 @@
                 updateClassDropdown();
                 updateActiveBadge();
                 renderScoreboard();
+                renderHistoryArchive();
                 
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get('role') === 'teacher') {
@@ -803,7 +912,7 @@
             }
         }
 
-        // STREAMING_CHUNK: Managing routing and views...
+        // STREAMING_CHUNK: Managing responsive client routers...
         function switchView(view) {
             currentView = view;
             const studentSection = getEl('student-view');
@@ -826,8 +935,9 @@
                 if (registeredName && registeredRoom) {
                     if (studentJoinCard) studentJoinCard.classList.add('hidden');
                     const badge = getEl('student-badge-info');
-                    if (badge) badge.innerText = `Verbunden: ${registeredName} (Raum ${registeredRoom})`;
+                    if (badge) badge.innerText = `Verbunden: ${registeredName}`;
                     if (studentBuzzerCard) studentBuzzerCard.classList.remove('hidden');
+                    connectStudentControlChannel(registeredRoom);
                 } else {
                     if (studentJoinCard) studentJoinCard.classList.remove('hidden');
                     if (studentBuzzerCard) studentBuzzerCard.classList.add('hidden');
@@ -931,7 +1041,169 @@
             }
         }
 
-        // STREAMING_CHUNK: Managing student-side interactions...
+        // STREAMING_CHUNK: Setup student controls...
+        function connectStudentControlChannel(room) {
+            if (studentSse) {
+                studentSse.close();
+            }
+
+            fetch(`https://ntfy.sh/mq-ntfy-${room}-control/json?poll=1`)
+                .then(r => r.text())
+                .then(text => {
+                    const lines = text.trim().split('\n');
+                    for (let i = lines.length - 1; i >= 0; i--) {
+                        try {
+                            const data = JSON.parse(lines[i]);
+                            if (data.message) {
+                                const payload = JSON.parse(data.message);
+                                if (payload) {
+                                    updateStudentRound(payload.round || 1, payload.jokersUsed || []);
+                                    break;
+                                }
+                            }
+                        } catch(e) {}
+                    }
+                }).catch(e => console.error(e));
+
+            studentSse = new EventSource(`https://ntfy.sh/mq-ntfy-${room}-control/sse`);
+            studentSse.onmessage = function(event) {
+                try {
+                    const rawData = JSON.parse(event.data);
+                    if (rawData && rawData.message) {
+                        const payload = JSON.parse(rawData.message);
+                        if (payload) {
+                            if (payload.round !== undefined) {
+                                updateStudentRound(payload.round, payload.jokersUsed || []);
+                            }
+                            if (payload.timer !== undefined) {
+                                updateStudentTimer(payload.timer);
+                            }
+                        }
+                    }
+                } catch(e) {}
+            };
+        }
+
+        /* Rundenzustand & JOKER-SYNC auf dem Schülergerät anwenden */
+        function updateStudentRound(newRound, jokersUsedArray) {
+            studentCurrentRound = newRound;
+            const roundBadge = getEl('student-round-badge');
+            if (roundBadge) {
+                roundBadge.innerText = `Runde ${newRound}`;
+                roundBadge.classList.remove('hidden');
+            }
+            
+            const room = localStorage.getItem('student_room_code');
+            const myName = localStorage.getItem('student_team_name') || "";
+            const lastSubmitted = localStorage.getItem(`last_sub_round_${room}`);
+            const btn = getEl('student-submit-btn');
+            const feedback = getEl('student-feedback');
+            const textarea = getEl('student-answer-input');
+            const jokerBtn = getEl('student-joker-btn');
+
+            let serverSaysJokerUsed = false;
+            if (jokersUsedArray && Array.isArray(jokersUsedArray)) {
+                serverSaysJokerUsed = jokersUsedArray.includes(myName.toLowerCase());
+            }
+
+            if (serverSaysJokerUsed) {
+                localStorage.setItem(`joker_used_${room}`, 'true'); 
+                studentJokerActive = false;
+                if (jokerBtn) {
+                    jokerBtn.disabled = true;
+                    jokerBtn.className = "w-full bg-slate-950/40 border border-slate-900 text-slate-600 py-2.5 rounded-xl text-xs cursor-not-allowed text-center";
+                    jokerBtn.innerHTML = `<span>🃏 Joker verbraucht (Lehrer-Sperre)</span>`;
+                }
+            } else {
+                const localJokerUsed = localStorage.getItem(`joker_used_${room}`);
+                if (localJokerUsed) {
+                    studentJokerActive = false;
+                    if (jokerBtn) {
+                        jokerBtn.disabled = true;
+                        jokerBtn.className = "w-full bg-slate-950/40 border border-slate-900 text-slate-600 py-2.5 rounded-xl text-xs cursor-not-allowed text-center";
+                        jokerBtn.innerHTML = `<span>🃏 Joker bereits verbraucht</span>`;
+                    }
+                } else {
+                    if (jokerBtn) {
+                        jokerBtn.disabled = false;
+                        if (studentJokerActive) {
+                            jokerBtn.className = "w-full bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-500 text-amber-300 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-95 animate-pulse";
+                            jokerBtn.innerHTML = `<span>🃏 Doppel-Joker AKTIV! (Risikorunde)</span>`;
+                        } else {
+                            jokerBtn.className = "w-full bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95";
+                            jokerBtn.innerHTML = `<span>🃏 Doppel-Joker aktivieren</span>`;
+                        }
+                    }
+                }
+            }
+
+            if (lastSubmitted && parseInt(lastSubmitted) === newRound) {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = `<i class="fa-solid fa-check"></i> Antwort gesendet! ✔`;
+                    btn.className = "w-full bg-emerald-950/40 border border-emerald-800/30 text-emerald-400 font-bold py-4 rounded-2xl cursor-not-allowed text-sm flex items-center justify-center gap-2 transition-all";
+                }
+                if (textarea) textarea.disabled = true;
+                if (feedback) {
+                    feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-850 text-amber-200 animate-scaleIn";
+                    feedback.innerHTML = `<i class="fa-solid fa-circle-info text-amber-400"></i> Du hast für Runde ${newRound} bereits geantwortet. Warte auf die nächste Runde!`;
+                    feedback.classList.remove('hidden');
+                }
+            } else {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Antwort abschicken! 🚀</span>`;
+                    btn.className = "w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2";
+                }
+                if (textarea) textarea.disabled = false;
+                if (feedback) {
+                    feedback.classList.add('hidden');
+                }
+            }
+        }
+
+        /* Echtzeit Countdown Timer auf den iPads einblenden & sperren */
+        function updateStudentTimer(seconds) {
+            const room = localStorage.getItem('student_room_code');
+            const lastSubmitted = localStorage.getItem(`last_sub_round_${room}`);
+            const submitBtn = getEl('student-submit-btn');
+            const textarea = getEl('student-answer-input');
+            const feedback = getEl('student-feedback');
+
+            const alreadySubmitted = lastSubmitted && parseInt(lastSubmitted) === studentCurrentRound;
+
+            if (seconds > 0) {
+                if (!alreadySubmitted) {
+                    if (feedback) {
+                        feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-850 text-amber-200 animate-pulse";
+                        feedback.innerHTML = `<i class="fa-solid fa-hourglass-half text-amber-400"></i> Noch ${seconds} Sekunden zum Raten! Schnell abgeben! ⏱️`;
+                        feedback.classList.remove('hidden');
+                    }
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.className = "w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2";
+                    }
+                    if (textarea) textarea.disabled = false;
+                }
+            } else if (seconds === 0) {
+                if (feedback) {
+                    feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-rose-950/40 border-rose-850 text-rose-200";
+                    feedback.innerHTML = `<i class="fa-solid fa-clock text-rose-400 animate-bounce"></i> Zeit abgelaufen! Keine Antwort mehr möglich! ⏰`;
+                    feedback.classList.remove('hidden');
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.className = "w-full bg-rose-950/30 border border-rose-900/30 text-rose-400 font-bold py-4 rounded-2xl cursor-not-allowed text-sm flex items-center justify-center gap-2";
+                }
+                if (textarea) textarea.disabled = true;
+            } else {
+                if (feedback && feedback.innerHTML.includes('Sekunden')) {
+                    feedback.classList.add('hidden');
+                }
+            }
+        }
+
+        // STREAMING_CHUNK: Managing registrations...
         function joinQuizRoom() {
             const roomEl = getEl('student-room-input');
             const nameEl = getEl('student-name-input');
@@ -951,8 +1223,10 @@
             if (studentJoinCard) studentJoinCard.classList.add('hidden');
             
             const badge = getEl('student-badge-info');
-            if (badge) badge.innerText = `Verbunden: ${name} (Raum ${room})`;
+            if (badge) badge.innerText = `Verbunden: ${name}`;
             if (studentBuzzerCard) studentBuzzerCard.classList.remove('hidden');
+            
+            connectStudentControlChannel(room);
             
             showToast(`Raum ${room.toUpperCase()} erfolgreich beigetreten!`, "success");
             playSound('up');
@@ -961,11 +1235,27 @@
         function leaveQuizRoom() {
             localStorage.removeItem('student_team_name');
             localStorage.removeItem('student_room_code');
+            if (studentSse) {
+                studentSse.close();
+                studentSse = null;
+            }
             const studentJoinCard = getEl('student-join-card');
             const studentBuzzerCard = getEl('student-buzzer-card');
             if (studentJoinCard) studentJoinCard.classList.remove('hidden');
             if (studentBuzzerCard) studentBuzzerCard.classList.add('hidden');
             showToast("Raum verlassen.", "info");
+        }
+
+        function toggleStudentJoker() {
+            const room = localStorage.getItem('student_room_code');
+            const jokerUsedKey = `joker_used_${room}`;
+            if (localStorage.getItem(jokerUsedKey)) {
+                showToast("Du hast deinen Doppel-Joker in diesem Spiel bereits verbraucht!", "danger");
+                return;
+            }
+
+            studentJokerActive = !studentJokerActive;
+            updateStudentRound(studentCurrentRound, []); 
         }
 
         async function sendStudentAnswer() {
@@ -990,6 +1280,7 @@
                 const payload = {
                     team: name,
                     answer: answer,
+                    joker: studentJokerActive,
                     time: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                     timestamp: Date.now()
                 };
@@ -1004,10 +1295,19 @@
                 });
 
                 if (res.ok) {
+                    localStorage.setItem(`last_sub_round_${room}`, studentCurrentRound);
+                    
+                    if (studentJokerActive) {
+                        localStorage.setItem(`joker_used_${room}`, 'true');
+                        studentJokerActive = false;
+                    }
+
+                    updateStudentRound(studentCurrentRound, []); 
+                    
                     const statusBox = getEl('student-feedback');
                     if (statusBox) {
                         statusBox.className = "p-3 rounded-xl border text-center text-xs font-semibold animate-scaleIn bg-emerald-950/40 border-emerald-800 text-emerald-200";
-                        statusBox.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i> Antwort um ${payload.time} erfolgreich gesendet! Projiziere auf Beamer...`;
+                        statusBox.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i> Antwort für Runde ${studentCurrentRound} erfolgreich gesendet!`;
                         statusBox.classList.remove('hidden');
                     }
                     if (answerEl) answerEl.value = '';
@@ -1019,7 +1319,6 @@
             } catch (err) {
                 console.error(err);
                 showToast("Fehler bei der Verbindung. Bitte erneut versuchen!", "danger");
-            } finally {
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Antwort abschicken! 🚀</span>`;
@@ -1045,7 +1344,10 @@
                 name: formattedName,
                 score: 0,
                 activeThisRound: false,
-                pendingPoints: 0
+                pendingPoints: 0,
+                streak: 0,
+                jokerUsed: false,
+                jokerActiveThisRound: false
             };
 
             teams.push(newTeam);
@@ -1056,7 +1358,7 @@
             renderScoreboard();
         }
 
-        // STREAMING_CHUNK: Connecting to the live channel via SSE...
+        // STREAMING_CHUNK: Setting up real-time live channels...
         function connectLiveRoom() {
             const codeInput = getEl('room-code-input');
             const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "7c";
@@ -1083,6 +1385,7 @@
                 const livePanel = getEl('live-answers-panel');
                 if (livePanel) livePanel.classList.remove('hidden');
                 generateQRCode();
+                broadcastControlState(); 
             };
 
             sseSource.onerror = function() {
@@ -1124,7 +1427,7 @@
             showToast(beamerProtectionActive ? "Sichtschutz aktiv (Teams & Antworten verdeckt)" : "Sichtschutz deaktiviert (Alles aufgedeckt)", "info");
         }
 
-        // STREAMING_CHUNK: Rendering the list of incoming answers (spoiler-proof!)...
+        // STREAMING_CHUNK: Drawing live-connected answers list with custom card views...
         function renderIncomingAnswersList() {
             const list = getEl('live-answers-list');
             const emptyDiv = getEl('live-answers-empty');
@@ -1144,24 +1447,24 @@
             protectionBanner.className = "w-full col-span-full mb-1";
             if (beamerProtectionActive) {
                 protectionBanner.innerHTML = `
-                    <div class="bg-violet-950/40 border border-violet-800/60 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn">
+                    <div class="bg-violet-950/40 border border-violet-800/60 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn font-sans">
                         <span class="text-[11px] text-violet-300 font-bold flex items-center gap-1.5">
                             <i class="fa-solid fa-user-secret text-violet-400 text-sm animate-pulse"></i> 
                             Sichtschutz aktiv: Teamnamen & Antworten sind auf dem Beamer unsichtbar.
                         </span>
-                        <button onclick="toggleBeamerProtection()" class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black px-3.5 py-1.5 rounded-lg transition-all shadow-lg active:scale-95">
+                        <button onclick="toggleBeamerProtection()" class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black px-3.5 py-1.5 rounded-lg transition-all shadow-lg active:scale-95 font-sans">
                             <i class="fa-solid fa-eye mr-1"></i> Alles aufdecken 🔓
                         </button>
                     </div>
                 `;
             } else {
                 protectionBanner.innerHTML = `
-                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn">
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn font-sans">
                         <span class="text-[11px] text-slate-300 font-bold flex items-center gap-1.5">
                             <i class="fa-solid fa-eye text-emerald-400 text-sm"></i> 
                             Antworten und Absender sind vollständig aufgedeckt.
                         </span>
-                        <button onclick="toggleBeamerProtection()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold px-3.5 py-1.5 rounded-lg transition-all active:scale-95">
+                        <button onclick="toggleBeamerProtection()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold px-3.5 py-1.5 rounded-lg transition-all active:scale-95 font-sans">
                             <i class="fa-solid fa-eye-slash mr-1"></i> Alles verbergen 🔒
                         </button>
                     </div>
@@ -1172,7 +1475,7 @@
             // Chronologische Kärtchen rendern (Kompakte Kärtchen im mehrspaltigen Grid)
             incomingAnswers.forEach((ans, index) => {
                 const item = document.createElement('div');
-                item.className = "flex flex-col justify-between gap-1.5 bg-slate-900 border border-slate-800 p-2 rounded-xl animate-scaleIn h-full relative";
+                item.className = "flex flex-col justify-between gap-1.5 bg-slate-900 border border-slate-800 p-2 rounded-xl animate-scaleIn h-full relative font-sans";
                 
                 let placementBadge = `
                     <span class="bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded text-[8px] font-bold">
@@ -1185,11 +1488,17 @@
                         </span>`;
                 }
 
-                // Sichtschutz Auswertung für das Beamer-Projektorbild (Vollständige Tarnung!)
+                // Falls Joker aktiv war
+                let jokerBadge = '';
+                if (ans.joker) {
+                    jokerBadge = `<span class="bg-amber-500 text-slate-950 text-[8px] font-black px-1.5 py-0.5 rounded animate-pulse" title="Doppel-Joker ist aktiv!"><i class="fa-solid fa-masks-theater"></i> JOKER!</span>`;
+                }
+
                 let answerTextContent = '';
                 let teamHeader = '';
                 let actionButtons = '';
                 const teamNameEscaped = ans.team.replace(/'/g, "\\'");
+                const hasJoker = ans.joker ? true : false;
 
                 if (beamerProtectionActive) {
                     teamHeader = `
@@ -1207,15 +1516,25 @@
                         </div>
                     `;
                     actionButtons = `
-                        <div class="text-center text-[9px] text-slate-600 font-bold py-1 border-t border-slate-800/30">
-                            <i class="fa-solid fa-eye-slash mr-1"></i> Erst aufdecken
+                        <div class="flex justify-between items-center gap-1.5 pt-1 border-t border-slate-800/30 font-bold">
+                            <span class="text-[8px] text-slate-600 font-black"><i class="fa-solid fa-eye-slash mr-1"></i> Erst aufdecken ${jokerBadge}</span>
+                            <button 
+                                onclick="removeLiveAnswerByIndex(${index})"
+                                class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-[9px] px-1.5 py-0.5 rounded transition-all"
+                                title="Verwerfen"
+                            >
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
                         </div>
                     `;
                 } else {
                     teamHeader = `
                         <div class="flex justify-between items-center gap-1.5">
                             <span class="font-bold text-violet-400 text-xs truncate max-w-[90px]" title="${ans.team}">${ans.team}</span>
-                            ${placementBadge}
+                            <div class="flex items-center gap-1">
+                                ${jokerBadge}
+                                ${placementBadge}
+                            </div>
                         </div>
                     `;
                     answerTextContent = `
@@ -1226,19 +1545,19 @@
                     actionButtons = `
                         <div class="flex gap-1 justify-end font-bold pt-1 border-t border-slate-800/30">
                             <button 
-                                onclick="applyLiveAnswer('${teamNameEscaped}', 3, ${index})"
+                                onclick="applyLiveAnswer('${teamNameEscaped}', 3, ${index}, ${hasJoker})"
                                 class="bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95 flex items-center gap-0.5"
                             >
                                 +3
                             </button>
                             <button 
-                                onclick="applyLiveAnswer('${teamNameEscaped}', 2, ${index})"
+                                onclick="applyLiveAnswer('${teamNameEscaped}', 2, ${index}, ${hasJoker})"
                                 class="bg-emerald-500 hover:bg-emerald-400 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95"
                             >
                                 +2
                             </button>
                             <button 
-                                onclick="applyLiveAnswer('${teamNameEscaped}', 1, ${index})"
+                                onclick="applyLiveAnswer('${teamNameEscaped}', 1, ${index}, ${hasJoker})"
                                 class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[9px] font-bold px-2 py-1 rounded transition-all active:scale-95"
                             >
                                 +1
@@ -1265,33 +1584,83 @@
             });
         }
 
-        /* Einloggen der Punkte von der Live-Antwort (Wie bei der Scorecard) */
-        function applyLiveAnswer(teamName, pointsToAdd, index) {
+        /* Einloggen der Punkte von der Live-Antwort und Archivierung im Backup-System */
+        function applyLiveAnswer(teamName, pointsToAdd, index, hasJoker = false) {
             let team = teams.find(t => t.name.toLowerCase() === teamName.toLowerCase());
-            
+            const incomingAns = incomingAnswers[index];
+
             if (!team) {
-                // Team automatisch erzeugen, falls es noch nicht existierte
                 const newTeam = {
                     id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
                     name: teamName.substring(0, 12),
                     score: 0,
                     activeThisRound: true,
-                    pendingPoints: pointsToAdd
+                    pendingPoints: pointsToAdd,
+                    streak: 0,
+                    jokerUsed: false,
+                    jokerActiveThisRound: hasJoker
                 };
                 teams.push(newTeam);
                 team = newTeam;
-                showToast(`Team "${teamName}" automatisch angelegt und für Runde markiert!`, "info");
             } else {
-                // Team für die laufende Runde grün voreinstellen / markieren
                 team.activeThisRound = true;
                 team.pendingPoints = pointsToAdd;
-                showToast(`Punkte für "${team.name}" wurden vorgemerkt (+${pointsToAdd})!`, "success");
+                team.jokerActiveThisRound = hasJoker;
             }
 
+            // Neues Backup-Archiv befüllen
+            answerHistory.push({
+                round: currentRound,
+                teamName: team.name,
+                answer: incomingAns ? incomingAns.answer : "Manuelle Wertung",
+                points: pointsToAdd,
+                hasJoker: hasJoker,
+                timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+            });
+
+            showToast(`Punkte für "${team.name}" wurden vorgemerkt (+${pointsToAdd})!`, "success");
             playSound('up');
             removeLiveAnswerByIndex(index);
             saveState();
             renderScoreboard();
+            renderHistoryArchive();
+        }
+
+        /* Archivierter Antwortverlauf */
+        function renderHistoryArchive() {
+            const list = getEl('history-archive-list');
+            const empty = getEl('history-archive-empty');
+            if (!list) return;
+            list.innerHTML = '';
+
+            const currentHistory = answerHistory.filter(h => h.round === currentRound);
+
+            if (currentHistory.length === 0) {
+                if (empty) empty.classList.remove('hidden');
+                return;
+            } else {
+                if (empty) empty.classList.add('hidden');
+            }
+
+            currentHistory.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-950/50 border border-slate-800/80 p-2 rounded-xl flex flex-col gap-1 text-[11px] text-slate-400 animate-fadeIn font-sans";
+                
+                let jokerLabel = item.hasJoker ? ' <span class="text-amber-400 font-bold">[🃏 Joker]</span>' : '';
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-center font-bold border-b border-slate-850 pb-1">
+                        <span class="text-slate-200 truncate max-w-[100px]">${item.teamName}</span>
+                        <span class="text-emerald-400 font-sans font-bold">+${item.points} Pkt${jokerLabel}</span>
+                    </div>
+                    <div class="italic text-[10px] text-slate-500 truncate mt-0.5" title="${item.answer}">"${item.answer}"</div>
+                    <div class="flex justify-between items-center text-[8px] text-slate-600 mt-0.5 font-sans">
+                        <span>Runde ${item.round}</span>
+                        <span>${item.timestamp} Uhr</span>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
         }
 
         function removeLiveAnswerByIndex(idx) {
@@ -1305,7 +1674,59 @@
             showToast("Antworten-Liste geleert.", "info");
         }
 
-        // STREAMING_CHUNK: Managing QR Code generation...
+        /* Countdown Timer Logik (Lehrer) */
+        let timerInterval = null;
+        function startTimer() {
+            const durationInput = getEl('timer-duration');
+            const duration = parseInt(durationInput ? durationInput.value : 30) || 30;
+            
+            stopTimer(); // Laufenden Timer zuerst löschen
+
+            let secondsLeft = duration;
+            const display = getEl('teacher-timer-display');
+            if (display) {
+                display.innerText = `${secondsLeft}s`;
+                display.classList.remove('hidden');
+            }
+            
+            broadcastControlState(secondsLeft);
+
+            timerInterval = setInterval(() => {
+                secondsLeft--;
+                if (display) display.innerText = `${secondsLeft}s`;
+                
+                broadcastControlState(secondsLeft);
+
+                if (secondsLeft <= 0) {
+                    stopTimer();
+                    if (display) display.innerText = "Zeit um! ⏰";
+                    playSound('down');
+                }
+            }, 1000);
+
+            const startBtn = getEl('start-timer-btn');
+            const stopBtn = getEl('stop-timer-btn');
+            if (startBtn) startBtn.classList.add('hidden');
+            if (stopBtn) stopBtn.classList.remove('hidden');
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            const startBtn = getEl('start-timer-btn');
+            const stopBtn = getEl('stop-timer-btn');
+            if (startBtn) startBtn.classList.remove('hidden');
+            if (stopBtn) stopBtn.classList.add('hidden');
+            
+            const display = getEl('teacher-timer-display');
+            if (display) display.classList.add('hidden');
+
+            broadcastControlState(-1); // Löscht Timer auf den iPads
+        }
+
+        /* QR-Code Generator */
         function generateQRCode() {
             const qrImg = getEl('qr-code-img');
             const customUrlInput = getEl('custom-url-input');
@@ -1385,9 +1806,9 @@
             });
         }
 
-        function handleClassChange(e) {
+        function handleClassChange(event) {
             saveState(); 
-            activeClass = e.target.value;
+            activeClass = event.target.value;
             
             if (activeClass === "Standard-Sitzung") {
                 classes["Standard-Sitzung"] = { teams: [], currentRound: 1 };
@@ -1404,14 +1825,16 @@
             
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
+            const managerRoundDisplay = getEl('manager-round-display');
+            if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
             updateActiveBadge();
             renderScoreboard();
+            broadcastControlState(); 
             showToast(`Klasse "${activeClass}" geladen.`, 'success');
             saveState();
         }
 
-        // STREAMING_CHUNK: Setting up sound effects generator...
         function saveNewClass() {
             const input = getEl('class-name-input');
             const name = input ? input.value.trim() : "";
@@ -1546,7 +1969,7 @@
             }
         }
 
-        // STREAMING_CHUNK: Setting up toast notifications...
+        /* Toast Benachrichtigung */
         function showToast(message, type = 'info') {
             const container = getEl('toast-container');
             if (!container) return;
@@ -1636,7 +2059,27 @@
             showToast(anyActive ? "Auswahl zurückgesetzt!" : "Alle Teams ausgewählt (+1)!", "success");
         }
 
-        /* RUNDENÜBERGANG UND VERGABE DER AUSGEWÄHLTEN PUNKTE */
+        /* Spielrunde zurücksetzen (Runde zurück Button) */
+        function prevRound() {
+            if (currentRound > 1) {
+                currentRound--;
+                const roundDisplay = getEl('header-round-display');
+                if (roundDisplay) roundDisplay.innerText = currentRound;
+                const managerRoundDisplay = getEl('manager-round-display');
+                if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
+                
+                saveState();
+                renderScoreboard();
+                broadcastControlState();
+                renderHistoryArchive();
+                showToast(`Zurück auf Runde ${currentRound}!`, "info");
+            } else {
+                showToast("Du bist bereits in Runde 1!", "danger");
+            }
+        }
+
+        /* RUNDEN-MANAGER & SCORE Gutschrift mit Joker-Verrechnung */
+        // STREAMING_CHUNK: Verifying points, streaks and resetting live panels on round transitions...
         function nextRound() {
             if (teams.length === 0) {
                 showToast("Bitte füge zuerst Teams hinzu!", "danger");
@@ -1645,45 +2088,82 @@
 
             const activeTeams = teams.filter(t => t.activeThisRound);
             activeTeams.forEach(t => {
-                const pts = t.pendingPoints || 1;
+                let pts = t.pendingPoints || 1;
+                
+                // JOKER-LOGIC: Bei Erfolg werden die Punkte verdoppelt!
+                if (t.jokerActiveThisRound) {
+                    pts = pts * 2;
+                    t.jokerUsed = true; // Jetzt fest auf dem Scoreboard für immer verbraucht!
+                    showToast(`🃏 Joker-Erfolg für "${t.name}"! Punkte verdoppelt: +${pts}!`, "success");
+                }
+
                 t.score += pts;
+                t.streak = (t.streak || 0) + 1; // Streak erhöhen
             });
 
-            // Status für diese Runde resetten
+            // Joker Misserfolg & Streak Zurücksetzen
             teams.forEach(t => {
+                if (!t.activeThisRound) {
+                    t.streak = 0; // Streak gerissen!
+                    
+                    // JOKER-LOGIC: Bei Fehler oder Ausbleiben verliert das Team 1 Punkt
+                    if (t.jokerActiveThisRound) {
+                        t.score = Math.max(0, t.score - 1);
+                        t.jokerUsed = true; // Jetzt fest auf dem Scoreboard für immer verbraucht!
+                        showToast(`💀 Joker-Risiko fehlgeschlagen! "${t.name}" verliert 1 Punkt!`, "danger");
+                        playSound('down');
+                    }
+                }
+                
+                // Zurücksetzen für neue Runde
                 t.activeThisRound = false;
                 t.pendingPoints = 0;
+                t.jokerActiveThisRound = false;
             });
+
+            // ECHTZEITANZEIGE BEI RUNDENWECHSEL KOMPLETT LEEREN!
+            incomingAnswers = [];
+            renderIncomingAnswersList();
 
             currentRound++;
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
+            const managerRoundDisplay = getEl('manager-round-display');
+            if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
             playSound('next');
             saveState();
             renderScoreboard();
-
-            if (activeTeams.length > 0) {
-                const names = activeTeams.map(t => `${t.name} (+${t.pendingPoints || 1})`).join(", ");
-                showToast("Runde beendet! Punkte addiert. Neue Runde gestartet!", "success");
-            } else {
-                showToast(`Nächste Runde gestartet! Keine Punkte vergeben.`, "info");
-            }
+            broadcastControlState(); 
+            renderHistoryArchive();
         }
 
-        function deleteTeam(id, name) {
+        // Sicherer Team-Löschen-Befehl per technischer ID (umgeht Namenskonflikte)
+        function deleteTeam(id) {
+            const team = teams.find(t => t.id === id);
+            const name = team ? team.name : "Team";
             teams = teams.filter(t => t.id !== id);
             showToast(`Team "${name}" gelöscht.`, 'danger');
             saveState();
             renderScoreboard();
         }
 
-        // STREAMING_CHUNK: Rendering the scoreboard layout grid dynamically...
+        /* Scoreboard rendern mit FLIP-Methode für fließenden Platzwechsel (Smooth CSS Reordering) */
+        // STREAMING_CHUNK: Processing the dynamic grid rendering with responsive item frames...
         function renderScoreboard() {
             const container = getEl('scoreboard-container');
             const emptyState = getEl('empty-state');
             
             if (!container) return;
+
+            // FLIP Animation: Vorherige Positionen sichern
+            const cards = container.querySelectorAll('[data-team-id]');
+            const firstPositions = {};
+            cards.forEach(card => {
+                const id = card.getAttribute('data-team-id');
+                firstPositions[id] = card.getBoundingClientRect();
+            });
+
             container.innerHTML = '';
 
             if (teams.length === 0) {
@@ -1709,6 +2189,8 @@
                 const isSelected = team.activeThisRound;
                 
                 const card = document.createElement('div');
+                card.setAttribute('data-team-id', team.id); // Wichtig für den FLIP-Effekt!
+                
                 let borderStyle = 'border-slate-800/80 bg-slate-900/40 hover:bg-slate-800/40 hover:border-slate-700/60';
                 let cardOverlay = '';
 
@@ -1723,30 +2205,55 @@
                     borderStyle = 'leader-card bg-slate-900/60';
                 }
 
+                // Streak Flame Icon
+                let streakBadge = '';
+                if (team.streak >= 3) {
+                    streakBadge = `
+                        <span class="bg-orange-500/15 text-orange-400 border border-orange-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
+                            <i class="fa-solid fa-fire text-[10px]"></i> ${team.streak}x Streak
+                        </span>`;
+                }
+
+                // Joker Statusanzeige auf dem Lehrerboard
+                let jokerCardBadge = '';
+                if (team.jokerActiveThisRound) {
+                    jokerCardBadge = `
+                        <div class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black px-1.5 py-0.5 rounded animate-pulse text-center mt-1">
+                            <i class="fa-solid fa-masks-theater"></i> JOKER AKTIV (Doppelt / Risiko!)
+                        </div>`;
+                } else {
+                    // Zeigt an, ob das Team seinen Joker in diesem Spiel noch hat oder verbraucht hat
+                    jokerCardBadge = team.jokerUsed ? 
+                        `<span class="text-[9px] text-slate-500 font-bold block mt-1"><i class="fa-solid fa-ban"></i> Joker verbraucht</span>` : 
+                        `<span class="text-[9px] text-emerald-500/85 font-bold block mt-1"><i class="fa-solid fa-masks-theater"></i> Joker bereit</span>`;
+                }
+
                 card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-48 select-none ${borderStyle}`;
-                
                 card.onclick = () => toggleTeamActive(team.id);
 
+                // GRUPPENNAME FÄRBT SICH HIER DIREKT GRÜN (text-emerald-400) BEI AUSWAHL!
                 card.innerHTML = `
                     ${cardOverlay}
-                    <div class="flex items-start justify-between">
+                    <div class="flex items-start justify-between gap-1">
                         <span class="text-[10px] text-slate-500 font-bold tracking-wider">PLATZ ${index + 1}</span>
+                        ${streakBadge}
                         <button 
-                            onclick="event.stopPropagation(); deleteTeam('${team.id}', '${team.name.replace(/'/g, "\\'")}')" 
-                            class="text-slate-600 hover:text-rose-400 p-1 rounded transition-all"
+                            onclick="event.stopPropagation(); deleteTeam('${team.id}')" 
+                            class="text-slate-500 hover:text-rose-400 p-1 rounded transition-all"
                             title="Team entfernen"
                         >
-                            <i class="fa-solid fa-times text-[10px]"></i>
+                            <i class="fa-solid fa-trash-can text-[11px]"></i>
                         </button>
                     </div>
 
                     <div class="text-center flex-grow flex flex-col justify-center">
-                        <h3 class="text-sm font-black text-slate-200 tracking-wide truncate px-1" title="${team.name}">
+                        <h3 class="text-sm font-black ${isSelected ? 'text-emerald-400 font-black' : 'text-slate-200'} tracking-wide truncate px-1" title="${team.name}">
                             ${team.name}
                         </h3>
                         <span class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-b ${isLeader ? 'from-amber-200 to-amber-500' : 'from-slate-100 to-slate-400'}">
                             ${team.score}
                         </span>
+                        ${jokerCardBadge}
                     </div>
 
                     <!-- Runden-Optionen für nächste Runde (+1, +2, +3) -->
@@ -1795,34 +2302,28 @@
 
                 container.appendChild(card);
             });
+
+            // FLIP Animation: Neuer Ort berechnen und sanft verschieben
+            const newCards = container.querySelectorAll('[data-team-id]');
+            newCards.forEach(card => {
+                const id = card.getAttribute('data-team-id');
+                const first = firstPositions[id];
+                if (first) {
+                    const last = card.getBoundingClientRect();
+                    const deltaX = first.left - last.left;
+                    const deltaY = first.top - last.top;
+                    if (deltaX !== 0 || deltaY !== 0) {
+                        card.style.transition = 'none';
+                        card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                        card.getBoundingClientRect(); // Repaint erzwingen
+                        card.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+                        card.style.transform = 'none';
+                    }
+                }
+            });
         }
 
-        function confirmReset() {
-            showCustomConfirm(
-                "Wirklich zurücksetzen?",
-                "Alle Teams und Punkte der aktuellen Klasse werden gelöscht. Die Runde startet wieder bei 1.",
-                executeReset
-            );
-        }
-
-        function executeReset() {
-            teams = [];
-            currentRound = 1;
-            const roundDisplay = getEl('header-round-display');
-            if (roundDisplay) roundDisplay.innerText = currentRound;
-            
-            classes[activeClass] = {
-                teams: [],
-                currentRound: 1
-            };
-            
-            saveState();
-            closeModal();
-            renderScoreboard();
-            showToast("Sitzung komplett zurückgesetzt!", "danger");
-        }
-
-        // STREAMING_CHUNK: Setting up Mass-Import dialog controls...
+        /* Massen-Import / KI Parser */
         function openImportModal() {
             const modal = getEl('import-modal');
             const input = getEl('bulk-text-input');
@@ -1890,7 +2391,10 @@
                                 name: formattedName,
                                 score: 0,
                                 activeThisRound: false,
-                                pendingPoints: 0
+                                pendingPoints: 0,
+                                streak: 0,
+                                jokerUsed: false,
+                                jokerActiveThisRound: false
                             });
                             importedCount++;
                         }
@@ -1939,8 +2443,8 @@
             }, false);
         }
 
-        function handleFileSelect(e) {
-            const files = e.target.files;
+        function handleFileSelect(event) {
+            const files = event.target.files;
             handleFiles(files);
         }
 
@@ -1980,7 +2484,6 @@
             }
         }
 
-        // STREAMING_CHUNK: Parsing PDF content and documents...
         async function parsePDFAndScan(typedarray) {
             try {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
@@ -2007,7 +2510,6 @@
             }
         }
 
-        /* GEMINI AI API CODES */
         async function scanImageWithAI(base64Data, mimeType) {
             const apiKeyInput = getEl('api-key-input');
             const apiKey = apiKeyInput ? apiKeyInput.value.trim() : "";
@@ -2066,7 +2568,6 @@
             await callGeminiAPI(apiUrl, payload);
         }
 
-        // STREAMING_CHUNK: Integrating Gemini AI calls...
         async function callGeminiAPI(apiUrl, payload) {
             let retries = 3;
             let delay = 1000;
@@ -2134,7 +2635,7 @@
 
             extractedTeams.forEach(item => {
                 const label = document.createElement('label');
-                label.className = "flex items-center gap-2 bg-slate-900 border border-slate-800 hover:border-slate-700 p-2 rounded-xl text-xs cursor-pointer select-none text-slate-300 animate-scaleIn";
+                label.className = "flex items-center gap-2 bg-slate-900 border border-slate-800 hover:border-slate-700 p-2 rounded-xl text-xs cursor-pointer select-none text-slate-300 animate-scaleIn font-bold";
                 label.innerHTML = `
                     <input type="checkbox" checked onchange="toggleExtractedItem(${item.id})" class="accent-violet-500 rounded">
                     <span>${item.name}</span>
@@ -2162,7 +2663,10 @@
                         name: name,
                         score: 0,
                         activeThisRound: false,
-                        pendingPoints: 0
+                        pendingPoints: 0,
+                        streak: 0,
+                        jokerUsed: false,
+                        jokerActiveThisRound: false
                     });
                     addedCount++;
                 }
@@ -2215,7 +2719,7 @@
             showToast(`Sicherung als "${fileName}" heruntergeladen!`, 'success');
         }
 
-        // STREAMING_CHUNK: Setting up Confetti celebration particles...
+        // STREAMING_CHUNK: Setup win decoration canvas...
         const canvas = getEl("confetti-canvas");
         const ctx = canvas ? canvas.getContext("2d") : null;
         let particles = [];
