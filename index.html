@@ -403,7 +403,7 @@
                     </label>
                 </div>
                 
-                <!-- Klassen-Speicher (Dropdown & Sichern) -->
+                <!-- Klassen-Speicher (Dropdown, automatisch über Raum-Code) -->
                 <div class="border-t border-slate-700/40 pt-1.5 mt-0.5 space-y-1">
                     <div class="flex items-center justify-between gap-1">
                         <select id="class-select" onchange="handleClassChange(event)" class="bg-slate-900 border border-slate-700 text-slate-200 text-[11px] rounded-lg p-1 flex-grow focus:outline-none">
@@ -413,17 +413,9 @@
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
-                    <div class="flex gap-1.5">
-                        <input 
-                            type="text" 
-                            id="class-name-input" 
-                            placeholder="Name (z.B. 7c)..." 
-                            class="bg-slate-900/60 border border-slate-700/50 text-slate-200 placeholder-slate-500 rounded-lg px-2.5 py-0.5 text-[11px] flex-grow focus:outline-none"
-                        >
-                        <button onclick="saveNewClass()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3.5 py-0.5 rounded-lg text-[11px] active:scale-95 transition-all">
-                            Sichern
-                        </button>
-                    </div>
+                    <p class="text-[9.5px] text-slate-500 leading-snug">
+                        <i class="fa-solid fa-circle-check text-emerald-500/80"></i> Wird automatisch unter dem Raum-Code gespeichert, sobald du oben auf "Starten" klickst – kein manuelles Sichern nötig.
+                    </p>
                 </div>
 
                 <!-- Passwort ändern Bereich -->
@@ -459,7 +451,7 @@
                 <div class="flex flex-col gap-1 mt-1 pt-1 border-t border-slate-700/40 font-bold">
                     <div class="grid grid-cols-2 gap-1.5">
                         <button onclick="confirmReset()" class="bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 border border-rose-900/40 font-bold py-1 rounded-lg text-[10px] transition-all font-sans">
-                            <i class="fa-solid fa-trash-can"></i> Reset
+                            <i class="fa-solid fa-arrows-rotate"></i> Neue Sitzung
                         </button>
                         <button onclick="triggerWinConfetti()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-1 rounded-lg text-[10px] transition-all shadow-md">
                             <i class="fa-solid fa-crown"></i> Finale 🏆
@@ -559,7 +551,7 @@
         <!-- ========================================== -->
         <!-- CHRONOLOGISCHE LIVE ANTWORTEN VOM IPAD       -->
         <!-- ========================================== -->
-        <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-3 mb-4 hidden animate-fadeIn resize-y overflow-auto min-h-[160px] h-[240px]">
+        <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-3 mb-4 hidden animate-fadeIn resize-y overflow-auto min-h-[200px] h-[380px]">
             <div class="flex justify-between items-center mb-2.5 border-b border-slate-800 pb-2">
                 <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5 font-sans">
                     <i class="fa-solid fa-clock-rotate-left"></i> Eingehende iPad-Antworten (Echtzeit-Anzeige)
@@ -583,7 +575,7 @@
             </div>
 
             <!-- Dashboard-Grid für ultra-schmale, kompakte Kärtchen -->
-            <div id="live-answers-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 p-1">
+            <div id="live-answers-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-1">
                 <!-- Wird dynamisch chronologisch befüllt -->
             </div>
             <div id="live-answers-empty" class="text-center py-4 text-[11px] text-slate-500 font-sans">
@@ -782,6 +774,7 @@
         let teamSongs = {}; // Geheimes Songverzeichnis der Teams (Spickzettel)
 
         let sseSource = null;
+        let liveRoomPollInterval = null; // Sicherheitsnetz gegen verpasste Live-Nachrichten bei kurzen Verbindungsabbrüchen
         let incomingAnswers = [];
         let answerHistory = []; // Neues Backupsystem für alte Antworten
 
@@ -794,6 +787,7 @@
         // Schüler Runden Synchronisierung Variablen
         let studentCurrentRound = 1;
         let studentSse = null;
+        let studentControlPollInterval = null;
         let studentJokerActive = false;
         
         // Audio Synthesizer Context (Lazy Loading)
@@ -805,7 +799,7 @@
             "🎸", "👑", "🎈", "🛸", "👻", 
             "🦄", "🌮", "👾", "🍩", "🦕", 
             "🍿", "🥑", "🐯", "🎨", "🧩", 
-            "⚽", "🎮", "🎤", "🍦", " Pineapple", 
+            "⚽", "🎮", "🎤", "🍦", "🍍",
             "🐸", "🐱", "🐶", "🦉", "🐨"
         ];
 
@@ -904,11 +898,12 @@
                     const parsed = JSON.parse(savedData);
                     if (parsed) {
                         classes = parsed.classes || { "Standard-Sitzung": { teams: [], currentRound: 1, teamSongs: {} } };
-                        activeClass = parsed.activeClass || "Standard-Sitzung";
+                        // Immer mit einer sauberen, leeren Oberfläche starten - frühere Räume bleiben im Dropdown erhalten und können bei Bedarf ausgewählt werden.
+                        activeClass = "Standard-Sitzung";
+                        answerHistory = [];
                         teacherPassword = parsed.teacherPassword || "musik";
                         beamerProtectionActive = parsed.beamerProtectionActive !== false;
-                        answerHistory = parsed.answerHistory || [];
-                        
+
                         const autoSortEl = getEl('auto-sort-toggle');
                         if (autoSortEl) autoSortEl.checked = parsed.autoSort !== false;
                         const soundEl = getEl('sound-toggle');
@@ -954,6 +949,9 @@
                 if (roundDisplay) roundDisplay.innerText = currentRound;
                 const managerRoundDisplay = getEl('manager-round-display');
                 if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
+
+                const codeInput = getEl('room-code-input');
+                if (codeInput) codeInput.value = activeClass === 'Standard-Sitzung' ? '' : activeClass.toLowerCase();
 
                 const storedStudentName = localStorage.getItem('student_team_name');
                 const storedStudentRoom = localStorage.getItem('student_room_code');
@@ -1140,11 +1138,8 @@
             }
         }
 
-        function connectStudentControlChannel(room) {
-            if (studentSse) {
-                studentSse.close();
-            }
-
+        /* Holt den letzten bekannten Runden-/Joker-Stand vom Kontrollkanal (Sicherheitsnetz gegen verpasste SSE-Events) */
+        function pollStudentControlState(room) {
             fetch(`https://ntfy.sh/mq-ntfy-${room}-control/json?poll=1`)
                 .then(r => r.text())
                 .then(text => {
@@ -1162,6 +1157,17 @@
                         } catch(e) {}
                     }
                 }).catch(e => console.error(e));
+        }
+
+        function connectStudentControlChannel(room) {
+            if (studentSse) {
+                studentSse.close();
+            }
+            if (studentControlPollInterval) {
+                clearInterval(studentControlPollInterval);
+            }
+
+            pollStudentControlState(room);
 
             studentSse = new EventSource(`https://ntfy.sh/mq-ntfy-${room}-control/sse`);
             studentSse.onmessage = function(event) {
@@ -1180,6 +1186,10 @@
                     }
                 } catch(e) {}
             };
+
+            // Sicherheitsnetz: iPads setzen die SSE-Verbindung im Hintergrund manchmal aus.
+            // Dieser periodische Abgleich holt den aktuellen Rundenstand notfalls automatisch nach.
+            studentControlPollInterval = setInterval(() => pollStudentControlState(room), 12000);
         }
 
         /* Rundenzustand & JOKER-SYNC auf dem Schülergerät anwenden */
@@ -1492,8 +1502,13 @@
                 return;
             }
 
+            activateClassForRoom(roomCode);
+
             if (sseSource) {
                 sseSource.close();
+            }
+            if (liveRoomPollInterval) {
+                clearInterval(liveRoomPollInterval);
             }
 
             const topic = `mq-ntfy-${roomCode}`;
@@ -1509,7 +1524,7 @@
                 const livePanel = getEl('live-answers-panel');
                 if (livePanel) livePanel.classList.remove('hidden');
                 generateQRCode();
-                broadcastControlState(); 
+                broadcastControlState();
             };
 
             sseSource.onerror = function() {
@@ -1520,27 +1535,63 @@
                 try {
                     const rawData = JSON.parse(event.data);
                     if (rawData && rawData.message) {
-                        const quizPayload = JSON.parse(rawData.message);
-                        if (quizPayload && quizPayload.team) {
-                            if (quizPayload.action === "join") {
-                                handleLiveJoin(quizPayload.team, quizPayload.emoji || "🎵");
-                            } else if (quizPayload.action === "secret_songs") {
-                                teamSongs[quizPayload.team.toLowerCase()] = {
-                                    team: quizPayload.team,
-                                    songs: quizPayload.songs
-                                };
-                                saveState();
-                                renderTeamSongsList();
-                                showToast(`🤫 Spickzettel von Team "${quizPayload.team}" erhalten!`, "success");
-                            } else if (quizPayload.answer) {
-                                addIncomingAnswer(quizPayload);
-                            }
-                        }
+                        processQuizPayload(JSON.parse(rawData.message));
                     }
                 } catch (e) {
                     // System-Meldungen ignorieren
                 }
             };
+
+            // Direkt beim Verbinden einmal die letzten 2 Stunden nachholen (z.B. Spickzettel, die vor dem Start eingegangen sind).
+            pollLiveRoomBacklog(roomCode, "2h");
+
+            // Sicherheitsnetz: Falls die Live-Verbindung kurz aussetzt (z.B. bei WLAN-Rucklern),
+            // holt dieser periodische Abgleich verpasste Nachrichten (Beitritte, Antworten, Spickzettel) nach.
+            liveRoomPollInterval = setInterval(() => pollLiveRoomBacklog(roomCode), 15000);
+        }
+
+        /* Verarbeitet ein einzelnes Quiz-Ereignis (Beitritt / Antwort / Spickzettel) - wird sowohl
+           von der Live-SSE-Verbindung als auch vom Backup-Polling genutzt */
+        function processQuizPayload(quizPayload) {
+            try {
+                if (quizPayload && quizPayload.team) {
+                    if (quizPayload.action === "join") {
+                        handleLiveJoin(quizPayload.team, quizPayload.emoji || "🎵");
+                    } else if (quizPayload.action === "secret_songs") {
+                        teamSongs[quizPayload.team.toLowerCase()] = {
+                            team: quizPayload.team,
+                            songs: quizPayload.songs
+                        };
+                        saveState();
+                        renderTeamSongsList();
+                        showToast(`🤫 Spickzettel von Team "${quizPayload.team}" erhalten!`, "success");
+                    } else if (quizPayload.answer) {
+                        addIncomingAnswer(quizPayload);
+                    }
+                }
+            } catch (e) {
+                // System-Meldungen ignorieren
+            }
+        }
+
+        /* Backup-Abgleich für den Live-Kanal: holt die letzten Nachrichten nach, falls die SSE-Verbindung kurz ausgesetzt hat */
+        function pollLiveRoomBacklog(roomCode, since = "20s") {
+            fetch(`https://ntfy.sh/mq-ntfy-${roomCode}/json?poll=1&since=${since}`)
+                .then(r => r.text())
+                .then(text => {
+                    text.trim().split('\n').forEach(line => {
+                        if (!line) return;
+                        try {
+                            const data = JSON.parse(line);
+                            if (data.message) {
+                                processQuizPayload(JSON.parse(data.message));
+                            }
+                        } catch (e) {
+                            // Ungültige Zeilen ignorieren
+                        }
+                    });
+                })
+                .catch(e => console.error("Fehler beim Backup-Abgleich:", e));
         }
 
         function addIncomingAnswer(answerObj) {
@@ -1838,15 +1889,15 @@
             // Chronologische Kärtchen rendern (Kompakte Kärtchen im mehrspaltigen Grid)
             incomingAnswers.forEach((ans, index) => {
                 const item = document.createElement('div');
-                item.className = "flex flex-col justify-between gap-1.5 bg-slate-900 border border-slate-800 p-2 rounded-xl animate-scaleIn h-full relative font-sans";
-                
+                item.className = "flex flex-col justify-between gap-2 bg-slate-900 border border-slate-800 p-3 rounded-xl animate-scaleIn h-full relative font-sans";
+
                 let placementBadge = `
-                    <span class="bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded text-[8px] font-bold">
+                    <span class="bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded text-[11px] font-bold">
                         ⏱️ ${index + 1}. Antwort
                     </span>`;
                 if (index === 0) {
                     placementBadge = `
-                        <span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold animate-pulse">
+                        <span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[11px] font-bold animate-pulse">
                             ⚡ 1. Antwort
                         </span>`;
                 }
@@ -1866,21 +1917,21 @@
                 if (beamerProtectionActive) {
                     teamHeader = `
                         <div class="flex justify-between items-center gap-1.5 font-sans">
-                            <span class="font-bold text-slate-500 text-[11px] flex items-center gap-1">
+                            <span class="font-bold text-slate-500 text-sm flex items-center gap-1">
                                 <i class="fa-solid fa-user-secret text-violet-500/80"></i> Team verdeckt
                             </span>
                             ${placementBadge}
                         </div>
                     `;
                     answerTextContent = `
-                        <div class="text-[10px] text-slate-500 bg-slate-950/80 p-2 rounded-lg border border-slate-900 font-mono text-center py-2.5 select-none flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-lock text-violet-500 text-[10px]"></i> 
-                            <span class="text-slate-400 font-medium text-[9px]">Inhalt verdeckt</span>
+                        <div class="text-sm text-slate-500 bg-slate-950/80 p-3 rounded-lg border border-slate-900 font-mono text-center py-4 select-none flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-lock text-violet-500 text-sm"></i>
+                            <span class="text-slate-400 font-medium text-xs">Inhalt verdeckt</span>
                         </div>
                     `;
                     actionButtons = `
                         <div class="flex justify-between items-center gap-1.5 pt-1 border-t border-slate-800/30 font-bold font-sans">
-                            <span class="text-[8px] text-slate-600 font-black"><i class="fa-solid fa-eye-slash mr-1"></i> Erst aufdecken ${jokerBadge}</span>
+                            <span class="text-[10px] text-slate-600 font-black"><i class="fa-solid fa-eye-slash mr-1"></i> Erst aufdecken ${jokerBadge}</span>
                             <button 
                                 onclick="removeLiveAnswerByIndex(${index})"
                                 class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-[9px] px-1.5 py-0.5 rounded transition-all"
@@ -1893,7 +1944,7 @@
                 } else {
                     teamHeader = `
                         <div class="flex justify-between items-center gap-1.5 font-sans">
-                            <span class="font-bold text-violet-400 text-xs truncate max-w-[90px]" title="${ans.team}">${ans.team}</span>
+                            <span class="font-black text-violet-400 text-base truncate max-w-[160px]" title="${ans.team}">${ans.team}</span>
                             <div class="flex items-center gap-1">
                                 ${jokerBadge}
                                 ${placementBadge}
@@ -1901,33 +1952,33 @@
                         </div>
                     `;
                     answerTextContent = `
-                        <div class="text-[11px] text-slate-200 bg-slate-950/60 p-2 rounded-lg border border-slate-850 font-medium truncate font-sans" title="${ans.answer}">
+                        <div class="text-xl sm:text-2xl text-slate-100 bg-slate-950/60 p-3 rounded-lg border border-slate-850 font-bold break-words text-center font-sans" title="${ans.answer}">
                             ${ans.answer}
                         </div>
                     `;
                     actionButtons = `
-                        <div class="flex gap-1 justify-end font-bold pt-1 border-t border-slate-800/30 font-sans">
-                            <button 
+                        <div class="flex gap-1.5 justify-end font-bold pt-1 border-t border-slate-800/30 font-sans">
+                            <button
                                 onclick="applyLiveAnswer('${teamNameEscaped}', 3, ${index}, ${hasJoker})"
-                                class="bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95 flex items-center gap-0.5 font-sans"
+                                class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-2.5 py-1.5 rounded transition-all active:scale-95 flex items-center gap-0.5 font-sans"
                             >
                                 +3
                             </button>
-                            <button 
+                            <button
                                 onclick="applyLiveAnswer('${teamNameEscaped}', 2, ${index}, ${hasJoker})"
-                                class="bg-emerald-500 hover:bg-emerald-400 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95 font-sans"
+                                class="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-2.5 py-1.5 rounded transition-all active:scale-95 font-sans"
                             >
                                 +2
                             </button>
-                            <button 
+                            <button
                                 onclick="applyLiveAnswer('${teamNameEscaped}', 1, ${index}, ${hasJoker})"
-                                class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[9px] font-bold px-2 py-1 rounded transition-all active:scale-95 font-sans"
+                                class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold px-3 py-1.5 rounded transition-all active:scale-95 font-sans"
                             >
                                 +1
                             </button>
-                            <button 
+                            <button
                                 onclick="removeLiveAnswerByIndex(${index})"
-                                class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-[9px] px-1.5 py-1 rounded transition-all font-sans"
+                                class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-xs px-2 py-1.5 rounded transition-all font-sans"
                                 title="Verwerfen"
                             >
                                 <i class="fa-solid fa-trash-can"></i>
@@ -2202,42 +2253,61 @@
             if (roundDisplay) roundDisplay.innerText = currentRound;
             const managerRoundDisplay = getEl('manager-round-display');
             if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
-            
+
+            const codeInput = getEl('room-code-input');
+            if (codeInput) codeInput.value = activeClass === 'Standard-Sitzung' ? '' : activeClass.toLowerCase();
+
             updateActiveBadge();
             renderScoreboard();
             renderHistoryArchive(); // Archiv-Anzeige aktualisieren!
             renderTeamSongsList();
-            broadcastControlState(); 
+            broadcastControlState();
             showToast(`Klasse "${activeClass}" geladen.`, 'success');
             saveState();
         }
 
-        function saveNewClass() {
-            const input = getEl('class-name-input');
-            const name = input ? input.value.trim() : "";
-            
-            if (!name) {
-                showToast("Bitte trage einen Namen für die Klasse ein!", "danger");
+        /* Legt automatisch eine Klasse/Sitzung unter dem Raum-Code an (oder wechselt zu ihr),
+           sobald ein Raum gestartet wird. Ersetzt das manuelle "Sichern". */
+        function activateClassForRoom(roomCode) {
+            if (roomCode.toLowerCase() === 'standard-sitzung' || roomCode.toLowerCase() === 'standard') {
+                showToast("Dieser Raum-Code ist reserviert, bitte einen anderen wählen!", "danger");
                 return;
             }
-            if (name.toLowerCase() === 'standard-sitzung' || name.toLowerCase() === 'standard') {
-                showToast("Dieser Name ist reserviert!", "danger");
-                return;
+            const className = roomCode.toUpperCase();
+            if (activeClass === className) return;
+
+            if (!classes[className]) {
+                // Neue Klasse: aktuellen Stand übernehmen, falls man aus der Standard-Sitzung kommt
+                classes[className] = {
+                    teams: activeClass === 'Standard-Sitzung' ? [...teams] : [],
+                    currentRound: activeClass === 'Standard-Sitzung' ? currentRound : 1,
+                    teamSongs: activeClass === 'Standard-Sitzung' ? { ...teamSongs } : {}
+                };
             }
 
-            classes[name] = {
-                teams: [...teams],
-                currentRound: currentRound,
-                teamSongs: teamSongs
-            };
-            
-            activeClass = name;
-            if (input) input.value = '';
-            
+            activeClass = className;
+            const targetData = classes[activeClass];
+            teams = targetData.teams || [];
+            currentRound = targetData.currentRound || 1;
+            teamSongs = targetData.teamSongs || {};
+
+            teams.forEach(t => {
+                t.activeThisRound = false;
+                t.pendingPoints = 0;
+            });
+
+            const roundDisplay = getEl('header-round-display');
+            if (roundDisplay) roundDisplay.innerText = currentRound;
+            const managerRoundDisplay = getEl('manager-round-display');
+            if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
+
             saveState();
             updateClassDropdown();
             updateActiveBadge();
-            showToast(`Klasse "${name}" erfolgreich gesichert!`, 'success');
+            renderScoreboard();
+            renderHistoryArchive();
+            renderTeamSongsList();
+            showToast(`Klasse "${className}" wird jetzt automatisch gespeichert.`, 'success');
         }
 
         function deleteCurrentClass() {
@@ -2502,6 +2572,8 @@
 
             // ECHTZEITANZEIGE BEI RUNDENWECHSEL KOMPLETT LEEREN!
             incomingAnswers = [];
+            // Sichtschutz für die neue Runde immer wieder aktivieren - manuelles Aufdecken nötig!
+            beamerProtectionActive = true;
             renderIncomingAnswersList();
 
             currentRound++;
@@ -3188,8 +3260,8 @@
 
         function confirmReset() {
             showCustomConfirm(
-                "Wirklich zurücksetzen?",
-                "Alle Teams und Punkte der aktuellen Klasse werden gelöscht. Die Runde startet wieder bei 1.",
+                "Neue Sitzung starten?",
+                "Alle Teams und Punkte der aktuellen Klasse werden gelöscht. Die Runde startet wieder bei 1. Der Raum-Code bleibt erhalten.",
                 executeReset
             );
         }
@@ -3216,7 +3288,7 @@
             renderScoreboard();
             renderHistoryArchive(); // Archiv-Anzeige leeren!
             renderTeamSongsList();
-            showToast("Sitzung komplett zurückgesetzt!", "danger");
+            showToast("Neue Sitzung gestartet!", "success");
         }
 
         // Automatische Erkennung für ungestylte OneDrive-Vorschau
@@ -3237,7 +3309,7 @@
             resizeCanvas();
             loadState();
             checkOneDriveEnvironment();
-            
+
             const urlParams = new URLSearchParams(window.location.search);
             const queryRoom = urlParams.get('room');
             if (queryRoom) {
@@ -3245,6 +3317,24 @@
                 if (roomInput) roomInput.value = queryRoom;
             }
         };
+
+        // iPads setzen die Verbindung im Hintergrund/Standby oft aus. Sobald die Seite wieder
+        // sichtbar wird, frisch verbinden statt dass Schüler die App manuell wegwischen müssen.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState !== 'visible') return;
+
+            const studentBuzzerCard = getEl('student-buzzer-card');
+            if (studentBuzzerCard && !studentBuzzerCard.classList.contains('hidden')) {
+                const room = localStorage.getItem('student_room_code');
+                if (room) connectStudentControlChannel(room);
+            }
+
+            if (sseSource) {
+                const codeInput = getEl('room-code-input');
+                const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "";
+                if (roomCode) pollLiveRoomBacklog(roomCode);
+            }
+        });
     </script>
 </body>
 </html>
