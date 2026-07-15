@@ -109,6 +109,8 @@
                         class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 font-sans"
                     >
                 </div>
+               
+                <!-- Emoji Picker Container -->
                 <div>
                     <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Wähle dein Team-Logo:</label>
                     <div class="grid grid-cols-5 gap-2" id="emoji-picker-container">
@@ -116,7 +118,6 @@
                     </div>
                     <input type="hidden" id="student-emoji-input" value="🎵">
                 </div>
-                
                 <button 
                     onclick="joinQuizRoom()" 
                     class="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-violet-900/30 active:scale-95 transition-all text-xs flex items-center justify-center gap-2"
@@ -840,7 +841,29 @@
             "⚽", "🎮", "🎤", "🍦", "🍍", 
             "🐸", "🐱", "🐶", "🦉", "🐨"
         ];
+/* Emoji Picker Initialisierung */
+function initEmojiPicker() {
+    const container = getEl('emoji-picker-container');
+    const hiddenInput = getEl('student-emoji-input');
+    if (!container) return;
 
+    container.innerHTML = '';
+    emojis.forEach(emoji => {
+        const btn = document.createElement('button');
+        btn.type = "button";
+        btn.className = "text-xl p-1 rounded-lg hover:bg-slate-800 transition-all";
+        btn.innerText = emoji;
+        
+        if (emoji === hiddenInput.value) btn.classList.add('bg-violet-600');
+
+        btn.onclick = () => {
+            document.querySelectorAll('#emoji-picker-container button').forEach(b => b.classList.remove('bg-violet-600'));
+            btn.classList.add('bg-violet-600');
+            hiddenInput.value = emoji;
+        };
+        container.appendChild(btn);
+    });
+}
         /* Sicherer Elementzugriff mit Fallback */
         function getEl(id) {
             return document.getElementById(id) || null;
@@ -2769,13 +2792,44 @@
                 modal.classList.remove('flex');
             }
         }
+/* SCHÜLER BEITRITT (inkl. Emoji-Picker) */
+        function joinQuizRoom() {
+            const name = getEl('student-name-input').value.trim();
+            const room = getEl('student-room-input').value.trim().toLowerCase();
+            const emoji = getEl('student-emoji-input').value; // <-- Hier wird das Emoji gegriffen
+            
+            if (!name || !room) {
+                showToast("Bitte Namen und Raumcode eingeben!", "danger");
+                return;
+            }
 
+            // Daten auf dem Gerät des Schülers speichern
+            localStorage.setItem('student_team_name', name);
+            localStorage.setItem('student_room_code', room);
+            localStorage.setItem('student_team_emoji', emoji);
+
+            // Beitritts-Event an das Lehrer-Scoreboard senden
+            const topic = `mq-ntfy-${room}`;
+            fetch(`https://ntfy.sh/${topic}`, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: "join", 
+                    team: name, 
+                    emoji: emoji // <-- Hier wird es an die Lehrkraft geschickt
+                })
+            }).then(() => {
+                showToast("Erfolgreich beigetreten!", "success");
+                switchView('student');
+            }).catch(() => {
+                showToast("Verbindungsfehler beim Beitreten.", "danger");
+            });
+        }
         /* Starten */
         window.onload = function() {
-            resizeCanvas();
-            loadState();
-            checkOneDriveEnvironment();
-        };
-    </script>
+        initEmojiPicker(); // HIER EINFÜGEN
+        resizeCanvas();
+        loadState();
+        checkOneDriveEnvironment();
+    };
 </body>
 </html>
