@@ -56,7 +56,7 @@
     <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none z-50 w-full h-full"></canvas>
 
     <!-- ========================================== -->
-    <!-- DETEKTIERUNG FÜR UNGESTYLTE ANZEIGE -->
+    <!-- DETEKTIERUNG FÜR UNGESTYLTE ANZEIGE (TEAMS/ONEDRIVE) -->
     <!-- ========================================== -->
     <div id="onedrive-safety-banner" class="bg-rose-950 border-b border-rose-800 p-4 text-center hidden z-50">
         <div class="max-w-md mx-auto flex flex-col items-center gap-2">
@@ -177,6 +177,26 @@
                     <span>Antwort abschicken! 🚀</span>
                 </button>
 
+                <!-- 🎯 EXPANDABLE SONG PREPARATION (Pre-entering songs secretly) -->
+                <div class="border-t border-slate-800/60 pt-3 mt-1">
+                    <details class="group bg-slate-950/60 border border-slate-800/80 rounded-2xl overflow-hidden">
+                        <summary class="flex justify-between items-center p-3 text-xs font-bold text-violet-400 cursor-pointer select-none">
+                            <span>🎯 Eure 4 Lieder vorbereiten 🤫</span>
+                            <i class="fa-solid fa-chevron-down transition-transform group-open:rotate-180"></i>
+                        </summary>
+                        <div class="p-3 space-y-2 border-t border-slate-900">
+                            <p class="text-[10px] text-slate-400 leading-tight mb-2">Tragt hier eure 4 vorbereiteten Lieder ein. Nur die Lehrkraft kann sie auf ihrem Bildschirm sehen!</p>
+                            <input type="text" id="prep-song-1" placeholder="Song 1..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
+                            <input type="text" id="prep-song-2" placeholder="Song 2..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
+                            <input type="text" id="prep-song-3" placeholder="Song 3..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
+                            <input type="text" id="prep-song-4" placeholder="Song 4..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
+                            <button onclick="sendPrepSongs()" id="student-send-songs-btn" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-2 rounded-xl text-xs active:scale-95 transition-all mt-1">
+                                An Lehrkraft senden 🤫
+                            </button>
+                        </div>
+                    </details>
+                </div>
+
                 <!-- Feedback-Status-Box (auch für Runden-Limiter und Timer genutzt) -->
                 <div id="student-feedback" class="hidden p-3 rounded-xl border text-center text-xs font-semibold"></div>
             </div>
@@ -275,6 +295,15 @@
                     <i class="fa-solid fa-expand text-lg"></i>
                 </button>
                 
+                <!-- Spickzettel-Button -->
+                <button 
+                    onclick="openTeamSongsModal()" 
+                    class="bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white p-3 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center"
+                    title="Vorbereitete Songs der Teams ansehen (Spickzettel)"
+                >
+                    <i class="fa-solid fa-user-secret text-lg text-amber-400"></i>
+                </button>
+
                 <!-- Zahnrad-Button für Einstellungen -->
                 <button 
                     onclick="openSettingsModal()" 
@@ -391,7 +420,7 @@
 
                 <div class="text-xs text-slate-300 space-y-2 leading-relaxed">
                     <p>Lass deine Schüler den QR-Code einscannen und dem Raum beitreten. Sobald sich ein Team einloggt, erscheint es sofort unten auf der Tafel mit 0 Punkten!</p>
-                    <p class="text-slate-400">Du kannst jederzeit die Einstellungen oben über das Zahnrad ⚙️ anpassen (z. B. Sounds deaktivieren oder die Auto-Sortierung ausschalten).</p>
+                    <p class="text-slate-400">Sie können jetzt auch bereits ihre 4 geheimen Songs über ihre iPads eintragen, damit du sie über den Spickzettel-Button (🤫) oben rechts einsehen kannst.</p>
                 </div>
 
                 <div class="pt-2 border-t border-slate-700/30 flex justify-end gap-2">
@@ -530,7 +559,7 @@
             <div id="live-answers-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 p-1">
                 <!-- Wird dynamisch chronologisch befüllt -->
             </div>
-            <div id="live-answers-empty" class="text-center py-4 text-[11px] text-slate-500">
+            <div id="live-answers-empty" class="text-center py-4 text-[11px] text-slate-500 font-sans">
                 <i class="fa-solid fa-spinner animate-spin text-slate-600 mr-1"></i> Warte auf Antworten von den Schüler-iPads... (Beamerbild ist standardmäßig verdeckt 🖥️🔒)
             </div>
         </div>
@@ -544,7 +573,7 @@
         <div id="empty-state" class="hidden text-center py-10 px-4 bg-slate-800/20 border border-slate-700/20 rounded-3xl mt-2">
             <i class="fa-solid fa-people-group text-4xl text-slate-600 mb-2 block"></i>
             <h4 class="text-base font-bold text-slate-400">Keine Teams in dieser Sitzung</h4>
-            <p class="text-slate-500 text-xs mt-1 max-w-sm mx-auto">
+            <p class="text-slate-500 text-xs mt-1 max-w-sm mx-auto font-medium">
                 Lass deine Schüler über ihre iPads mitspielen, um das Live-Scoreboard automatisch zu befüllen!
             </p>
         </div>
@@ -552,7 +581,7 @@
         <!-- ========================================== -->
         <!-- ARCHIVIERTER ANTWORT-VERLAUF               -->
         <!-- ========================================== -->
-        <div id="history-archive-panel" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 mt-6 animate-fadeIn">
+        <div id="history-archive-panel" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 mt-6 animate-fadeIn font-sans">
             <h3 class="text-xs font-bold text-slate-400 flex items-center gap-1.5 border-b border-slate-800 pb-2 mb-2.5">
                 <i class="fa-solid fa-box-archive text-slate-500"></i> Antwort-Verlauf (Echtzeit-Backup dieser Runde)
             </h3>
@@ -642,6 +671,36 @@
 
             <div class="pt-2.5 border-t border-slate-800 flex justify-end">
                 <button onclick="closeSettingsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs active:scale-95">
+                    Schließen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 🤫 SECRET TEAM SONGS PREP MODAL              -->
+    <!-- ========================================== -->
+    <div id="team-songs-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-lg w-full shadow-2xl animate-fadeIn space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                <h3 class="text-base font-bold text-amber-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-user-secret"></i> 🤫 Spickzettel: Vorbereitete Songs der Teams
+                </h3>
+                <button onclick="closeTeamSongsModal()" class="text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <div class="text-xs text-slate-400 leading-normal mb-2">
+                <p>Hier siehst du die 4 Songs, die die Teams vorab eingetragen haben. Die Liste ist standardmäßig <strong>verschwommen (Sichtschutz)</strong>, falls du deinen Bildschirm auf dem Beamer spiegelst. Klicke auf das Auge, um die Songs eines Teams anzuzeigen!</p>
+            </div>
+
+            <div id="team-songs-list" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+                <!-- Wird dynamisch befüllt -->
+            </div>
+
+            <div class="pt-2.5 border-t border-slate-800 flex justify-end">
+                <button onclick="closeTeamSongsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs active:scale-95">
                     Schließen
                 </button>
             </div>
@@ -748,10 +807,11 @@
         let beamerProtectionActive = true; 
         
         let classes = {
-            "Standard-Sitzung": { teams: [], currentRound: 1 }
+            "Standard-Sitzung": { teams: [], currentRound: 1, teamSongs: {} }
         };
         let teams = [];
         let currentRound = 1;
+        let teamSongs = {}; // Geheimes Songverzeichnis der Teams
 
         let sseSource = null;
         let incomingAnswers = [];
@@ -771,7 +831,7 @@
         // Audio Synthesizer Context (Lazy Loading)
         let audioCtx = null;
 
-        // Emojis für Team-Logos (Erweitert auf 6 Reihen / 30 Emojis)
+        // Emojis für Team-Logos
         const emojis = [
             "🦁", "🍕", "🚀", "🦊", "🐼", 
             "🎸", "👑", "🎈", "🛸", "👻", 
@@ -789,14 +849,14 @@
         /* LocalStorage Speicher-Funktionen mit kontinuierlichem Autosave */
         function saveState() {
             try {
-                // Den aktuellen Arbeitsstand im Klassenobjekt sichern (solange es NICHT die Standard-Sitzung ist)
-                classes["Standard-Sitzung"] = { teams: [], currentRound: 1 };
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {} };
                 
                 if (activeClass !== "Standard-Sitzung") {
                     classes[activeClass] = {
                         teams: teams,
                         currentRound: currentRound,
-                        answerHistory: answerHistory
+                        answerHistory: answerHistory,
+                        teamSongs: teamSongs
                     };
                 }
                 
@@ -814,7 +874,7 @@
                     beamerProtectionActive: beamerProtectionActive
                 };
                 
-                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys_autosave', JSON.stringify(saveDataObj));
+                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2', JSON.stringify(saveDataObj));
             } catch (err) {
                 console.error("Fehler beim Speichern des Zustands:", err);
             }
@@ -867,16 +927,17 @@
                     updateActiveBadge();
                     renderScoreboard();
                     renderHistoryArchive();
+                    renderTeamSongsList();
                     showToast("Exportierter Spielstand erfolgreich geladen!", "success");
                     switchView('teacher'); 
                     return;
                 }
 
-                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys_autosave');
+                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2');
                 if (savedData) {
                     const parsed = JSON.parse(savedData);
                     if (parsed) {
-                        classes = parsed.classes || { "Standard-Sitzung": { teams: [], currentRound: 1 } };
+                        classes = parsed.classes || { "Standard-Sitzung": { teams: [], currentRound: 1, teamSongs: {} } };
                         activeClass = parsed.activeClass || "Standard-Sitzung";
                         teacherPassword = parsed.teacherPassword || "musik";
                         beamerProtectionActive = parsed.beamerProtectionActive !== false;
@@ -892,21 +953,22 @@
                     }
                 } else {
                     classes = {
-                        "Standard-Sitzung": { teams: [], currentRound: 1 }
+                        "Standard-Sitzung": { teams: [], currentRound: 1, teamSongs: {} }
                     };
                     activeClass = "Standard-Sitzung";
                 }
 
-                classes["Standard-Sitzung"] = { teams: [], currentRound: 1 };
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {} };
 
                 if (!classes[activeClass]) {
-                    classes[activeClass] = { teams: [], currentRound: 1, answerHistory: [] };
+                    classes[activeClass] = { teams: [], currentRound: 1, answerHistory: [], teamSongs: {} };
                 }
 
                 const currentData = classes[activeClass];
                 teams = currentData.teams || [];
                 currentRound = currentData.currentRound || 1;
                 answerHistory = currentData.answerHistory || [];
+                teamSongs = currentData.teamSongs || {};
 
                 teams.forEach(t => {
                     t.activeThisRound = false;
@@ -916,9 +978,9 @@
                     t.jokerActiveThisRound = false;
                 });
 
-                // Standard-Sitzung soll immer leer starten
                 if (activeClass === "Standard-Sitzung") {
                     answerHistory = [];
+                    teamSongs = {};
                 }
 
                 const roundDisplay = getEl('header-round-display');
@@ -937,6 +999,7 @@
                 updateActiveBadge();
                 renderScoreboard();
                 renderHistoryArchive();
+                renderTeamSongsList();
                 
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get('role') === 'teacher') {
@@ -967,6 +1030,24 @@
             }
         }
 
+        /* Modalssteuerung für Team Spickzettel */
+        function openTeamSongsModal() {
+            renderTeamSongsList();
+            const modal = getEl('team-songs-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function closeTeamSongsModal() {
+            const modal = getEl('team-songs-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
         /* Lobby vs. Spielmodus Wechsel */
         function startLiveGame() {
             const roomCode = getEl('room-code-input').value.trim();
@@ -974,11 +1055,9 @@
                 showToast("Bitte gib zuerst einen Raumcode ein, um das Spiel zu starten!", "danger");
                 return;
             }
-            // Panels verschieben
             getEl('setup-lobby-panel').classList.add('hidden');
             getEl('game-controls-panel').classList.remove('hidden');
             
-            // Sichtschutz zum Starten automatisch EINschalten (Sicherheits-Check)
             beamerProtectionActive = true;
             renderIncomingAnswersList();
 
@@ -992,371 +1071,210 @@
             showToast("Zurück in den Lobby-Modus geschaltet.", "info");
         }
 
-        /* Emoji Picker Initialisierung auf Schüler-Join-Modul */
-        function initEmojiPicker() {
-            const container = getEl('emoji-picker-container');
-            if (!container) return;
-            container.innerHTML = '';
-            emojis.forEach((emoji, idx) => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = `p-2 text-xl rounded-xl bg-slate-950 border border-slate-800 hover:border-violet-500/50 transition-all ${idx === 0 ? 'ring-2 ring-violet-500' : ''}`;
-                btn.innerHTML = emoji;
-                btn.onclick = () => selectEmoji(emoji, btn);
-                container.appendChild(btn);
-            });
-            const hiddenInput = getEl('student-emoji-input');
-            if (hiddenInput) hiddenInput.value = emojis[0];
-        }
+        function switchView(view) {
+            currentView = view;
+            const studentSection = getEl('student-view');
+            const teacherSection = getEl('teacher-view');
 
-        function selectEmoji(emoji, element) {
-            const hiddenInput = getEl('student-emoji-input');
-            if (hiddenInput) hiddenInput.value = emoji;
-            
-            const container = getEl('emoji-picker-container');
-            if (container) {
-                container.querySelectorAll('button').forEach(btn => {
-                    btn.classList.remove('ring-2', 'ring-violet-500');
-                });
-            }
-            element.classList.add('ring-2', 'ring-violet-500');
-        }
+            if (!studentSection || !teacherSection) return;
 
-        /* Schüler Runden Empfang per SSE */
-        function connectStudentControlChannel(room) {
-            if (studentSse) {
-                studentSse.close();
-            }
-
-            fetch(`https://ntfy.sh/mq-ntfy-${room}-control/json?poll=1`)
-                .then(r => r.text())
-                .then(text => {
-                    const lines = text.trim().split('\n');
-                    for (let i = lines.length - 1; i >= 0; i--) {
-                        try {
-                            const data = JSON.parse(lines[i]);
-                            if (data.message) {
-                                const payload = JSON.parse(data.message);
-                                if (payload) {
-                                    updateStudentRound(payload.round || 1, payload.jokersUsed || []);
-                                    break;
-                                }
-                            }
-                        } catch(e) {}
-                    }
-                }).catch(e => console.error(e));
-
-            studentSse = new EventSource(`https://ntfy.sh/mq-ntfy-${room}-control/sse`);
-            studentSse.onmessage = function(event) {
-                try {
-                    const rawData = JSON.parse(event.data);
-                    if (rawData && rawData.message) {
-                        const payload = JSON.parse(rawData.message);
-                        if (payload) {
-                            if (payload.round !== undefined) {
-                                updateStudentRound(payload.round, payload.jokersUsed || []);
-                            }
-                            if (payload.timer !== undefined) {
-                                updateStudentTimer(payload.timer);
-                            }
-                        }
-                    }
-                } catch(e) {}
-            };
-        }
-
-        /* Rundenzustand & JOKER-SYNC auf dem Schülergerät anwenden */
-        function updateStudentRound(newRound, jokersUsedArray) {
-            studentCurrentRound = newRound;
-            const roundBadge = getEl('student-round-badge');
-            if (roundBadge) {
-                roundBadge.innerText = `Runde ${newRound}`;
-                roundBadge.classList.remove('hidden');
-            }
-            
-            const room = localStorage.getItem('student_room_code');
-            const myName = localStorage.getItem('student_team_name') || "";
-            const lastSubmitted = localStorage.getItem(`last_sub_round_${room}`);
-            const btn = getEl('student-submit-btn');
-            const feedback = getEl('student-feedback');
-            const textarea = getEl('student-answer-input');
-            const jokerBtn = getEl('student-joker-btn');
-
-            let serverSaysJokerUsed = false;
-            if (jokersUsedArray && Array.isArray(jokersUsedArray)) {
-                serverSaysJokerUsed = jokersUsedArray.includes(myName.toLowerCase());
-            }
-
-            if (serverSaysJokerUsed) {
-                localStorage.setItem(`joker_used_${room}`, 'true'); 
-                studentJokerActive = false;
-                if (jokerBtn) {
-                    jokerBtn.disabled = true;
-                    jokerBtn.className = "w-full bg-slate-950/40 border border-slate-900 text-slate-600 py-2.5 rounded-xl text-xs cursor-not-allowed text-center";
-                    jokerBtn.innerHTML = `<span>🃏 Joker verbraucht (Lehrer-Sperre)</span>`;
+            if (view === 'student') {
+                studentSection.classList.remove('hidden');
+                teacherSection.classList.add('hidden');
+                if (sseSource) {
+                    sseSource.close();
+                    sseSource = null;
                 }
-            } else {
-                const localJokerUsed = localStorage.getItem(`joker_used_${room}`);
-                if (localJokerUsed) {
-                    studentJokerActive = false;
-                    if (jokerBtn) {
-                        jokerBtn.disabled = true;
-                        jokerBtn.className = "w-full bg-slate-950/40 border border-slate-900 text-slate-600 py-2.5 rounded-xl text-xs cursor-not-allowed text-center";
-                        jokerBtn.innerHTML = `<span>🃏 Joker bereits verbraucht</span>`;
-                    }
+                const registeredName = localStorage.getItem('student_team_name');
+                const registeredRoom = localStorage.getItem('student_room_code');
+                const studentJoinCard = getEl('student-join-card');
+                const studentBuzzerCard = getEl('student-buzzer-card');
+
+                if (registeredName && registeredRoom) {
+                    if (studentJoinCard) studentJoinCard.classList.add('hidden');
+                    const badge = getEl('student-badge-info');
+                    const storedEmoji = localStorage.getItem('student_team_emoji') || "🎵";
+                    if (badge) badge.innerText = `Verbunden: ${storedEmoji} ${registeredName}`;
+                    if (studentBuzzerCard) studentBuzzerCard.classList.remove('hidden');
+                    connectStudentControlChannel(registeredRoom);
+                    loadStudentPrepSongs(registeredRoom);
                 } else {
-                    if (jokerBtn) {
-                        jokerBtn.disabled = false;
-                        if (studentJokerActive) {
-                            jokerBtn.className = "w-full bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-500 text-amber-300 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-95 animate-pulse";
-                            jokerBtn.innerHTML = `<span>🃏 Doppel-Joker AKTIV! (Risikorunde)</span>`;
-                        } else {
-                            jokerBtn.className = "w-full bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95";
-                            jokerBtn.innerHTML = `<span>🃏 Doppel-Joker aktivieren</span>`;
-                        }
-                    }
+                    if (studentJoinCard) studentJoinCard.classList.remove('hidden');
+                    if (studentBuzzerCard) studentBuzzerCard.classList.add('hidden');
                 }
+            } else if (view === 'teacher') {
+                studentSection.classList.add('hidden');
+                teacherSection.classList.remove('hidden');
+                connectLiveRoom();
             }
+        }
 
-            if (lastSubmitted && parseInt(lastSubmitted) === newRound) {
+        /* Spickzettel-Sperrung auf Schülergeräten laden */
+        function loadStudentPrepSongs(room) {
+            const sentPrep = localStorage.getItem(`prep_songs_sent_${room}`);
+            const prepDataStr = localStorage.getItem(`prep_songs_data_${room}`);
+            const btn = getEl('student-send-songs-btn');
+            
+            if (sentPrep && prepDataStr) {
                 if (btn) {
                     btn.disabled = true;
-                    btn.innerHTML = `<i class="fa-solid fa-check"></i> Antwort gesendet! ✔`;
-                    btn.className = "w-full bg-emerald-950/40 border border-emerald-800/30 text-emerald-400 font-bold py-4 rounded-2xl cursor-not-allowed text-sm flex items-center justify-center gap-2 transition-all";
+                    btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Gesendet! 🤫`;
+                    btn.className = "w-full bg-emerald-600 text-white font-bold py-2 rounded-xl text-xs cursor-not-allowed mt-1";
                 }
-                if (textarea) textarea.disabled = true;
-                if (feedback) {
-                    feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-850 text-amber-200 animate-scaleIn";
-                    feedback.innerHTML = `<i class="fa-solid fa-circle-info text-amber-400"></i> Du hast für Runde ${newRound} bereits geantwortet. Warte auf die nächste Runde!`;
-                    feedback.classList.remove('hidden');
-                }
+                try {
+                    const songs = JSON.parse(prepDataStr);
+                    for (let i = 1; i <= 4; i++) {
+                        const input = getEl(`prep-song-${i}`);
+                        if (input && songs[i-1]) {
+                            input.value = songs[i-1];
+                            input.disabled = true;
+                        }
+                    }
+                } catch(e){}
             } else {
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Antwort abschicken! 🚀</span>`;
-                    btn.className = "w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2";
+                    btn.innerHTML = "An Lehrkraft senden 🤫";
+                    btn.className = "w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-2 rounded-xl text-xs active:scale-95 transition-all mt-1";
                 }
-                if (textarea) textarea.disabled = false;
-                if (feedback) {
-                    feedback.classList.add('hidden');
-                }
-            }
-        }
-
-        /* Echtzeit Countdown Timer auf den iPads einblenden & sperren */
-        function updateStudentTimer(seconds) {
-            const room = localStorage.getItem('student_room_code');
-            const lastSubmitted = localStorage.getItem(`last_sub_round_${room}`);
-            const submitBtn = getEl('student-submit-btn');
-            const textarea = getEl('student-answer-input');
-            const feedback = getEl('student-feedback');
-
-            const alreadySubmitted = lastSubmitted && parseInt(lastSubmitted) === studentCurrentRound;
-
-            if (seconds > 0) {
-                if (!alreadySubmitted) {
-                    if (feedback) {
-                        feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-850 text-amber-200 animate-pulse";
-                        feedback.innerHTML = `<i class="fa-solid fa-hourglass-half text-amber-400"></i> Noch ${seconds} Sekunden zum Raten! Schnell abgeben! ⏱️`;
-                        feedback.classList.remove('hidden');
+                for (let i = 1; i <= 4; i++) {
+                    const input = getEl(`prep-song-${i}`);
+                    if (input) {
+                        input.value = "";
+                        input.disabled = false;
                     }
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.className = "w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2";
-                    }
-                    if (textarea) textarea.disabled = false;
-                }
-            } else if (seconds === 0) {
-                if (feedback) {
-                    feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-rose-950/40 border-rose-850 text-rose-200";
-                    feedback.innerHTML = `<i class="fa-solid fa-clock text-rose-400 animate-bounce"></i> Zeit abgelaufen! Keine Antwort mehr möglich! ⏰`;
-                    feedback.classList.remove('hidden');
-                }
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.className = "w-full bg-rose-950/30 border border-rose-900/30 text-rose-400 font-bold py-4 rounded-2xl cursor-not-allowed text-sm flex items-center justify-center gap-2";
-                }
-                if (textarea) textarea.disabled = true;
-            } else {
-                if (feedback && feedback.innerHTML.includes('Sekunden')) {
-                    feedback.classList.add('hidden');
                 }
             }
         }
 
-        function joinQuizRoom() {
-            const roomEl = getEl('student-room-input');
-            const nameEl = getEl('student-name-input');
-            const emojiEl = getEl('student-emoji-input');
-            const room = roomEl ? roomEl.value.trim().toLowerCase() : "";
-            const name = nameEl ? nameEl.value.trim() : "";
-            const emoji = emojiEl ? emojiEl.value : "🎵";
-
-            if (!room || !name) {
-                showToast("Raum-Code und Teamname sind erforderlich!", "danger");
-                return;
-            }
-
-            localStorage.setItem('student_team_name', name);
-            localStorage.setItem('student_room_code', room);
-            localStorage.setItem('student_team_emoji', emoji);
-
-            const studentJoinCard = getEl('student-join-card');
-            const studentBuzzerCard = getEl('student-buzzer-card');
-            if (studentJoinCard) studentJoinCard.classList.add('hidden');
-            
-            const badge = getEl('student-badge-info');
-            if (badge) badge.innerText = `Verbunden: ${emoji} ${name}`;
-            if (studentBuzzerCard) studentBuzzerCard.classList.remove('hidden');
-            
-            connectStudentControlChannel(room);
-            
-            // Sofort-Join Signal
-            try {
-                const topic = `mq-ntfy-${room}`;
-                const payload = {
-                    action: "join",
-                    team: name,
-                    emoji: emoji,
-                    timestamp: Date.now()
-                };
-                fetch(`https://ntfy.sh/${topic}`, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-            } catch(e) {}
-            
-            showToast(`Raum ${room.toUpperCase()} erfolgreich beigetreten!`, "success");
-            playSound('up');
-        }
-
-        function leaveQuizRoom() {
-            localStorage.removeItem('student_team_name');
-            localStorage.removeItem('student_room_code');
-            localStorage.removeItem('student_team_emoji');
-            if (studentSse) {
-                studentSse.close();
-                studentSse = null;
-            }
-            const studentJoinCard = getEl('student-join-card');
-            const studentBuzzerCard = getEl('student-buzzer-card');
-            if (studentJoinCard) studentJoinCard.classList.remove('hidden');
-            if (studentBuzzerCard) studentBuzzerCard.classList.add('hidden');
-            showToast("Raum verlassen.", "info");
-        }
-
-        function toggleStudentJoker() {
-            const room = localStorage.getItem('student_room_code');
-            const jokerUsedKey = `joker_used_${room}`;
-            if (localStorage.getItem(jokerUsedKey)) {
-                showToast("Du hast deinen Doppel-Joker in diesem Spiel bereits verbraucht!", "danger");
-                return;
-            }
-
-            studentJokerActive = !studentJokerActive;
-            updateStudentRound(studentCurrentRound, []); 
-        }
-
-        async function sendStudentAnswer() {
+        /* Spickzettel absenden (Schüler) */
+        async function sendPrepSongs() {
             const room = localStorage.getItem('student_room_code');
             const name = localStorage.getItem('student_team_name');
-            const emoji = localStorage.getItem('student_team_emoji') || "🎵";
-            const answerEl = getEl('student-answer-input');
-            const answer = answerEl ? answerEl.value.trim() : "";
-            const btn = getEl('student-submit-btn');
+            const btn = getEl('student-send-songs-btn');
+            
+            const s1 = getEl('prep-song-1').value.trim();
+            const s2 = getEl('prep-song-2').value.trim();
+            const s3 = getEl('prep-song-3').value.trim();
+            const s4 = getEl('prep-song-4').value.trim();
 
-            if (!answer) {
-                showToast("Deine Antwort ist leer!", "danger");
+            if (!s1 && !s2 && !s3 && !s4) {
+                showToast("Bitte trage mindestens ein Lied ein!", "danger");
                 return;
             }
 
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Übertrage...`;
+                btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Sende Spickzettel...`;
             }
 
             try {
                 const topic = `mq-ntfy-${room}`;
                 const payload = {
+                    action: "secret_songs",
                     team: name,
-                    emoji: emoji,
-                    answer: answer,
-                    joker: studentJokerActive,
-                    time: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                    songs: [s1, s2, s3, s4],
                     timestamp: Date.now()
                 };
 
                 const res = await fetch(`https://ntfy.sh/${topic}`, {
                     method: 'POST',
-                    body: JSON.stringify(payload),
-                    headers: {
-                        'Title': 'greenboys Scoreboard Antwort',
-                        'Tags': 'musical_note'
-                    }
+                    body: JSON.stringify(payload)
                 });
 
                 if (res.ok) {
-                    localStorage.setItem(`last_sub_round_${room}`, studentCurrentRound);
+                    showToast("Dein Spickzettel wurde heimlich gesendet! 🤫", "success");
+                    btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Gesendet! 🤫`;
+                    btn.className = "w-full bg-emerald-600 text-white font-bold py-2 rounded-xl text-xs cursor-not-allowed mt-1";
                     
-                    if (studentJokerActive) {
-                        localStorage.setItem(`joker_used_${room}`, 'true');
-                        studentJokerActive = false;
-                    }
-
-                    updateStudentRound(studentCurrentRound, []); 
-                    
-                    const statusBox = getEl('student-feedback');
-                    if (statusBox) {
-                        statusBox.className = "p-3 rounded-xl border text-center text-xs font-semibold animate-scaleIn bg-emerald-950/40 border-emerald-800 text-emerald-200";
-                        statusBox.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i> Antwort für Runde ${studentCurrentRound} gesendet!`;
-                        statusBox.classList.remove('hidden');
-                    }
-                    if (answerEl) answerEl.value = '';
-                    showToast("Erfolgreich abgesendet! 📡", "success");
-                    playSound('up');
+                    localStorage.setItem(`prep_songs_sent_${room}`, "true");
+                    localStorage.setItem(`prep_songs_data_${room}`, JSON.stringify([s1, s2, s3, s4]));
+                    loadStudentPrepSongs(room);
                 } else {
-                    throw new Error("Sende-Fehler");
+                    throw new Error("Fehler beim Senden");
                 }
-            } catch (err) {
-                console.error(err);
-                showToast("Fehler bei der Verbindung. Bitte erneut versuchen!", "danger");
+            } catch(e) {
+                showToast("Verbindungsfehler beim Senden des Spickzettels.", "danger");
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Antwort abschicken! 🚀</span>`;
+                    btn.innerHTML = "An Lehrkraft senden 🤫";
                 }
             }
         }
 
-        /* Lehrerseite: Team manuell eintragen */
-        function handleManualTeamAdd(e) {
-            if (e) e.preventDefault();
-            const input = getEl('manual-team-input');
-            const name = input ? input.value.trim() : "";
-            if (!name) return;
-            
-            const formattedName = name.substring(0, 12);
-            if (teams.some(t => t.name.toLowerCase() === formattedName.toLowerCase())) {
-                showToast(`Das Team "${formattedName}" existiert bereits!`, 'danger');
+        /* Lehrer-PC: Spickzettel rendern */
+        function renderTeamSongsList() {
+            const list = getEl('team-songs-list');
+            if (!list) return;
+            list.innerHTML = '';
+
+            if (teams.length === 0) {
+                list.innerHTML = `<p class="text-center text-slate-500 py-4 text-xs font-semibold">Noch keine Teams im Spiel.</p>`;
                 return;
             }
 
-            const newTeam = {
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                name: formattedName,
-                score: 0,
-                activeThisRound: false,
-                pendingPoints: 0,
-                streak: 0,
-                jokerUsed: false,
-                jokerActiveThisRound: false
-            };
+            teams.forEach(t => {
+                const teamKey = t.name.toLowerCase();
+                const record = teamSongs[teamKey];
+                const card = document.createElement('div');
+                card.className = "bg-slate-950/60 border border-slate-800 p-3 rounded-2xl space-y-2 animate-fadeIn";
+                
+                if (record && record.songs && record.songs.some(s => s.trim() !== "")) {
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center border-b border-slate-850 pb-1.5 font-sans">
+                            <span class="font-bold text-slate-200 text-xs flex items-center gap-1.5">
+                                <span class="text-sm">${t.emoji || '🎵'}</span> ${t.name}
+                            </span>
+                            <button 
+                                onclick="toggleSongBlur('${teamKey}')" 
+                                id="reveal-btn-${teamKey}"
+                                class="text-slate-400 hover:text-slate-200 p-1 rounded transition-colors text-[10px] flex items-center gap-1 font-bold"
+                            >
+                                <i class="fa-solid fa-eye" id="reveal-icon-${teamKey}"></i> <span id="reveal-text-${teamKey}">Anzeigen</span>
+                            </button>
+                        </div>
+                        <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-300 transition-all filter blur-[4px] select-none font-bold" id="songs-list-${teamKey}">
+                            <li>${record.songs[0] || '<em>Kein Song</em>'}</li>
+                            <li>${record.songs[1] || '<em>Kein Song</em>'}</li>
+                            <li>${record.songs[2] || '<em>Kein Song</em>'}</li>
+                            <li>${record.songs[3] || '<em>Kein Song</em>'}</li>
+                        </ol>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center font-sans">
+                            <span class="font-bold text-slate-500 text-xs flex items-center gap-1.5">
+                                <span class="text-sm opacity-50">${t.emoji || '🎵'}</span> ${t.name}
+                            </span>
+                            <span class="text-[10px] text-slate-500 italic"><i class="fa-solid fa-hourglass-half mr-1"></i> Wartet auf Eingabe...</span>
+                        </div>
+                    `;
+                }
+                list.appendChild(card);
+            });
+        }
 
-            teams.push(newTeam);
-            showToast(`Team "${formattedName}" manuell hinzugefügt!`, 'success');
-            playSound('up');
-            if (input) input.value = '';
-            saveState();
-            renderScoreboard();
+        function toggleSongBlur(teamKey) {
+            const listEl = getEl(`songs-list-${teamKey}`);
+            const icon = getEl(`reveal-icon-${teamKey}`);
+            const text = getEl(`reveal-text-${teamKey}`);
+            if (listEl) {
+                if (listEl.classList.contains('blur-[4px]')) {
+                    listEl.classList.remove('blur-[4px]', 'select-none');
+                    if (icon) {
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    }
+                    if (text) text.innerText = "Verbergen";
+                } else {
+                    listEl.classList.add('blur-[4px]', 'select-none');
+                    if (icon) {
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    }
+                    if (text) text.innerText = "Anzeigen";
+                }
+            }
         }
 
         /* Lehrer-PC: Raum laden und starten */
@@ -1377,16 +1295,16 @@
                 sseSource.close();
             }
 
-            // NEUER RAUM: Im Autosave-Dropdown anlegen (falls noch nicht existent)
             activeClass = roomCode;
             if (!classes[activeClass]) {
-                classes[activeClass] = { teams: [], currentRound: 1, answerHistory: [] };
+                classes[activeClass] = { teams: [], currentRound: 1, answerHistory: [], teamSongs: {} };
             }
             
             const currentData = classes[activeClass];
             teams = currentData.teams || [];
             currentRound = currentData.currentRound || 1;
             answerHistory = currentData.answerHistory || [];
+            teamSongs = currentData.teamSongs || {};
 
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
@@ -1397,6 +1315,7 @@
             updateActiveBadge();
             renderScoreboard();
             renderHistoryArchive();
+            renderTeamSongsList();
 
             const topic = `mq-ntfy-${roomCode}`;
             const statusDiv = getEl('connection-status');
@@ -1427,6 +1346,15 @@
                         if (quizPayload && quizPayload.team) {
                             if (quizPayload.action === "join") {
                                 handleLiveJoin(quizPayload.team, quizPayload.emoji || "🎵");
+                            } else if (quizPayload.action === "secret_songs") {
+                                // Spickzettel erhalten!
+                                teamSongs[quizPayload.team.toLowerCase()] = {
+                                    team: quizPayload.team,
+                                    songs: quizPayload.songs
+                                };
+                                saveState();
+                                renderTeamSongsList();
+                                showToast(`🤫 Spickzettel von Team "${quizPayload.team}" erhalten!`, "success");
                             } else if (quizPayload.answer) {
                                 addIncomingAnswer(quizPayload);
                             }
@@ -1477,6 +1405,13 @@
             playSound('up');
         }
 
+        function toggleBeamerProtection() {
+            beamerProtectionActive = !beamerProtectionActive;
+            saveState();
+            renderIncomingAnswersList();
+            showToast(beamerProtectionActive ? "Sichtschutz aktiv (Teams & Antworten verdeckt)" : "Sichtschutz deaktiviert (Alles aufgedeckt)", "info");
+        }
+
         function renderIncomingAnswersList() {
             const list = getEl('live-answers-list');
             const emptyDiv = getEl('live-answers-empty');
@@ -1506,7 +1441,7 @@
             protectionBanner.className = "w-full col-span-full mb-1";
             if (beamerProtectionActive) {
                 protectionBanner.innerHTML = `
-                    <div class="bg-violet-950/40 border border-violet-800/60 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn font-sans">
+                    <div class="bg-violet-950/40 border border-violet-800/60 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn">
                         <span class="text-[11px] text-violet-300 font-bold flex items-center gap-1.5 font-sans">
                             <i class="fa-solid fa-user-secret text-violet-400 text-sm animate-pulse"></i> 
                             Sichtschutz aktiv: Teamnamen & Antworten sind auf dem Beamer unsichtbar.
@@ -1603,25 +1538,25 @@
                         <div class="flex gap-1 justify-end font-bold pt-1 border-t border-slate-800/30 font-sans">
                             <button 
                                 onclick="applyLiveAnswer('${teamNameEscaped}', 3, ${index}, ${hasJoker})"
-                                class="bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95 flex items-center gap-0.5"
+                                class="bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95 flex items-center gap-0.5 font-sans"
                             >
                                 +3
                             </button>
                             <button 
                                 onclick="applyLiveAnswer('${teamNameEscaped}', 2, ${index}, ${hasJoker})"
-                                class="bg-emerald-500 hover:bg-emerald-400 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95"
+                                class="bg-emerald-500 hover:bg-emerald-400 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95 font-sans"
                             >
                                 +2
                             </button>
                             <button 
                                 onclick="applyLiveAnswer('${teamNameEscaped}', 1, ${index}, ${hasJoker})"
-                                class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[9px] font-bold px-2 py-1 rounded transition-all active:scale-95"
+                                class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[9px] font-bold px-2 py-1 rounded transition-all active:scale-95 font-sans"
                             >
                                 +1
                             </button>
                             <button 
                                 onclick="removeLiveAnswerByIndex(${index})"
-                                class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-[9px] px-1.5 py-1 rounded transition-all"
+                                class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-[9px] px-1.5 py-1 rounded transition-all font-sans"
                                 title="Verwerfen"
                             >
                                 <i class="fa-solid fa-trash-can"></i>
@@ -1875,14 +1810,16 @@
             activeClass = event.target.value;
             
             if (activeClass === "Standard-Sitzung") {
-                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, answerHistory: [] };
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, answerHistory: [], teamSongs: {} };
                 answerHistory = []; 
+                teamSongs = {};
             }
 
-            const targetData = classes[activeClass] || { teams: [], currentRound: 1, answerHistory: [] };
+            const targetData = classes[activeClass] || { teams: [], currentRound: 1, answerHistory: [], teamSongs: {} };
             teams = targetData.teams || [];
             currentRound = targetData.currentRound || 1;
             answerHistory = targetData.answerHistory || [];
+            teamSongs = targetData.teamSongs || {};
 
             teams.forEach(t => {
                 t.activeThisRound = false;
@@ -1894,12 +1831,12 @@
             const managerRoundDisplay = getEl('manager-round-display');
             if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
-            // AUTOMATISCHER SICHTSCHUTZ bei Klassenwechsel
             beamerProtectionActive = true;
 
             updateActiveBadge();
             renderScoreboard();
             renderHistoryArchive();
+            renderTeamSongsList();
             broadcastControlState(); 
             showToast(`Klasse "${activeClass}" geladen.`, 'success');
             saveState();
@@ -1917,18 +1854,20 @@
                 function() {
                     delete classes[activeClass];
                     activeClass = 'Standard-Sitzung';
-                    classes["Standard-Sitzung"] = { teams: [], currentRound: 1, answerHistory: [] };
+                    classes["Standard-Sitzung"] = { teams: [], currentRound: 1, answerHistory: [], teamSongs: {} };
                     
                     const targetData = classes[activeClass];
                     teams = targetData.teams;
                     currentRound = targetData.currentRound;
                     answerHistory = [];
+                    teamSongs = {};
                     
                     saveState();
                     updateClassDropdown();
                     updateActiveBadge();
                     renderScoreboard();
                     renderHistoryArchive(); 
+                    renderTeamSongsList();
                     showToast("Klasse wurde gelöscht. Zurück zur Standard-Sitzung.", "info");
                 }
             );
@@ -2113,7 +2052,6 @@
                 const managerRoundDisplay = getEl('manager-round-display');
                 if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
                 
-                // AUTOMATISCHER SICHTSCHUTZ bei Rundenwechsel
                 beamerProtectionActive = true;
 
                 saveState();
@@ -2137,38 +2075,34 @@
             activeTeams.forEach(t => {
                 let pts = t.pendingPoints || 1;
                 
-                // JOKER-LOGIC: Bei Erfolg werden die Punkte verdoppelt!
                 if (t.jokerActiveThisRound) {
                     pts = pts * 2;
-                    t.jokerUsed = true; // Jetzt fest auf dem Scoreboard für immer verbraucht!
+                    t.jokerUsed = true; 
                     showToast(`🃏 Joker-Erfolg für "${t.name}"! Punkte verdoppelt: +${pts}!`, "success");
                 }
 
                 t.score += pts;
-                t.streak = (t.streak || 0) + 1; // Streak erhöhen
+                t.streak = (t.streak || 0) + 1; 
             });
 
             // Joker Misserfolg & Streak Zurücksetzen
             teams.forEach(t => {
                 if (!t.activeThisRound) {
-                    t.streak = 0; // Streak gerissen!
+                    t.streak = 0; 
                     
-                    // JOKER-LOGIC: Bei Fehler oder Ausbleiben verliert das Team 1 Punkt
                     if (t.jokerActiveThisRound) {
                         t.score = Math.max(0, t.score - 1);
-                        t.jokerUsed = true; // Jetzt fest auf dem Scoreboard für immer verbraucht!
+                        t.jokerUsed = true; 
                         showToast(`💀 Joker-Risiko fehlgeschlagen! "${t.name}" verliert 1 Punkt!`, "danger");
                         playSound('down');
                     }
                 }
                 
-                // Zurücksetzen für neue Runde
                 t.activeThisRound = false;
                 t.pendingPoints = 0;
                 t.jokerActiveThisRound = false;
             });
 
-            // ECHTZEITANZEIGE BEI RUNDENWECHSEL KOMPLETT LEEREN!
             incomingAnswers = [];
             renderIncomingAnswersList();
 
@@ -2178,7 +2112,6 @@
             const managerRoundDisplay = getEl('manager-round-display');
             if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
-            // AUTOMATISCHER SICHTSCHUTZ bei Rundenwechsel
             beamerProtectionActive = true;
 
             playSound('next');
@@ -2188,677 +2121,10 @@
             renderHistoryArchive();
         }
 
-        // Sicherer Team-Löschen-Befehl per technischer ID
-        function deleteTeam(id) {
-            const team = teams.find(t => t.id === id);
-            const name = team ? team.name : "Team";
-            teams = teams.filter(t => t.id !== id);
-            showToast(`Team "${name}" gelöscht.`, 'danger');
-            saveState();
-            renderScoreboard();
-        }
-
-        /* Scoreboard rendern mit FLIP-Methode für fließenden Platzwechsel (Smooth CSS Reordering) */
-        function renderScoreboard() {
-            const container = getEl('scoreboard-container');
-            const emptyState = getEl('empty-state');
-            
-            if (!container) return;
-
-            // FLIP Animation: Vorherige Positionen sichern
-            const cards = container.querySelectorAll('[data-team-id]');
-            const firstPositions = {};
-            cards.forEach(card => {
-                const id = card.getAttribute('data-team-id');
-                firstPositions[id] = card.getBoundingClientRect();
-            });
-
-            container.innerHTML = '';
-
-            if (teams.length === 0) {
-                if (emptyState) emptyState.classList.remove('hidden');
-                return;
-            } else {
-                if (emptyState) emptyState.classList.add('hidden');
-            }
-
-            let renderTeams = [...teams];
-            const autoSortEl = getEl('auto-sort-toggle');
-            const autoSort = autoSortEl ? autoSortEl.checked : true;
-            
-            if (autoSort) {
-                renderTeams.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
-            }
-
-            const highestScore = Math.max(...teams.map(t => t.score));
-            const hasLeader = teams.length > 1 && highestScore > 0;
-
-            renderTeams.forEach((team, index) => {
-                const isLeader = hasLeader && team.score === highestScore;
-                const isSelected = team.activeThisRound;
-                
-                const card = document.createElement('div');
-                card.setAttribute('data-team-id', team.id); // Wichtig für den FLIP-Effekt!
-                
-                let borderStyle = 'border-slate-800/80 bg-slate-900/40 hover:bg-slate-800/40 hover:border-slate-700/60';
-                let cardOverlay = '';
-
-                if (isSelected) {
-                    borderStyle = 'border-emerald-500 bg-emerald-950/60 shadow-lg shadow-emerald-900/30 ring-2 ring-emerald-500/20';
-                    cardOverlay = `
-                        <div class="absolute top-2 left-2 bg-emerald-500 text-slate-950 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black shadow animate-bounce">
-                            <i class="fa-solid fa-check"></i>
-                        </div>
-                    `;
-                } else if (isLeader) {
-                    borderStyle = 'leader-card bg-slate-900/60';
-                }
-
-                // Streak Flame Icon
-                let streakBadge = '';
-                if (team.streak >= 3) {
-                    streakBadge = `
-                        <span class="bg-orange-500/15 text-orange-400 border border-orange-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
-                            <i class="fa-solid fa-fire text-[10px]"></i> ${team.streak}x Streak
-                        </span>`;
-                }
-
-                // Joker Statusanzeige auf dem Lehrerboard
-                let jokerCardBadge = '';
-                if (team.jokerActiveThisRound) {
-                    jokerCardBadge = `
-                        <div class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black px-1.5 py-0.5 rounded animate-pulse text-center mt-1">
-                            <i class="fa-solid fa-masks-theater"></i> JOKER AKTIV (Doppelt / Risiko!)
-                        </div>`;
-                } else {
-                    jokerCardBadge = team.jokerUsed ? 
-                        `<span class="text-[9px] text-slate-500 font-bold block mt-1"><i class="fa-solid fa-ban"></i> Joker verbraucht</span>` : 
-                        `<span class="text-[9px] text-emerald-500/85 font-bold block mt-1"><i class="fa-solid fa-masks-theater"></i> Joker bereit</span>`;
-                }
-
-                card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-48 select-none ${borderStyle}`;
-                card.onclick = () => toggleTeamActive(team.id);
-
-                card.innerHTML = `
-                    ${cardOverlay}
-                    <div class="flex items-start justify-between gap-1">
-                        <span class="text-[10px] text-slate-500 font-bold tracking-wider">PLATZ ${index + 1}</span>
-                        ${streakBadge}
-                        <button 
-                            onclick="event.stopPropagation(); deleteTeam('${team.id}')" 
-                            class="text-slate-500 hover:text-rose-400 p-1 rounded transition-all font-sans"
-                            title="Team entfernen"
-                        >
-                            <i class="fa-solid fa-trash-can text-[11px]"></i>
-                        </button>
-                    </div>
-
-                    <div class="text-center flex-grow flex flex-col justify-center">
-                        <h3 class="text-sm font-black ${isSelected ? 'text-emerald-400 font-black' : 'text-slate-200'} tracking-wide truncate px-1" title="${team.name}">
-                            <span class="text-lg">${team.emoji || '🎵'}</span> ${team.name}
-                        </h3>
-                        <span class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-b ${isLeader ? 'from-amber-200 to-amber-500' : 'from-slate-100 to-slate-400'}">
-                            ${team.score}
-                        </span>
-                        ${jokerCardBadge}
-                    </div>
-
-                    <!-- Runden-Optionen für nächste Runde (+1, +2, +3) -->
-                    <div class="flex gap-1 justify-center my-1" onclick="event.stopPropagation();">
-                        <button 
-                            onclick="setPendingRoundPoints('${team.id}', 1)"
-                            class="flex-grow py-1 rounded text-[10px] font-black transition-all ${isSelected && team.pendingPoints === 1 ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}"
-                            title="Nächste Runde +1 Punkt"
-                        >
-                            +1
-                        </button>
-                        <button 
-                            onclick="setPendingRoundPoints('${team.id}', 2)"
-                            class="flex-grow py-1 rounded text-[10px] font-black transition-all ${isSelected && team.pendingPoints === 2 ? 'bg-emerald-600 text-white font-bold animate-pulse' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}"
-                            title="Nächste Runde +2 Punkte"
-                        >
-                            +2
-                        </button>
-                        <button 
-                            onclick="setPendingRoundPoints('${team.id}', 3)"
-                            class="flex-grow py-1 rounded text-[10px] font-black transition-all ${isSelected && team.pendingPoints === 3 ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}"
-                            title="Nächste Runde +3 Punkte"
-                        >
-                            +3
-                        </button>
-                    </div>
-
-                    <!-- Direkt-Änderungstasten (-1 Pkt, +1 Pkt) -->
-                    <div class="flex gap-1 justify-center pt-1 border-t border-slate-800/40 font-sans" onclick="event.stopPropagation();">
-                        <button 
-                            onclick="adjustScore('${team.id}', -1)" 
-                            class="flex-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 py-1 rounded text-[10px] font-bold transition-all active:scale-90"
-                            title="Sofort minus 1"
-                        >
-                            -1 Pkt
-                        </button>
-                        <button 
-                            onclick="adjustScore('${team.id}', 1)" 
-                            class="flex-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 py-1 rounded text-[10px] font-bold transition-all active:scale-90"
-                            title="Sofort plus 1"
-                        >
-                            +1 Pkt
-                        </button>
-                    </div>
-                `;
-
-                container.appendChild(card);
-            });
-
-            // FLIP Animation: Neuer Ort berechnen und verschieben
-            const newCards = container.querySelectorAll('[data-team-id]');
-            newCards.forEach(card => {
-                const id = card.getAttribute('data-team-id');
-                const first = firstPositions[id];
-                if (first) {
-                    const last = card.getBoundingClientRect();
-                    const deltaX = first.left - last.left;
-                    const deltaY = first.top - last.top;
-                    if (deltaX !== 0 || deltaY !== 0) {
-                        card.style.transition = 'none';
-                        card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                        card.getBoundingClientRect(); 
-                        card.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
-                        card.style.transform = 'none';
-                    }
-                }
-            });
-        }
-
-        /* Massen-Import / KI Parser */
-        function openImportModal() {
-            const modal = getEl('import-modal');
-            const input = getEl('bulk-text-input');
-            const preview = getEl('preview-container');
-
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-            if (input) input.value = '';
-            if (preview) preview.classList.add('hidden');
-            extractedTeams = [];
-            setupDragAndDrop();
-        }
-
-        function closeImportModal() {
-            const modal = getEl('import-modal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        }
-
-        function switchImportTab(tab) {
-            activeImportTab = tab;
-            const textBtn = getEl('tab-btn-text');
-            const fileBtn = getEl('tab-btn-file');
-            const textContent = getEl('tab-content-text');
-            const fileContent = getEl('tab-content-file');
-
-            if (!textBtn || !fileBtn || !textContent || !fileContent) return;
-
-            if (tab === 'text') {
-                textBtn.className = "py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400";
-                fileBtn.className = "py-2 px-4 font-medium text-slate-400 hover:text-slate-200";
-                textContent.classList.remove('hidden');
-                fileContent.classList.add('hidden');
-            } else {
-                fileBtn.className = "py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400";
-                textBtn.className = "py-2 px-4 font-medium text-slate-400 hover:text-slate-200";
-                fileContent.classList.remove('hidden');
-                textContent.classList.add('hidden');
-            }
-        }
-
-        function processTextImport() {
-            try {
-                const textEl = getEl('bulk-text-input');
-                const rawText = textEl ? textEl.value.trim() : "";
-                if (!rawText) {
-                    showToast("Bitte trage zuerst ein paar Namen ein!", "danger");
-                    return;
-                }
-
-                const rawList = rawText.split(/[\n,]+/);
-                let importedCount = 0;
-
-                rawList.forEach(rawName => {
-                    const name = rawName.trim();
-                    if (name && name.length > 0) {
-                        const formattedName = name.substring(0, 12);
-                        if (!teams.some(t => t.name.toLowerCase() === formattedName.toLowerCase())) {
-                            teams.push({
-                                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                                name: formattedName,
-                                score: 0,
-                                activeThisRound: false,
-                                pendingPoints: 0,
-                                streak: 0,
-                                jokerUsed: false,
-                                jokerActiveThisRound: false
-                            });
-                            importedCount++;
-                        }
-                    }
-                });
-
-                if (importedCount > 0) {
-                    showToast(`${importedCount} Teams erfolgreich importiert!`, 'success');
-                    playSound('up');
-                    saveState();
-                    renderScoreboard();
-                    closeImportModal();
-                } else {
-                    showToast("Keine neuen Teams hinzugefügt.", "info");
-                }
-            } catch (err) {
-                console.error("Fehler beim Verarbeiten des Imports:", err);
-                showToast("Fehler beim Importieren.", "danger");
-            }
-        }
-
-        function setupDragAndDrop() {
-            const dropzone = getEl('dropzone');
-            if (!dropzone) return;
-
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropzone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropzone.classList.add('drag-active');
-                }, false);
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropzone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropzone.classList.remove('drag-active');
-                }, false);
-            });
-
-            dropzone.addEventListener('drop', (e) => {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                handleFiles(files);
-            }, false);
-        }
-
-        function handleFileSelect(event) {
-            const files = event.target.files;
-            handleFiles(files);
-        }
-
-        function handleFiles(files) {
-            if (files.length === 0) return;
-            const file = files[0];
-            
-            const aiLoading = getEl('ai-loading');
-            const previewContainer = getEl('preview-container');
-            if (aiLoading) aiLoading.classList.remove('hidden');
-            if (previewContainer) previewContainer.classList.add('hidden');
-
-            const reader = new FileReader();
-
-            if (file.type.startsWith('image/')) {
-                reader.onload = async function(event) {
-                    const base64Data = event.target.result.split(',')[1];
-                    const mimeType = file.type;
-                    await scanImageWithAI(base64Data, mimeType);
-                };
-                reader.readAsDataURL(file);
-            } else if (file.type === 'text/plain') {
-                reader.onload = function(event) {
-                    const text = event.target.result;
-                    processRawScannedText(text);
-                };
-                reader.readAsText(file);
-            } else if (file.name.endsWith('.pdf')) {
-                reader.onload = async function(event) {
-                    const typedarray = new Uint8Array(event.target.result);
-                    await parsePDFAndScan(typedarray);
-                };
-                reader.readAsArrayBuffer(file);
-            } else {
-                if (aiLoading) aiLoading.classList.add('hidden');
-                showToast("Format nicht unterstützt!", "danger");
-            }
-        }
-
-        async function parsePDFAndScan(typedarray) {
-            try {
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-                const pdf = await pdfjsLib.getDocument({data: typedarray}).promise;
-                let fullText = "";
-
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map(item => item.str).join(" ");
-                    fullText += pageText + "\n";
-                }
-
-                if (fullText.trim().length > 0) {
-                    await scanTextWithAI(fullText);
-                } else {
-                    throw new Error("Kein lesbarer Text.");
-                }
-            } catch (err) {
-                console.error("PDF Parser Fehler:", err);
-                const aiLoading = getEl('ai-loading');
-                if (aiLoading) aiLoading.classList.add('hidden');
-                showToast("PDF konnte nicht gelesen werden.", "danger");
-            }
-        }
-
-        async function scanImageWithAI(base64Data, mimeType) {
-            const apiKeyInput = getEl('api-key-input');
-            const apiKey = apiKeyInput ? apiKeyInput.value.trim() : "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [
-                    {
-                        role: "user",
-                        parts: [
-                            { text: "Analysiere dieses Bild oder Dokument und ziehe alle Gruppen-, Schüler- oder Teamnamen heraus. Ignoriere Überschriften oder Punktestände. Gib mir ausschließlich eine JSON-Liste mit den extrahierten, bereinigten Namen zurück. Kürze jeden Namen auf maximal 12 Zeichen, falls er länger ist. Beispiel: [\"BLJ\", \"Didi\", \"KA\"]" },
-                            {
-                                inlineData: {
-                                    mimeType: mimeType,
-                                    data: base64Data
-                                }
-                            }
-                        ]
-                    }
-                ],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "ARRAY",
-                        items: { "type": "STRING" }
-                    }
-                }
-            };
-
-            await callGeminiAPI(apiUrl, payload);
-        }
-
-        async function scanTextWithAI(rawText) {
-            const apiKeyInput = getEl('api-key-input');
-            const apiKey = apiKeyInput ? apiKeyInput.value.trim() : "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [
-                    {
-                        role: "user",
-                        parts: [
-                            { text: `Analysiere diesen Text und extrahiere alle Teamnamen oder Gruppenbezeichnungen. Bereinige sie und gib sie als saubere JSON-Array-Liste zurück (max. 12 Zeichen pro Name). Text: \n\n ${rawText}` }
-                        ]
-                    }
-                ],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "ARRAY",
-                        items: { "type": "STRING" }
-                    }
-                }
-            };
-
-            await callGeminiAPI(apiUrl, payload);
-        }
-
-        async function callGeminiAPI(apiUrl, payload) {
-            let retries = 3;
-            let delay = 1000;
-
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const result = await response.json();
-                    
-                    const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (jsonText) {
-                        const parsedNames = JSON.parse(jsonText);
-                        displayExtractedTeams(parsedNames);
-                        return;
-                    }
-                    throw new Error("Antwort unvollständig");
-                } catch (err) {
-                    if (i === retries - 1) {
-                        console.error("Gemini API Fehler:", err);
-                        const aiLoading = getEl('ai-loading');
-                        if (aiLoading) aiLoading.classList.add('hidden');
-                        showToast("KI Verbindung fehlgeschlagen. Nutze Copy & Paste.", "danger");
-                    } else {
-                        await new Promise(res => setTimeout(res, delay));
-                        delay *= 2;
-                    }
-                }
-            }
-        }
-
-        function processRawScannedText(text) {
-            const rawList = text.split(/[\n,]+/);
-            const cleaned = [];
-            rawList.forEach(name => {
-                const clean = name.trim().substring(0, 12);
-                if (clean) cleaned.push(clean);
-            });
-            displayExtractedTeams(cleaned);
-        }
-
-        function displayExtractedTeams(namesList) {
-            const aiLoading = getEl('ai-loading');
-            if (aiLoading) aiLoading.classList.add('hidden');
-            
-            if (!namesList || namesList.length === 0) {
-                showToast("Keine Namen im Dokument gefunden.", "info");
-                return;
-            }
-
-            extractedTeams = namesList.map((name, idx) => ({
-                id: idx,
-                name: name,
-                selected: true
-            }));
-
-            const listContainer = getEl('extracted-teams-list');
-            if (!listContainer) return;
-            listContainer.innerHTML = '';
-
-            extractedTeams.forEach(item => {
-                const label = document.createElement('label');
-                label.className = "flex items-center gap-2 bg-slate-900 border border-slate-800 hover:border-slate-700 p-2 rounded-xl text-xs cursor-pointer select-none text-slate-300 animate-scaleIn font-bold";
-                label.innerHTML = `
-                    <input type="checkbox" checked onchange="toggleExtractedItem(${item.id})" class="accent-violet-500 rounded">
-                    <span>${item.name}</span>
-                `;
-                listContainer.appendChild(label);
-            });
-
-            const preview = getEl('preview-container');
-            if (preview) preview.classList.remove('hidden');
-        }
-
-        function toggleExtractedItem(id) {
-            const item = extractedTeams.find(t => t.id === id);
-            if (item) item.selected = !item.selected;
-        }
-
-        function commitExtractedImport() {
-            const toImport = extractedTeams.filter(t => t.selected).map(t => t.name);
-            let addedCount = 0;
-
-            toImport.forEach(name => {
-                if (!teams.some(t => t.name.toLowerCase() === name.toLowerCase())) {
-                    teams.push({
-                        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                        name: name,
-                        score: 0,
-                        activeThisRound: false,
-                        pendingPoints: 0,
-                        streak: 0,
-                        jokerUsed: false,
-                        jokerActiveThisRound: false
-                    });
-                    addedCount++;
-                }
-            });
-
-            showToast(`${addedCount} neue Teams erfolgreich hinzugefügt!`, 'success');
-            playSound('up');
-            saveState();
-            renderScoreboard();
-            closeImportModal();
-        }
-
-        /* Stand als HTML exportieren */
-        function exportCurrentStand() {
-            const className = prompt("Für welche Klasse möchtest du diesen Stand sichern?", activeClass);
-            if (className === null) return;
-            
-            const sanitizedClassName = className.trim().replace(/[^a-zA-Z0-9_-]/g, "_");
-            const fileName = `scoreboard_${sanitizedClassName}.html`;
-            
-            const docClone = document.documentElement.cloneNode(true);
-            
-            const oldLoader = docClone.querySelector('#state-loader');
-            if (oldLoader) oldLoader.remove();
-            
-            const stateScript = document.createElement('script');
-            stateScript.id = 'state-loader';
-            stateScript.innerHTML = `
-                window.PREBAKED_TEAMS = ${JSON.stringify(teams)};
-                window.PREBAKED_ROUND = ${currentRound};
-            `;
-            
-            docClone.querySelector('head').appendChild(stateScript);
-            
-            const confirmModal = docClone.querySelector('#confirm-modal');
-            if (confirmModal) confirmModal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50";
-            const importModal = docClone.querySelector('#import-modal');
-            if (importModal) importModal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50";
-
-            const htmlContent = "<!DOCTYPE html>\n<html lang=\"de\">" + docClone.innerHTML + "</html>";
-            
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            showToast(`Sicherung als "${fileName}" heruntergeladen!`, 'success');
-        }
-
-        const canvas = getEl("confetti-canvas");
-        const ctx = canvas ? canvas.getContext("2d") : null;
-        let particles = [];
-        const colors = ["#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#ef4444"];
-
-        function resizeCanvas() {
-            if (!canvas) return;
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-
-        window.addEventListener("resize", resizeCanvas);
-
-        class ConfettiParticle {
-            constructor() {
-                this.x = Math.random() * (canvas ? canvas.width : 500);
-                this.y = Math.random() * -(canvas ? canvas.height : 500) - 20;
-                this.size = Math.random() * 8 + 6;
-                this.color = colors[Math.floor(Math.random() * colors.length)];
-                this.speedX = Math.random() * 4 - 2;
-                this.speedY = Math.random() * 5 + 3;
-                this.rotation = Math.random() * 360;
-                this.rotationSpeed = Math.random() * 4 - 2;
-            }
-
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                this.rotation += this.rotationSpeed;
-
-                if (canvas && this.y > canvas.height) {
-                    this.y = -20;
-                    this.x = Math.random() * canvas.width;
-                }
-            }
-
-            draw() {
-                if (!ctx) return;
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate((this.rotation * Math.PI) / 180);
-                ctx.fillStyle = this.color;
-                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
-                ctx.restore();
-            }
-        }
-
-        function initConfetti() {
-            particles = [];
-            for (let i = 0; i < 150; i++) {
-                particles.push(new ConfettiParticle());
-            }
-        }
-
-        function animateConfetti() {
-            if (!isConfettiActive || !ctx || !canvas) return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.forEach((p) => {
-                p.update();
-                p.draw();
-            });
-            requestAnimationFrame(animateConfetti);
-        }
-
-        function triggerWinConfetti() {
-            let winnerName = "Niemand";
-            if (teams.length > 0) {
-                const highestScore = Math.max(...teams.map(t => t.score));
-                const winners = teams.filter(t => t.score === highestScore);
-                if (highestScore > 0) {
-                    winnerName = winners.map(w => w.name).join(" & ");
-                }
-            }
-
-            showToast(`🏆 Glückwunsch an das Siegerteam: ${winnerName}! 🎉`, 'success');
-            playSound('fanfare');
-            
-            resizeCanvas();
-            initConfetti();
-            isConfettiActive = true;
-            animateConfetti();
-
-            if (confettiInterval) clearTimeout(confettiInterval);
-            confettiInterval = setTimeout(() => {
-                isConfettiActive = false;
-                if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }, 8000);
-        }
-
         function confirmReset() {
             showCustomConfirm(
                 "Neue Sitzung starten?",
-                "Alle Teams, Punkte und der Antwort-Verlauf dieses Raums werden gelöscht. Die Runde startet wieder bei 1.",
+                "Alle Teams, Punkte, der Antwort-Verlauf und die vorbereiteten Songs dieses Raums werden gelöscht. Die Runde startet wieder bei 1.",
                 executeReset
             );
         }
@@ -2868,23 +2134,22 @@
             currentRound = 1;
             incomingAnswers = [];
             answerHistory = [];
+            teamSongs = {};
 
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
             const managerRoundDisplay = getEl('manager-round-display');
             if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
-            // Aktiven Slot im Speicher überschreiben
             classes[activeClass] = {
                 teams: [],
                 currentRound: 1,
-                answerHistory: []
+                answerHistory: [],
+                teamSongs: {}
             };
             
-            // AUTOMATISCHER SICHTSCHUTZ bei Reset
             beamerProtectionActive = true;
 
-            // Zurück in den Lobby-Modus schalten
             getEl('setup-lobby-panel').classList.remove('hidden');
             getEl('game-controls-panel').classList.add('hidden');
 
@@ -2893,6 +2158,7 @@
             renderScoreboard();
             renderIncomingAnswersList();
             renderHistoryArchive();
+            renderTeamSongsList();
             showToast("Eine neue, leere Sitzung wurde gestartet!", "danger");
         }
 
