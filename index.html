@@ -56,7 +56,7 @@
     <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none z-50 w-full h-full"></canvas>
 
     <!-- ========================================== -->
-    <!-- DETEKTIERUNG FÜR UNGESTYLTE ANZEIGE (TEAMS/ONEDRIVE) -->
+    <!-- DETEKTIERUNG FÜR UNGESTYLTE ANZEIGE -->
     <!-- ========================================== -->
     <div id="onedrive-safety-banner" class="bg-rose-950 border-b border-rose-800 p-4 text-center hidden z-50">
         <div class="max-w-md mx-auto flex flex-col items-center gap-2">
@@ -274,6 +274,16 @@
                 >
                     <i class="fa-solid fa-expand text-lg"></i>
                 </button>
+                
+                <!-- Zahnrad-Button für Einstellungen -->
+                <button 
+                    onclick="openSettingsModal()" 
+                    class="bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white p-3 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center"
+                    title="Einstellungen & Optionen öffnen"
+                >
+                    <i class="fa-solid fa-gear text-lg"></i>
+                </button>
+
                 <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl px-5 py-2 flex items-center gap-4 shadow-lg">
                     <span class="text-xs uppercase tracking-widest text-slate-400 font-bold">Aktuelle Runde:</span>
                     <span id="header-round-display" class="text-2xl font-black text-violet-400 font-mono">1</span>
@@ -281,11 +291,13 @@
             </div>
         </header>
 
-        <!-- Extrem kompakter zweispaltiger Steuerungsbereich -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <!-- ========================================== -->
+        <!-- LOBBY & SETUP-BEREICH (PHASE 1)            -->
+        <!-- ========================================== -->
+        <div id="setup-lobby-panel" class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
             
             <!-- 1. LIVE-BUZZER & IPAD VERBINDUNG (LINKS) -->
-            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-2">
+            <div class="md:col-span-5 bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-3">
                 <h3 class="text-sm font-bold text-violet-400 flex items-center justify-between gap-2">
                     <span class="flex items-center gap-2"><i class="fa-solid fa-wifi text-violet-400"></i> iPad Live-Empfänger 📡</span>
                     <button 
@@ -297,15 +309,23 @@
                     </button>
                 </h3>
                 
-                <div class="flex items-center gap-2">
-                    <div class="flex-grow">
-                        <label class="text-[10px] text-slate-400 block mb-0.5">Raum-Code (z.B. Klasse):</label>
+                <div class="space-y-3 text-xs">
+                    <!-- Dropdown für gespeicherte Räume & Sichern -->
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-0.5">Gespeicherte Klassen/Räume:</label>
+                        <select id="class-select" onchange="handleClassChange(event)" class="w-full bg-slate-950 border border-slate-700/60 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none">
+                            <option value="Standard-Sitzung">-- Standard-Sitzung --</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-0.5">Neuer Raum-Code (z.B. 7c):</label>
                         <div class="flex gap-1.5">
                             <input 
                                 type="text" 
                                 id="room-code-input" 
                                 value="" 
-                                placeholder="Raum-Code (z.B. 7c)..." 
+                                placeholder="Raum eingeben (z. B. 7c)..." 
                                 maxlength="8"
                                 class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500 font-mono font-bold"
                             >
@@ -317,30 +337,30 @@
                             </button>
                         </div>
                     </div>
-                </div>
 
-                <!-- Team manuell hinzufügen mit Enter-Taste -->
-                <div class="border-t border-slate-700/30 pt-1.5 mt-0.5">
-                    <label class="text-[10px] text-slate-400 block mb-0.5">Team manuell hinzufügen (Enter drücken):</label>
-                    <form onsubmit="handleManualTeamAdd(event)" class="flex gap-1.5">
-                        <input 
-                            type="text" 
-                            id="manual-team-input" 
-                            placeholder="z. B. Kiwi, Team Alpha..." 
-                            maxlength="12"
-                            class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
-                        >
-                        <button 
-                            type="submit" 
-                            class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1 rounded-xl text-xs active:scale-95 transition-all"
-                        >
-                            <i class="fa-solid fa-plus"></i>
-                        </button>
-                    </form>
+                    <!-- Team manuell hinzufügen -->
+                    <div class="border-t border-slate-700/30 pt-2 mt-1">
+                        <label class="text-[10px] text-slate-400 block mb-0.5">Team manuell hinzufügen:</label>
+                        <form onsubmit="handleManualTeamAdd(event)" class="flex gap-1.5">
+                            <input 
+                                type="text" 
+                                id="manual-team-input" 
+                                placeholder="Teamname..." 
+                                maxlength="12"
+                                class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
+                            >
+                            <button 
+                                type="submit" 
+                                class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1 rounded-xl text-xs active:scale-95 transition-all"
+                            >
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
                 <!-- Live Verbindung Status & QR Code Trigger -->
-                <div class="flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t border-slate-700/30">
+                <div class="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-700/30">
                     <div id="connection-status" class="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
                         <span class="h-2 w-2 rounded-full bg-rose-500"></span> Live-Empfang offline
                     </div>
@@ -354,100 +374,42 @@
                 </div>
             </div>
 
-            <!-- 2. EINSTELLUNGEN & KLASSEN-SPEICHER (RECHTS) -->
-            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-2 text-xs">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-slate-300 flex items-center gap-1">
-                        <i class="fa-solid fa-volume-high text-slate-400"></i> Sounds
-                    </span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="sound-toggle" checked class="sr-only peer" onchange="saveState()">
-                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
-                    </label>
-                </div>
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-slate-300 flex items-center gap-1">
-                        <i class="fa-solid fa-arrow-down-1-9 text-slate-400"></i> Auto-Sortierung
-                    </span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="auto-sort-toggle" checked class="sr-only peer" onchange="handleAutoSortToggle()">
-                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
-                    </label>
-                </div>
-                
-                <!-- Klassen-Speicher (Dropdown & Sichern) -->
-                <div class="border-t border-slate-700/40 pt-1.5 mt-0.5 space-y-1">
-                    <div class="flex items-center justify-between gap-1">
-                        <select id="class-select" onchange="handleClassChange(event)" class="bg-slate-900 border border-slate-700 text-slate-200 text-[11px] rounded-lg p-1 flex-grow focus:outline-none">
-                            <option value="Standard-Sitzung">-- Standard-Sitzung --</option>
-                        </select>
-                        <button onclick="deleteCurrentClass()" class="bg-rose-950/40 hover:bg-rose-900/60 border border-rose-900/40 text-rose-300 p-1 rounded-lg text-xs transition-all active:scale-95" title="Klasse löschen">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                    </div>
-                    <div class="flex gap-1.5">
-                        <input 
-                            type="text" 
-                            id="class-name-input" 
-                            placeholder="Name (z.B. 7c)..." 
-                            class="bg-slate-900/60 border border-slate-700/50 text-slate-200 placeholder-slate-500 rounded-lg px-2.5 py-0.5 text-[11px] flex-grow focus:outline-none"
-                        >
-                        <button onclick="saveNewClass()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3.5 py-0.5 rounded-lg text-[11px] active:scale-95 transition-all">
-                            Sichern
-                        </button>
-                    </div>
+            <!-- 2. ANLEITUNGS- & LIVE-BEITRITT-PANEL (RECHTS) -->
+            <div class="md:col-span-7 bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-play"></i> 1. Beitrittsphase (Lobby)
+                    </h3>
+                    <!-- NEUE SITZUNG STARTEN (RESET) -->
+                    <button 
+                        onclick="confirmReset()" 
+                        class="bg-rose-950/40 hover:bg-rose-900 border border-rose-900/50 text-rose-300 text-[10px] font-bold px-3 py-1 rounded-lg transition-all active:scale-95"
+                    >
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Neue Sitzung starten
+                    </button>
                 </div>
 
-                <!-- Passwort ändern Bereich -->
-                <div class="border-t border-slate-700/40 pt-1.5 space-y-1">
-                    <div class="flex gap-1.5 items-center justify-between font-medium">
-                        <span class="text-slate-400 text-[10px]"><i class="fa-solid fa-key text-violet-400"></i> Lehrer-Passwort:</span>
-                        <div class="flex gap-1">
-                            <div class="relative flex items-center">
-                                <input 
-                                    type="password" 
-                                    id="change-password-input" 
-                                    value="musik" 
-                                    placeholder="Neu..." 
-                                    class="w-24 bg-slate-900/60 border border-slate-700/50 text-slate-200 text-[10px] rounded pl-1.5 pr-6 py-0.5 focus:outline-none"
-                                >
-                                <button 
-                                    type="button" 
-                                    onclick="togglePasswordVisibility('change-password-input', 'toggle-pw-icon')" 
-                                    class="absolute right-1 text-slate-500 hover:text-slate-300 text-[10px] p-0.5"
-                                    title="Passwort anzeigen/verbergen"
-                                >
-                                    <i class="fa-solid fa-eye" id="toggle-pw-icon"></i>
-                                </button>
-                            </div>
-                            <button onclick="changeTeacherPassword()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all">
-                                Sichern
-                            </button>
-                        </div>
-                    </div>
+                <div class="text-xs text-slate-300 space-y-2 leading-relaxed">
+                    <p>Lass deine Schüler den QR-Code einscannen und dem Raum beitreten. Sobald sich ein Team einloggt, erscheint es sofort unten auf der Tafel mit 0 Punkten!</p>
+                    <p class="text-slate-400">Du kannst jederzeit die Einstellungen oben über das Zahnrad ⚙️ anpassen (z. B. Sounds deaktivieren oder die Auto-Sortierung ausschalten).</p>
                 </div>
 
-                <!-- Reset, Finale & Export -->
-                <div class="flex flex-col gap-1 mt-1 pt-1 border-t border-slate-700/40 font-bold">
-                    <div class="grid grid-cols-2 gap-1.5">
-                        <button onclick="confirmReset()" class="bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 border border-rose-900/40 font-bold py-1 rounded-lg text-[10px] transition-all font-sans">
-                            <i class="fa-solid fa-trash-can"></i> Reset
-                        </button>
-                        <button onclick="triggerWinConfetti()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-1 rounded-lg text-[10px] transition-all shadow-md">
-                            <i class="fa-solid fa-crown"></i> Finale 🏆
-                        </button>
-                    </div>
-                    <button onclick="exportCurrentStand()" class="w-full bg-violet-600/30 hover:bg-violet-600/50 border border-violet-500/40 text-violet-200 font-bold py-1 rounded-lg text-[10px] transition-all flex items-center justify-center gap-1" title="Speichert diesen Spielstand als HTML-Datei">
-                        <i class="fa-solid fa-file-export"></i> Stand als HTML exportieren 💾
+                <div class="pt-2 border-t border-slate-700/30 flex justify-end gap-2">
+                    <button 
+                        onclick="startLiveGame()" 
+                        class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2.5 px-6 rounded-xl shadow-lg shadow-emerald-900/30 active:scale-95 transition-all text-sm flex items-center gap-2 animate-pulse"
+                    >
+                        <span>Spiel starten 🎮</span>
+                        <i class="fa-solid fa-gamepad"></i>
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- ========================================== -->
-        <!-- LIVE QR-CODE UND EINRICHTUNGS PANEL       -->
+        <!-- LIVE QR-CODE PANEL                         -->
         <!-- ========================================== -->
-        <div id="qr-code-panel" class="hidden bg-slate-900/90 border-2 border-violet-500/50 rounded-2xl p-4 mb-4 backdrop-blur-md transition-all grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+        <div id="qr-code-panel" class="hidden bg-slate-900/90 border-2 border-violet-500/50 rounded-2xl p-4 mb-4 backdrop-blur-md transition-all grid grid-cols-1 md:grid-cols-12 gap-4 items-center animate-fadeIn">
             <div class="md:col-span-3 flex justify-center bg-white p-3 rounded-xl shadow-lg border border-slate-700">
                 <img id="qr-code-img" src="" alt="iPad Connection QR Code" class="w-40 h-40 object-contain">
             </div>
@@ -459,7 +421,7 @@
                     <li>Veröffentliche diese Seite auf GitHub Pages (wie in der Anleitung beschrieben).</li>
                     <li>Lass die Schüler den links angezeigten <strong>QR-Code</strong> mit ihren iPads einscannen.</li>
                     <li>Gib ihnen dann einfach deinen oben eingestellten Raum-Code (z. B. <strong class="text-violet-400 font-mono font-bold" id="qr-room-code-display">7c</strong>) durch!</li>
-                    <li>Sobald sie absenden, landen die Antworten live und sortiert auf dieser Tafel!</li>
+                    <li>Sobald sie beitreten, landen sie live auf der Tafel!</li>
                 </ul>
                 <div class="pt-2 text-[10px] text-slate-400 flex flex-col md:flex-row md:items-center gap-2">
                     <span>Manuelle URL (falls im Internet gehostet):</span>
@@ -475,56 +437,66 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- EINZEILIGER RUNDEN-MANAGER (ÜBER ANTWORTEN)-->
+        <!-- SPIELSTEUERUNG-OBERFLÄCHE (PHASE 2)        -->
         <!-- ========================================== -->
-        <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 mb-3 flex flex-col xl:flex-row items-center justify-between gap-3 animate-fadeIn">
-            <div class="flex flex-wrap items-center gap-2.5 text-xs">
-                <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 animate-sans">
-                    <i class="fa-solid fa-play-circle text-emerald-400 animate-pulse"></i> Runden-Manager
-                </span>
-                
-                <!-- Neue, hochsichtbare Rundenanzeige direkt im Rundenmanager -->
-                <span class="bg-violet-500/25 text-violet-300 border border-violet-500/45 px-3 py-1 rounded-lg font-bold font-mono flex items-center gap-1">
-                    Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400">1</span>
-                </span>
+        <div id="game-controls-panel" class="hidden animate-fadeIn mb-4">
+            
+            <!-- EINZEILIGER RUNDEN-MANAGER -->
+            <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 flex flex-col xl:flex-row items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2.5 text-xs">
+                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-play-circle text-emerald-400 animate-pulse"></i> Runden-Manager
+                    </span>
+                    
+                    <span class="bg-violet-500/25 text-violet-300 border border-violet-500/45 px-3 py-1 rounded-lg font-bold font-mono flex items-center gap-1">
+                        Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400">1</span>
+                    </span>
 
-                <!-- Countdown Timer direkt hier einzeilig integriert! -->
-                <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px]">
-                    <span class="text-slate-300 font-bold flex items-center gap-1"><i class="fa-solid fa-hourglass-start text-amber-500"></i> Timer:</span>
-                    <input type="number" id="timer-duration" value="30" min="5" max="120" class="w-10 bg-slate-950 text-slate-100 rounded text-center text-xs focus:outline-none focus:ring-1 focus:ring-violet-500 font-black">
-                    <span class="text-slate-400 text-[10px]">Sek.</span>
-                    <button id="start-timer-btn" onclick="startTimer()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all">Start ⏱️</button>
-                    <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">Stop 🛑</button>
-                    <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-1.5 py-0.5 rounded">30s</div>
+                    <!-- Countdown Timer direkt hier einzeilig integriert -->
+                    <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px]">
+                        <span class="text-slate-300 font-bold flex items-center gap-1"><i class="fa-solid fa-hourglass-start text-amber-500"></i> Timer:</span>
+                        <input type="number" id="timer-duration" value="30" min="5" max="120" class="w-10 bg-slate-950 text-slate-100 rounded text-center text-xs focus:outline-none focus:ring-1 focus:ring-violet-500 font-black">
+                        <span class="text-slate-400 text-[10px]">Sek.</span>
+                        <button id="start-timer-btn" onclick="startTimer()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all">Start ⏱️</button>
+                        <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">Stop 🛑</button>
+                        <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-1.5 py-0.5 rounded">30s</div>
+                    </div>
+                    
+                    <span class="text-slate-400 text-[11px] hidden xl:inline font-medium">Punkte vergeben oder iPad-Buzzer auswerten.</span>
                 </div>
-                
-                <span class="text-slate-400 text-[11px] hidden xl:inline font-medium">Nutze das +1, +2, +3 System oder werte die iPad-Buzzer aus.</span>
-            </div>
-            <div class="flex items-center gap-2 w-full xl:w-auto justify-end">
-                <button 
-                    onclick="prevRound()" 
-                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1 font-sans"
-                    title="Gehe eine Spielrunde zurück"
-                >
-                    <i class="fa-solid fa-arrow-left"></i>
-                    <span>Runde zurück</span>
-                </button>
-                <button 
-                    onclick="markAllActive()" 
-                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
-                    title="Alle Teams aus- oder abwählen"
-                >
-                    <i class="fa-solid fa-check-double text-emerald-400"></i>
-                    <span>Alle Richtig / Null</span>
-                </button>
-                <button 
-                    onclick="nextRound()" 
-                    class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-1.5 px-4.5 rounded-lg text-[11px] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 font-sans"
-                    title="Punkte für diese Runde gutschreiben und nächste Runde starten"
-                >
-                    <span>Nächste Runde</span>
-                    <i class="fa-solid fa-arrow-right"></i>
-                </button>
+                <div class="flex items-center gap-2 w-full xl:w-auto justify-end">
+                    <button 
+                        onclick="prevRound()" 
+                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1"
+                        title="Gehe eine Spielrunde zurück"
+                    >
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>Runde zurück</span>
+                    </button>
+                    <button 
+                        onclick="markAllActive()" 
+                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5"
+                        title="Alle Teams aus- oder abwählen"
+                    >
+                        <i class="fa-solid fa-check-double text-emerald-400"></i>
+                        <span>Alle Richtig / Null</span>
+                    </button>
+                    <button 
+                        onclick="nextRound()" 
+                        class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-1.5 px-4.5 rounded-lg text-[11px] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 flex items-center gap-1.5"
+                        title="Punkte für diese Runde gutschreiben und nächste Runde starten"
+                    >
+                        <span>Nächste Runde</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                    <button 
+                        onclick="stopLiveGame()" 
+                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-400 hover:text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1"
+                        title="Zurück zur Setup-Lobby wechseln"
+                    >
+                        <i class="fa-solid fa-users"></i> Lobby zeigen
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -533,7 +505,7 @@
         <!-- ========================================== -->
         <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-3 mb-4 hidden animate-fadeIn resize-y overflow-auto min-h-[160px] h-[240px]">
             <div class="flex justify-between items-center mb-2.5 border-b border-slate-800 pb-2">
-                <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5 font-sans">
+                <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
                     <i class="fa-solid fa-clock-rotate-left"></i> Eingehende iPad-Antworten (Echtzeit-Anzeige)
                 </h3>
                 <div class="flex gap-1.5">
@@ -541,13 +513,13 @@
                     <button 
                         id="beamer-protection-toggle-btn" 
                         onclick="toggleBeamerProtection()" 
-                        class="text-[9px] bg-slate-700 hover:bg-violet-600 border border-slate-600/40 text-slate-300 px-2.5 py-1 rounded transition-all font-bold font-sans"
+                        class="text-[9px] bg-slate-700 hover:bg-violet-600 border border-slate-600/40 text-slate-300 px-2.5 py-1 rounded transition-all font-bold"
                     >
                         <i class="fa-solid fa-user-secret mr-1"></i> Sichtschutz umschalten
                     </button>
                     <button 
                         onclick="clearIncomingAnswers()" 
-                        class="text-[9px] bg-slate-700 hover:bg-rose-950 hover:text-rose-300 border border-slate-600/40 text-slate-300 px-2 py-1 rounded transition-all font-bold font-sans"
+                        class="text-[9px] bg-slate-700 hover:bg-rose-950 hover:text-rose-300 border border-slate-600/40 text-slate-300 px-2 py-1 rounded transition-all font-bold"
                     >
                         Liste leeren 🗑️
                     </button>
@@ -558,7 +530,7 @@
             <div id="live-answers-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 p-1">
                 <!-- Wird dynamisch chronologisch befüllt -->
             </div>
-            <div id="live-answers-empty" class="text-center py-4 text-[11px] text-slate-500 font-sans">
+            <div id="live-answers-empty" class="text-center py-4 text-[11px] text-slate-500">
                 <i class="fa-solid fa-spinner animate-spin text-slate-600 mr-1"></i> Warte auf Antworten von den Schüler-iPads... (Beamerbild ist standardmäßig verdeckt 🖥️🔒)
             </div>
         </div>
@@ -569,18 +541,18 @@
         </div>
 
         <!-- Leerer Zustand -->
-        <div id="empty-state" class="hidden text-center py-10 px-4 bg-slate-800/20 border border-slate-700/20 rounded-3xl mt-2 font-sans">
+        <div id="empty-state" class="hidden text-center py-10 px-4 bg-slate-800/20 border border-slate-700/20 rounded-3xl mt-2">
             <i class="fa-solid fa-people-group text-4xl text-slate-600 mb-2 block"></i>
             <h4 class="text-base font-bold text-slate-400">Keine Teams in dieser Sitzung</h4>
             <p class="text-slate-500 text-xs mt-1 max-w-sm mx-auto">
-                Trage über das <strong>Massen-Import Tool</strong> oben deine Schülergruppen ein oder lass sie über ihre iPads mitspielen!
+                Lass deine Schüler über ihre iPads mitspielen, um das Live-Scoreboard automatisch zu befüllen!
             </p>
         </div>
 
         <!-- ========================================== -->
         <!-- ARCHIVIERTER ANTWORT-VERLAUF               -->
         <!-- ========================================== -->
-        <div id="history-archive-panel" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 mt-6 animate-fadeIn font-sans">
+        <div id="history-archive-panel" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 mt-6 animate-fadeIn">
             <h3 class="text-xs font-bold text-slate-400 flex items-center gap-1.5 border-b border-slate-800 pb-2 mb-2.5">
                 <i class="fa-solid fa-box-archive text-slate-500"></i> Antwort-Verlauf (Echtzeit-Backup dieser Runde)
             </h3>
@@ -594,23 +566,93 @@
 
     </div>
 
-    <!-- Toast Benachrichtigungen -->
-    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+    <!-- ========================================== -->
+    <!-- SETTINGS MODAL DIALOG                      -->
+    <!-- ========================================== -->
+    <div id="settings-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-md w-full shadow-2xl animate-fadeIn space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+                <h3 class="text-base font-bold text-violet-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-gear"></i> Scoreboard-Einstellungen
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
 
-    <!-- Bestätigungs-Modal für Reset & Deletion (Eigene, schicke Modals) -->
-    <div id="confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50 font-sans">
-        <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl max-w-xs w-full shadow-2xl animate-scaleIn">
-            <h3 id="confirm-title" class="text-lg font-bold text-white mb-2">Wirklich zurücksetzen?</h3>
-            <p id="confirm-desc" class="text-slate-400 text-xs mb-4 font-medium">Alle Teams und Punkte der aktuellen Klasse werden gelöscht. Die Runde startet wieder bei 1.</p>
-            <div class="flex gap-3 justify-end">
-                <button onclick="closeModal()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700 transition-all font-bold">Abbrechen</button>
-                <button id="confirm-action-btn" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs transition-all font-bold">Ja, ausführen</button>
+            <div class="space-y-3.5 text-xs text-slate-300">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-volume-high text-slate-400"></i> Soundeffekte abspielen
+                    </span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="sound-toggle" checked class="sr-only peer" onchange="saveState()">
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                    </label>
+                </div>
+
+                <div class="flex items-center justify-between gap-2">
+                    <span class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrow-down-1-9 text-slate-400"></i> Führende Teams auto-sortieren
+                    </span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="auto-sort-toggle" checked class="sr-only peer" onchange="handleAutoSortToggle()">
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                    </label>
+                </div>
+
+                <!-- API Key Config -->
+                <div class="border-t border-slate-800 pt-3 mt-1.5 space-y-1">
+                    <span class="text-slate-400 font-bold block mb-0.5"><i class="fa-solid fa-key text-amber-500 mr-1"></i>Gemini API-Schlüssel (für Dokumenten-KI):</span>
+                    <input 
+                        type="password" 
+                        id="api-key-input" 
+                        placeholder="API-Key eintragen..." 
+                        class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1.5 text-slate-300 placeholder-slate-650 focus:outline-none focus:ring-1 focus:ring-violet-500 font-sans text-xs"
+                        onchange="saveState()"
+                    >
+                </div>
+
+                <!-- Passwort ändern Bereich -->
+                <div class="border-t border-slate-800 pt-3 mt-1.5 space-y-1">
+                    <span class="text-slate-400 font-bold block mb-0.5"><i class="fa-solid fa-lock text-violet-400 mr-1"></i>Lehrer-Bereichs Passwort ändern:</span>
+                    <div class="flex gap-1.5">
+                        <div class="relative flex items-center flex-grow">
+                            <input 
+                                type="password" 
+                                id="change-password-input" 
+                                value="musik" 
+                                placeholder="Neues Passwort..." 
+                                class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1.5 text-slate-300 text-xs focus:outline-none"
+                            >
+                            <button 
+                                type="button" 
+                                onclick="togglePasswordVisibility('change-password-input', 'toggle-pw-icon')" 
+                                class="absolute right-2 text-slate-500 hover:text-slate-300 text-xs p-1"
+                            >
+                                <i class="fa-solid fa-eye animate-fadeIn" id="toggle-pw-icon"></i>
+                            </button>
+                        </div>
+                        <button onclick="changeTeacherPassword()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs active:scale-95 transition-all">
+                            Ändern
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2.5 border-t border-slate-800 flex justify-end">
+                <button onclick="closeSettingsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs active:scale-95">
+                    Schließen
+                </button>
             </div>
         </div>
     </div>
 
+    <!-- Toast Benachrichtigungen -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+
     <!-- MASSEN-IMPORT / KI MODAL -->
-    <div id="import-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50 font-sans">
+    <div id="import-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
         <div class="bg-slate-900 border border-slate-700/80 p-5 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col gap-4 animate-scaleIn font-sans">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2">
                 <h3 class="text-lg font-bold text-violet-400 flex items-center gap-2">
@@ -619,19 +661,6 @@
                 <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-200 p-1">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
-            </div>
-
-            <!-- Optionaler API-Key Config -->
-            <div class="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs">
-                <span class="text-slate-400 font-medium leading-tight">
-                    <i class="fa-solid fa-key text-amber-500"></i> Gemini API-Schlüssel (für lokale KI-Bilderkennung):
-                </span>
-                <input 
-                    type="password" 
-                    id="api-key-input" 
-                    placeholder="API-Key hier eintragen (optional)..." 
-                    class="bg-slate-900 border border-slate-700/60 rounded px-2.5 py-1 text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-violet-500 text-[11px]"
-                >
             </div>
 
             <!-- Tabs Navigation -->
@@ -726,7 +755,7 @@
 
         let sseSource = null;
         let incomingAnswers = [];
-        let answerHistory = []; // Neues Backupsystem für alte Antworten
+        let answerHistory = []; // Backup für alte Antworten
 
         let confettiInterval = null;
         let isConfettiActive = false;
@@ -748,7 +777,7 @@
             "🎸", "👑", "🎈", "🛸", "👻", 
             "🦄", "🌮", "👾", "🍩", "🦕", 
             "🍿", "🥑", "🐯", "🎨", "🧩", 
-            "⚽", "🎮", "🎤", "🍦", " Pineapple", 
+            "⚽", "🎮", "🎤", "🍦", "🍍", 
             "🐸", "🐱", "🐶", "🦉", "🐨"
         ];
 
@@ -757,15 +786,17 @@
             return document.getElementById(id) || null;
         }
 
-        /* LocalStorage Speicher-Funktionen */
+        /* LocalStorage Speicher-Funktionen mit kontinuierlichem Autosave */
         function saveState() {
             try {
+                // Den aktuellen Arbeitsstand im Klassenobjekt sichern (solange es NICHT die Standard-Sitzung ist)
                 classes["Standard-Sitzung"] = { teams: [], currentRound: 1 };
                 
                 if (activeClass !== "Standard-Sitzung") {
                     classes[activeClass] = {
                         teams: teams,
-                        currentRound: currentRound
+                        currentRound: currentRound,
+                        answerHistory: answerHistory
                     };
                 }
                 
@@ -780,11 +811,10 @@
                     autoSort: autoSortEl ? autoSortEl.checked : true,
                     soundEnabled: soundEl ? soundEl.checked : true,
                     geminiKey: apiKeyEl ? apiKeyEl.value.trim() : "",
-                    beamerProtectionActive: beamerProtectionActive,
-                    answerHistory: answerHistory
+                    beamerProtectionActive: beamerProtectionActive
                 };
                 
-                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys', JSON.stringify(saveDataObj));
+                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys_autosave', JSON.stringify(saveDataObj));
             } catch (err) {
                 console.error("Fehler beim Speichern des Zustands:", err);
             }
@@ -793,7 +823,7 @@
         /* Serverless Broadcast für Runden-Synchronisierung auf Schülergeräten */
         async function broadcastControlState(timerSeconds = -1) {
             const codeInput = getEl('room-code-input');
-            const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "7c";
+            const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "";
             if (!roomCode) return;
             
             const jokersUsed = teams.filter(t => t.jokerUsed).map(t => t.name.toLowerCase());
@@ -833,6 +863,7 @@
                     const managerRoundDisplay = getEl('manager-round-display');
                     if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
                     
+                    updateClassDropdown();
                     updateActiveBadge();
                     renderScoreboard();
                     renderHistoryArchive();
@@ -841,7 +872,7 @@
                     return;
                 }
 
-                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys');
+                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys_autosave');
                 if (savedData) {
                     const parsed = JSON.parse(savedData);
                     if (parsed) {
@@ -849,7 +880,6 @@
                         activeClass = parsed.activeClass || "Standard-Sitzung";
                         teacherPassword = parsed.teacherPassword || "musik";
                         beamerProtectionActive = parsed.beamerProtectionActive !== false;
-                        answerHistory = parsed.answerHistory || [];
                         
                         const autoSortEl = getEl('auto-sort-toggle');
                         if (autoSortEl) autoSortEl.checked = parsed.autoSort !== false;
@@ -865,18 +895,18 @@
                         "Standard-Sitzung": { teams: [], currentRound: 1 }
                     };
                     activeClass = "Standard-Sitzung";
-                    answerHistory = [];
                 }
 
                 classes["Standard-Sitzung"] = { teams: [], currentRound: 1 };
 
                 if (!classes[activeClass]) {
-                    classes[activeClass] = { teams: [], currentRound: 1 };
+                    classes[activeClass] = { teams: [], currentRound: 1, answerHistory: [] };
                 }
 
                 const currentData = classes[activeClass];
                 teams = currentData.teams || [];
                 currentRound = currentData.currentRound || 1;
+                answerHistory = currentData.answerHistory || [];
 
                 teams.forEach(t => {
                     t.activeThisRound = false;
@@ -886,7 +916,7 @@
                     t.jokerActiveThisRound = false;
                 });
 
-                // Standard-Sitzung soll immer mit absolut leerem Verlauf starten!
+                // Standard-Sitzung soll immer leer starten
                 if (activeClass === "Standard-Sitzung") {
                     answerHistory = [];
                 }
@@ -920,6 +950,48 @@
             }
         }
 
+        /* Modalssteuerung für Zahnrad & Settings */
+        function openSettingsModal() {
+            const modal = getEl('settings-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function closeSettingsModal() {
+            const modal = getEl('settings-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        /* Lobby vs. Spielmodus Wechsel */
+        function startLiveGame() {
+            const roomCode = getEl('room-code-input').value.trim();
+            if (!roomCode) {
+                showToast("Bitte gib zuerst einen Raumcode ein, um das Spiel zu starten!", "danger");
+                return;
+            }
+            // Panels verschieben
+            getEl('setup-lobby-panel').classList.add('hidden');
+            getEl('game-controls-panel').classList.remove('hidden');
+            
+            // Sichtschutz zum Starten automatisch EINschalten (Sicherheits-Check)
+            beamerProtectionActive = true;
+            renderIncomingAnswersList();
+
+            showToast("Spielmodus gestartet! QR-Codes wurden ausgeblendet.", "success");
+            playSound('up');
+        }
+
+        function stopLiveGame() {
+            getEl('setup-lobby-panel').classList.remove('hidden');
+            getEl('game-controls-panel').classList.add('hidden');
+            showToast("Zurück in den Lobby-Modus geschaltet.", "info");
+        }
+
         /* Emoji Picker Initialisierung auf Schüler-Join-Modul */
         function initEmojiPicker() {
             const container = getEl('emoji-picker-container');
@@ -950,135 +1022,7 @@
             element.classList.add('ring-2', 'ring-violet-500');
         }
 
-        function switchView(view) {
-            currentView = view;
-            const studentSection = getEl('student-view');
-            const teacherSection = getEl('teacher-view');
-
-            if (!studentSection || !teacherSection) return;
-
-            if (view === 'student') {
-                studentSection.classList.remove('hidden');
-                teacherSection.classList.add('hidden');
-                if (sseSource) {
-                    sseSource.close();
-                    sseSource = null;
-                }
-                const registeredName = localStorage.getItem('student_team_name');
-                const registeredRoom = localStorage.getItem('student_room_code');
-                const studentJoinCard = getEl('student-join-card');
-                const studentBuzzerCard = getEl('student-buzzer-card');
-
-                if (registeredName && registeredRoom) {
-                    if (studentJoinCard) studentJoinCard.classList.add('hidden');
-                    const badge = getEl('student-badge-info');
-                    const storedEmoji = localStorage.getItem('student_team_emoji') || "🎵";
-                    if (badge) badge.innerText = `Verbunden: ${storedEmoji} ${registeredName}`;
-                    if (studentBuzzerCard) studentBuzzerCard.classList.remove('hidden');
-                    connectStudentControlChannel(registeredRoom);
-                } else {
-                    if (studentJoinCard) studentJoinCard.classList.remove('hidden');
-                    if (studentBuzzerCard) studentBuzzerCard.classList.add('hidden');
-                }
-            } else if (view === 'teacher') {
-                studentSection.classList.add('hidden');
-                teacherSection.classList.remove('hidden');
-                connectLiveRoom();
-            }
-        }
-
-        /* Passwort-Schutz für Lehrkraft */
-        function promptTeacherLogin() {
-            const modal = getEl('teacher-password-modal');
-            const input = getEl('teacher-password-input');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-            if (input) input.focus();
-        }
-
-        function closeTeacherLogin() {
-            const modal = getEl('teacher-password-modal');
-            const input = getEl('teacher-password-input');
-            if (modal) modal.classList.add('hidden');
-            if (modal) modal.classList.remove('flex');
-            if (input) input.value = '';
-        }
-
-        function checkTeacherPassword() {
-            const input = getEl('teacher-password-input');
-            const val = input ? input.value.trim() : "";
-            if (val === teacherPassword) {
-                closeTeacherLogin();
-                switchView('teacher');
-                showToast("Erfolgreich eingeloggt!", "success");
-            } else {
-                showToast("Passwort falsch!", "danger");
-                playSound('down');
-            }
-        }
-
-        function changeTeacherPassword() {
-            const input = getEl('change-password-input');
-            const newPw = input ? input.value.trim() : "";
-            if (newPw.length < 3) {
-                showToast("Das Passwort muss mindestens 3 Zeichen lang sein!", "danger");
-                return;
-            }
-            teacherPassword = newPw;
-            saveState();
-            showToast("Lehrer-Passwort erfolgreich geändert!", "success");
-        }
-
-        function togglePasswordVisibility(inputId, iconId) {
-            const input = getEl(inputId);
-            const icon = getEl(iconId);
-            if (input && icon) {
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    icon.classList.remove('fa-eye');
-                    icon.classList.add('fa-eye-slash');
-                } else {
-                    input.type = 'password';
-                    icon.classList.remove('fa-eye-slash');
-                    icon.classList.add('fa-eye');
-                }
-            }
-        }
-
-        /* Custom Modal Controller */
-        function showCustomConfirm(title, description, onConfirm) {
-            const modal = getEl('confirm-modal');
-            const titleEl = getEl('confirm-title');
-            const descEl = getEl('confirm-desc');
-            const btn = getEl('confirm-action-btn');
-
-            if (titleEl) titleEl.innerText = title;
-            if (descEl) descEl.innerText = description;
-            confirmActionCallback = onConfirm;
-            
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-
-            if (btn) {
-                btn.onclick = function() {
-                    if (confirmActionCallback) confirmActionCallback();
-                    closeModal();
-                };
-            }
-        }
-
-        function closeModal() {
-            const modal = getEl('confirm-modal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        }
-
+        /* Schüler Runden Empfang per SSE */
         function connectStudentControlChannel(room) {
             if (studentSse) {
                 studentSse.close();
@@ -1267,7 +1211,7 @@
             
             connectStudentControlChannel(room);
             
-            // NEU: Sende ein "Join"-Signal über den ntfy-Kanal, damit die Lehrkraft das Team sofort mit 0 Punkten sieht
+            // Sofort-Join Signal
             try {
                 const topic = `mq-ntfy-${room}`;
                 const payload = {
@@ -1280,9 +1224,7 @@
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
-            } catch(e) {
-                console.error("Fehler beim Senden des Beitritts-Signals:", e);
-            }
+            } catch(e) {}
             
             showToast(`Raum ${room.toUpperCase()} erfolgreich beigetreten!`, "success");
             playSound('up');
@@ -1385,7 +1327,7 @@
             }
         }
 
-        /* Team manuell hinzufügen (von Lehrerseite) */
+        /* Lehrerseite: Team manuell eintragen */
         function handleManualTeamAdd(e) {
             if (e) e.preventDefault();
             const input = getEl('manual-team-input');
@@ -1417,6 +1359,7 @@
             renderScoreboard();
         }
 
+        /* Lehrer-PC: Raum laden und starten */
         function connectLiveRoom() {
             const codeInput = getEl('room-code-input');
             const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "";
@@ -1434,6 +1377,27 @@
                 sseSource.close();
             }
 
+            // NEUER RAUM: Im Autosave-Dropdown anlegen (falls noch nicht existent)
+            activeClass = roomCode;
+            if (!classes[activeClass]) {
+                classes[activeClass] = { teams: [], currentRound: 1, answerHistory: [] };
+            }
+            
+            const currentData = classes[activeClass];
+            teams = currentData.teams || [];
+            currentRound = currentData.currentRound || 1;
+            answerHistory = currentData.answerHistory || [];
+
+            const roundDisplay = getEl('header-round-display');
+            if (roundDisplay) roundDisplay.innerText = currentRound;
+            const managerRoundDisplay = getEl('manager-round-display');
+            if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
+
+            updateClassDropdown();
+            updateActiveBadge();
+            renderScoreboard();
+            renderHistoryArchive();
+
             const topic = `mq-ntfy-${roomCode}`;
             const statusDiv = getEl('connection-status');
 
@@ -1448,6 +1412,7 @@
                 if (livePanel) livePanel.classList.remove('hidden');
                 generateQRCode();
                 broadcastControlState(); 
+                saveState();
             };
 
             sseSource.onerror = function() {
@@ -1467,25 +1432,11 @@
                             }
                         }
                     }
-                } catch (e) {
-                    // System-Meldungen ignorieren
-                }
+                } catch (e) {}
             };
         }
 
-        function addIncomingAnswer(answerObj) {
-            if (incomingAnswers.some(ans => ans.team === answerObj.team && ans.answer === answerObj.answer)) {
-                return;
-            }
-
-            incomingAnswers.push(answerObj);
-            incomingAnswers.sort((a, b) => a.timestamp - b.timestamp);
-
-            renderIncomingAnswersList();
-            playSound('up');
-        }
-
-        /* NEU: Verarbeitet das Beitritts-Signal eines Schülergeräts und legt das Team sofort mit 0 Punkten an */
+        /* Automatisches Beitritts-Signal der iPads auf dem Beamer */
         function handleLiveJoin(teamName, emoji) {
             let team = teams.find(t => t.name.toLowerCase() === teamName.toLowerCase());
             if (!team) {
@@ -1503,10 +1454,9 @@
                 teams.push(newTeam);
                 saveState();
                 renderScoreboard();
-                showToast(`🚀 "${teamName}" ist dem Spiel beigetreten!`, "success");
+                showToast(`🚀 "${teamName}" ist der Lobby beigetreten!`, "success");
                 playSound('up');
             } else {
-                // Falls sie bereits existieren, aktualisieren wir ggf. das Emoji
                 if (emoji && emoji !== "🎵" && team.emoji !== emoji) {
                     team.emoji = emoji;
                     saveState();
@@ -1515,12 +1465,16 @@
             }
         }
 
-        /* Beamer Sichtschutz steuern */
-        function toggleBeamerProtection() {
-            beamerProtectionActive = !beamerProtectionActive;
-            saveState();
+        function addIncomingAnswer(answerObj) {
+            if (incomingAnswers.some(ans => ans.team === answerObj.team && ans.answer === answerObj.answer)) {
+                return;
+            }
+
+            incomingAnswers.push(answerObj);
+            incomingAnswers.sort((a, b) => a.timestamp - b.timestamp);
+
             renderIncomingAnswersList();
-            showToast(beamerProtectionActive ? "Sichtschutz aktiv (Teams & Antworten verdeckt)" : "Sichtschutz deaktiviert (Alles aufgedeckt)", "info");
+            playSound('up');
         }
 
         function renderIncomingAnswersList() {
@@ -1530,7 +1484,6 @@
             if (!list) return;
             list.innerHTML = '';
 
-            // Sichtschutz Button-Status (Auge / Durchgestrichen) dynamisch aktualisieren
             const toggleBtn = getEl('beamer-protection-toggle-btn');
             if (toggleBtn) {
                 if (beamerProtectionActive) {
@@ -1549,12 +1502,11 @@
                 if (emptyDiv) emptyDiv.classList.add('hidden');
             }
 
-            // Beamer Sichtschutz Banner einfügen
             const protectionBanner = document.createElement('div');
             protectionBanner.className = "w-full col-span-full mb-1";
             if (beamerProtectionActive) {
                 protectionBanner.innerHTML = `
-                    <div class="bg-violet-950/40 border border-violet-800/60 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn">
+                    <div class="bg-violet-950/40 border border-violet-800/60 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn font-sans">
                         <span class="text-[11px] text-violet-300 font-bold flex items-center gap-1.5 font-sans">
                             <i class="fa-solid fa-user-secret text-violet-400 text-sm animate-pulse"></i> 
                             Sichtschutz aktiv: Teamnamen & Antworten sind auf dem Beamer unsichtbar.
@@ -1566,8 +1518,8 @@
                 `;
             } else {
                 protectionBanner.innerHTML = `
-                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn">
-                        <span class="text-[11px] text-slate-300 font-bold flex items-center gap-1.5">
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn font-sans">
+                        <span class="text-[11px] text-slate-300 font-bold flex items-center gap-1.5 font-sans">
                             <i class="fa-solid fa-eye text-emerald-400 text-sm"></i> 
                             Antworten und Absender sind vollständig aufgedeckt.
                         </span>
@@ -1579,7 +1531,6 @@
             }
             list.appendChild(protectionBanner);
 
-            // Chronologische Kärtchen rendern (Kompakte Kärtchen im mehrspaltigen Grid)
             incomingAnswers.forEach((ans, index) => {
                 const item = document.createElement('div');
                 item.className = "flex flex-col justify-between gap-1.5 bg-slate-900 border border-slate-800 p-2 rounded-xl animate-scaleIn h-full relative font-sans";
@@ -1595,7 +1546,6 @@
                         </span>`;
                 }
 
-                // Falls Joker aktiv war
                 let jokerBadge = '';
                 if (ans.joker) {
                     jokerBadge = `<span class="bg-amber-500 text-slate-950 text-[8px] font-black px-1.5 py-0.5 rounded animate-pulse" title="Doppel-Joker ist aktiv!"><i class="fa-solid fa-masks-theater"></i> JOKER!</span>`;
@@ -1609,7 +1559,7 @@
 
                 if (beamerProtectionActive) {
                     teamHeader = `
-                        <div class="flex justify-between items-center gap-1.5 font-sans">
+                        <div class="flex justify-between items-center gap-1.5">
                             <span class="font-bold text-slate-500 text-[11px] flex items-center gap-1">
                                 <i class="fa-solid fa-user-secret text-violet-500/80"></i> Team verdeckt
                             </span>
@@ -1636,7 +1586,7 @@
                     `;
                 } else {
                     teamHeader = `
-                        <div class="flex justify-between items-center gap-1.5 font-sans">
+                        <div class="flex justify-between items-center gap-1.5">
                             <span class="font-bold text-violet-400 text-xs truncate max-w-[90px]" title="${ans.team}">${ans.team}</span>
                             <div class="flex items-center gap-1">
                                 ${jokerBadge}
@@ -1653,25 +1603,25 @@
                         <div class="flex gap-1 justify-end font-bold pt-1 border-t border-slate-800/30 font-sans">
                             <button 
                                 onclick="applyLiveAnswer('${teamNameEscaped}', 3, ${index}, ${hasJoker})"
-                                class="bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95 flex items-center gap-0.5 font-sans"
+                                class="bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95 flex items-center gap-0.5"
                             >
                                 +3
                             </button>
                             <button 
                                 onclick="applyLiveAnswer('${teamNameEscaped}', 2, ${index}, ${hasJoker})"
-                                class="bg-emerald-500 hover:bg-emerald-400 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95 font-sans"
+                                class="bg-emerald-500 hover:bg-emerald-400 text-white text-[9px] font-bold px-1.5 py-1 rounded transition-all active:scale-95"
                             >
                                 +2
                             </button>
                             <button 
                                 onclick="applyLiveAnswer('${teamNameEscaped}', 1, ${index}, ${hasJoker})"
-                                class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[9px] font-bold px-2 py-1 rounded transition-all active:scale-95 font-sans"
+                                class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[9px] font-bold px-2 py-1 rounded transition-all active:scale-95"
                             >
                                 +1
                             </button>
                             <button 
                                 onclick="removeLiveAnswerByIndex(${index})"
-                                class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-[9px] px-1.5 py-1 rounded transition-all font-sans"
+                                class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-[9px] px-1.5 py-1 rounded transition-all"
                                 title="Verwerfen"
                             >
                                 <i class="fa-solid fa-trash-can"></i>
@@ -1691,9 +1641,8 @@
             });
         }
 
-        /* Einloggen der Punkte von der Live-Antwort und Archivierung im Backup-System */
         function applyLiveAnswer(teamName, pointsToAdd, index, hasJoker = false) {
-            let team = teams.find(t => t.id === teamName || t.name.toLowerCase() === teamName.toLowerCase());
+            let team = teams.find(t => t.name.toLowerCase() === teamName.toLowerCase());
             const incomingAns = incomingAnswers[index];
             const emoji = incomingAns ? (incomingAns.emoji || "🎵") : "🎵";
 
@@ -1739,14 +1688,12 @@
             renderHistoryArchive();
         }
 
-        /* Verlauf-Archiv rendern */
         function renderHistoryArchive() {
             const list = getEl('history-archive-list');
             const empty = getEl('history-archive-empty');
             if (!list) return;
             list.innerHTML = '';
 
-            // Filtert den Verlauf für die aktuell gewählte Runden-Ansicht
             const currentHistory = answerHistory.filter(h => h.round === currentRound);
 
             if (currentHistory.length === 0) {
@@ -1797,7 +1744,7 @@
             const durationInput = getEl('timer-duration');
             const duration = parseInt(durationInput ? durationInput.value : 30) || 30;
             
-            stopTimer(); // Laufenden Timer zuerst löschen
+            stopTimer(); 
 
             let secondsLeft = duration;
             const display = getEl('teacher-timer-display');
@@ -1840,7 +1787,7 @@
             const display = getEl('teacher-timer-display');
             if (display) display.classList.add('hidden');
 
-            broadcastControlState(-1); // Löscht Timer auf den iPads
+            broadcastControlState(-1); 
         }
 
         /* QR-Code Generator */
@@ -1848,7 +1795,7 @@
             const qrImg = getEl('qr-code-img');
             const customUrlInput = getEl('custom-url-input');
             const roomCodeInput = getEl('room-code-input');
-            const roomCode = roomCodeInput ? roomCodeInput.value.trim().toLowerCase() : "7c";
+            const roomCode = roomCodeInput ? roomCodeInput.value.trim().toLowerCase() : "";
             
             const qrRoomDisplay = getEl('qr-room-code-display');
             if (qrRoomDisplay) qrRoomDisplay.innerText = roomCode.toUpperCase();
@@ -1928,14 +1875,15 @@
             activeClass = event.target.value;
             
             if (activeClass === "Standard-Sitzung") {
-                classes["Standard-Sitzung"] = { teams: [], currentRound: 1 };
-                answerHistory = []; // Verlauf für Standard-Sitzung leeren!
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, answerHistory: [] };
+                answerHistory = []; 
             }
 
-            const targetData = classes[activeClass] || { teams: [], currentRound: 1 };
+            const targetData = classes[activeClass] || { teams: [], currentRound: 1, answerHistory: [] };
             teams = targetData.teams || [];
             currentRound = targetData.currentRound || 1;
-            
+            answerHistory = targetData.answerHistory || [];
+
             teams.forEach(t => {
                 t.activeThisRound = false;
                 t.pendingPoints = 0;
@@ -1946,39 +1894,15 @@
             const managerRoundDisplay = getEl('manager-round-display');
             if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
+            // AUTOMATISCHER SICHTSCHUTZ bei Klassenwechsel
+            beamerProtectionActive = true;
+
             updateActiveBadge();
             renderScoreboard();
-            renderHistoryArchive(); // Archiv-Anzeige aktualisieren!
+            renderHistoryArchive();
             broadcastControlState(); 
             showToast(`Klasse "${activeClass}" geladen.`, 'success');
             saveState();
-        }
-
-        function saveNewClass() {
-            const input = getEl('class-name-input');
-            const name = input ? input.value.trim() : "";
-            
-            if (!name) {
-                showToast("Bitte trage einen Namen für die Klasse ein!", "danger");
-                return;
-            }
-            if (name.toLowerCase() === 'standard-sitzung' || name.toLowerCase() === 'standard') {
-                showToast("Dieser Name ist reserviert!", "danger");
-                return;
-            }
-
-            classes[name] = {
-                teams: [...teams],
-                currentRound: currentRound
-            };
-            
-            activeClass = name;
-            if (input) input.value = '';
-            
-            saveState();
-            updateClassDropdown();
-            updateActiveBadge();
-            showToast(`Klasse "${name}" erfolgreich gesichert!`, 'success');
         }
 
         function deleteCurrentClass() {
@@ -1993,16 +1917,18 @@
                 function() {
                     delete classes[activeClass];
                     activeClass = 'Standard-Sitzung';
-                    classes["Standard-Sitzung"] = { teams: [], currentRound: 1 };
+                    classes["Standard-Sitzung"] = { teams: [], currentRound: 1, answerHistory: [] };
                     
                     const targetData = classes[activeClass];
                     teams = targetData.teams;
                     currentRound = targetData.currentRound;
+                    answerHistory = [];
                     
                     saveState();
                     updateClassDropdown();
                     updateActiveBadge();
                     renderScoreboard();
+                    renderHistoryArchive(); 
                     showToast("Klasse wurde gelöscht. Zurück zur Standard-Sitzung.", "info");
                 }
             );
@@ -2036,33 +1962,33 @@
                 }
 
                 const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
+                const bgain = audioCtx.createGain();
                 
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
+                osc.connect(bgain);
+                bgain.connect(audioCtx.destination);
 
                 if (type === 'up') {
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(550, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.1);
-                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    bgain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    bgain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.1);
                 } else if (type === 'down') {
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(300, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.15);
-                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                    bgain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    bgain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.15);
                 } else if (type === 'next') {
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(440, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2);
-                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    bgain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    bgain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.2);
                 } else if (type === 'fanfare') {
@@ -2187,6 +2113,9 @@
                 const managerRoundDisplay = getEl('manager-round-display');
                 if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
                 
+                // AUTOMATISCHER SICHTSCHUTZ bei Rundenwechsel
+                beamerProtectionActive = true;
+
                 saveState();
                 renderScoreboard();
                 broadcastControlState();
@@ -2249,6 +2178,9 @@
             const managerRoundDisplay = getEl('manager-round-display');
             if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
+            // AUTOMATISCHER SICHTSCHUTZ bei Rundenwechsel
+            beamerProtectionActive = true;
+
             playSound('next');
             saveState();
             renderScoreboard();
@@ -2256,7 +2188,7 @@
             renderHistoryArchive();
         }
 
-        // Sicherer Team-Löschen-Befehl per technischer ID (umgeht Namenskonflikte)
+        // Sicherer Team-Löschen-Befehl per technischer ID
         function deleteTeam(id) {
             const team = teams.find(t => t.id === id);
             const name = team ? team.name : "Team";
@@ -2339,7 +2271,6 @@
                             <i class="fa-solid fa-masks-theater"></i> JOKER AKTIV (Doppelt / Risiko!)
                         </div>`;
                 } else {
-                    // Zeigt an, ob das Team seinen Joker in diesem Spiel noch hat oder verbraucht hat
                     jokerCardBadge = team.jokerUsed ? 
                         `<span class="text-[9px] text-slate-500 font-bold block mt-1"><i class="fa-solid fa-ban"></i> Joker verbraucht</span>` : 
                         `<span class="text-[9px] text-emerald-500/85 font-bold block mt-1"><i class="fa-solid fa-masks-theater"></i> Joker bereit</span>`;
@@ -2348,10 +2279,9 @@
                 card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-48 select-none ${borderStyle}`;
                 card.onclick = () => toggleTeamActive(team.id);
 
-                // GRUPPENNAME FÄRBT SICH HIER DIREKT GRÜN BEI AUSWAHL
                 card.innerHTML = `
                     ${cardOverlay}
-                    <div class="flex items-start justify-between gap-1 font-sans">
+                    <div class="flex items-start justify-between gap-1">
                         <span class="text-[10px] text-slate-500 font-bold tracking-wider">PLATZ ${index + 1}</span>
                         ${streakBadge}
                         <button 
@@ -2420,7 +2350,7 @@
                 container.appendChild(card);
             });
 
-            // FLIP Animation: Neuer Ort berechnen und sanft verschieben
+            // FLIP Animation: Neuer Ort berechnen und verschieben
             const newCards = container.querySelectorAll('[data-team-id]');
             newCards.forEach(card => {
                 const id = card.getAttribute('data-team-id');
@@ -2432,7 +2362,7 @@
                     if (deltaX !== 0 || deltaY !== 0) {
                         card.style.transition = 'none';
                         card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                        card.getBoundingClientRect(); // Repaint erzwingen
+                        card.getBoundingClientRect(); 
                         card.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
                         card.style.transform = 'none';
                     }
@@ -2927,8 +2857,8 @@
 
         function confirmReset() {
             showCustomConfirm(
-                "Wirklich zurücksetzen?",
-                "Alle Teams und Punkte der aktuellen Klasse werden gelöscht. Die Runde startet wieder bei 1.",
+                "Neue Sitzung starten?",
+                "Alle Teams, Punkte und der Antwort-Verlauf dieses Raums werden gelöscht. Die Runde startet wieder bei 1.",
                 executeReset
             );
         }
@@ -2936,50 +2866,40 @@
         function executeReset() {
             teams = [];
             currentRound = 1;
+            incomingAnswers = [];
+            answerHistory = [];
+
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
             const managerRoundDisplay = getEl('manager-round-display');
             if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
+            // Aktiven Slot im Speicher überschreiben
             classes[activeClass] = {
                 teams: [],
-                currentRound: 1
+                currentRound: 1,
+                answerHistory: []
             };
             
-            answerHistory = []; // Verlauf bei Reset komplett löschen!
-            
+            // AUTOMATISCHER SICHTSCHUTZ bei Reset
+            beamerProtectionActive = true;
+
+            // Zurück in den Lobby-Modus schalten
+            getEl('setup-lobby-panel').classList.remove('hidden');
+            getEl('game-controls-panel').classList.add('hidden');
+
             saveState();
             closeModal();
             renderScoreboard();
-            renderHistoryArchive(); // Archiv-Anzeige leeren!
-            showToast("Sitzung komplett zurückgesetzt!", "danger");
-        }
-
-        // Automatische Erkennung für ungestylte OneDrive-Vorschau
-        function checkOneDriveEnvironment() {
-            try {
-                const hasStyles = document.styleSheets.length > 0;
-                if (!hasStyles || typeof EventSource === "undefined") {
-                    const banner = getEl('onedrive-safety-banner');
-                    if (banner) banner.classList.remove('hidden');
-                }
-            } catch (e) {
-                // Fallback
-            }
+            renderIncomingAnswersList();
+            renderHistoryArchive();
+            showToast("Eine neue, leere Sitzung wurde gestartet!", "danger");
         }
 
         // Starten
         window.onload = function() {
             resizeCanvas();
             loadState();
-            checkOneDriveEnvironment();
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const queryRoom = urlParams.get('room');
-            if (queryRoom) {
-                const roomInput = getEl('student-room-input');
-                if (roomInput) roomInput.value = queryRoom;
-            }
         };
     </script>
 </body>
