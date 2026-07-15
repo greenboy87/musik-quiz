@@ -48,12 +48,58 @@
         .animate-fadeIn {
             animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+
+        /* Schwebende Emoji-Reaktionen der Schüler auf dem Beamer */
+        @keyframes floatUpReaction {
+            0% { opacity: 0; transform: translateY(0) scale(0.5); }
+            15% { opacity: 1; transform: translateY(-40px) scale(1.15); }
+            85% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-420px) scale(1.3); }
+        }
+        .floating-reaction {
+            position: absolute;
+            bottom: 0;
+            font-size: 2.5rem;
+            animation: floatUpReaction 3.2s ease-out forwards;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+        }
+
+        /* Dringlicher Timer-Puls in den letzten Sekunden */
+        @keyframes timerCritical {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+        .timer-critical {
+            animation: timerCritical 0.6s infinite ease-in-out;
+            background-color: rgba(190, 18, 60, 0.5) !important;
+            border-color: rgba(244, 63, 94, 0.8) !important;
+            color: #fecdd3 !important;
+        }
+
+        /* Großer 3-2-1 Countdown auf dem Beamer-Bildschirm */
+        @keyframes countdownPop {
+            0% { opacity: 0; transform: scale(2.2); }
+            18% { opacity: 1; transform: scale(1); }
+            75% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.85); }
+        }
+        .countdown-pop {
+            animation: countdownPop 0.9s ease-out forwards;
+        }
     </style>
 </head>
 <body class="text-slate-100 flex flex-col justify-between overflow-x-hidden relative selection:bg-violet-500/30">
 
     <!-- Konfetti Canvas für das Finale -->
     <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none z-50 w-full h-full"></canvas>
+
+    <!-- Schwebende Emoji-Reaktionen der Schüler (Lehreransicht) -->
+    <div id="reaction-layer" class="fixed inset-0 pointer-events-none z-40 overflow-hidden"></div>
+
+    <!-- Großer 3-2-1 Countdown auf dem Beamer-Bildschirm -->
+    <div id="timer-countdown-overlay" class="fixed inset-0 flex items-center justify-center pointer-events-none z-40 hidden">
+        <span id="timer-countdown-number" class="font-black text-amber-400" style="font-size: min(35vw, 320px); line-height: 1; text-shadow: 0 0 60px rgba(245, 158, 11, 0.6), 0 8px 24px rgba(0,0,0,0.6);"></span>
+    </div>
 
     <!-- ========================================== -->
     <!-- DETEKTIERUNG FÜR UNGESTYLTE ANZEIGE (TEAMS/ONEDRIVE) -->
@@ -199,6 +245,18 @@
 
                 <!-- Feedback-Status-Box (auch für Runden-Limiter und Timer genutzt) -->
                 <div id="student-feedback" class="hidden p-3 rounded-xl border text-center text-xs font-semibold"></div>
+
+                <!-- Live-Emoji-Reaktionen für den Beamer -->
+                <div class="border-t border-slate-800/60 pt-3 mt-1">
+                    <label class="text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1.5 text-center">Reaktion an den Beamer schicken</label>
+                    <div class="grid grid-cols-5 gap-1.5">
+                        <button type="button" onclick="sendStudentReaction('👍')" class="bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl py-2 text-lg active:scale-90 transition-all">👍</button>
+                        <button type="button" onclick="sendStudentReaction('😂')" class="bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl py-2 text-lg active:scale-90 transition-all">😂</button>
+                        <button type="button" onclick="sendStudentReaction('🔥')" class="bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl py-2 text-lg active:scale-90 transition-all">🔥</button>
+                        <button type="button" onclick="sendStudentReaction('😮')" class="bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl py-2 text-lg active:scale-90 transition-all">😮</button>
+                        <button type="button" onclick="sendStudentReaction('👎')" class="bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl py-2 text-lg active:scale-90 transition-all">👎</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -457,9 +515,6 @@
                             <i class="fa-solid fa-crown"></i> Finale 🏆
                         </button>
                     </div>
-                    <button onclick="exportCurrentStand()" class="w-full bg-violet-600/30 hover:bg-violet-600/50 border border-violet-500/40 text-violet-200 font-bold py-1 rounded-lg text-[10px] transition-all flex items-center justify-center gap-1" title="Speichert diesen Spielstand als HTML-Datei">
-                        <i class="fa-solid fa-file-export"></i> Stand als HTML exportieren 💾
-                    </button>
                 </div>
             </div>
         </div>
@@ -1276,7 +1331,10 @@
             if (seconds > 0) {
                 if (!alreadySubmitted) {
                     if (feedback) {
-                        feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-850 text-amber-200 animate-pulse";
+                        const isCritical = seconds <= 5;
+                        feedback.className = isCritical
+                            ? "p-3 rounded-xl border text-center text-sm font-black bg-rose-950/50 border-rose-700 text-rose-200 timer-critical"
+                            : "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-850 text-amber-200 animate-pulse";
                         feedback.innerHTML = `<i class="fa-solid fa-hourglass-half text-amber-400"></i> Noch ${seconds} Sekunden zum Raten! Schnell abgeben! ⏱️`;
                         feedback.classList.remove('hidden');
                     }
@@ -1545,7 +1603,7 @@
 
         /* Verarbeitet ein einzelnes Quiz-Ereignis (Beitritt / Antwort / Spickzettel) - wird sowohl
            von der Live-SSE-Verbindung als auch vom Backup-Polling genutzt */
-        function processQuizPayload(quizPayload) {
+        function processQuizPayload(quizPayload, fromPoll = false) {
             try {
                 if (quizPayload && quizPayload.team) {
                     if (quizPayload.action === "join") {
@@ -1558,6 +1616,9 @@
                         saveState();
                         renderTeamSongsList();
                         showToast(`🤫 Spickzettel von Team "${quizPayload.team}" erhalten!`, "success");
+                    } else if (quizPayload.action === "reaction") {
+                        // Reaktionen sind rein visuell/flüchtig - beim Nachhol-Abgleich nicht erneut abspielen
+                        if (!fromPoll) spawnFloatingReaction(quizPayload.emoji || "❓");
                     } else if (quizPayload.answer) {
                         addIncomingAnswer(quizPayload);
                     }
@@ -1577,7 +1638,7 @@
                         try {
                             const data = JSON.parse(line);
                             if (data.message) {
-                                processQuizPayload(JSON.parse(data.message));
+                                processQuizPayload(JSON.parse(data.message), true);
                             }
                         } catch (e) {
                             // Ungültige Zeilen ignorieren
@@ -1720,6 +1781,46 @@
                     btn.innerHTML = "An Lehrkraft senden 🤫";
                 }
             }
+        }
+
+        /* Schüler: Live-Emoji-Reaktion an den Beamer schicken */
+        let reactionCooldown = false;
+        function sendStudentReaction(emoji) {
+            if (reactionCooldown) return;
+            reactionCooldown = true;
+            setTimeout(() => { reactionCooldown = false; }, 1200);
+
+            const room = localStorage.getItem('student_room_code');
+            const name = localStorage.getItem('student_team_name') || "Team";
+            if (!room) return;
+
+            try {
+                fetch(`https://ntfy.sh/mq-ntfy-${room}`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: "reaction",
+                        team: name,
+                        emoji: emoji,
+                        timestamp: Date.now()
+                    })
+                });
+            } catch (e) {
+                // Reaktionen sind unkritisch - Fehler einfach ignorieren
+            }
+        }
+
+        /* Lehrer-PC: Schwebende Emoji-Reaktion auf dem Beamer anzeigen */
+        function spawnFloatingReaction(emoji) {
+            const layer = getEl('reaction-layer');
+            if (!layer) return;
+
+            const el = document.createElement('div');
+            el.className = 'floating-reaction';
+            el.textContent = emoji;
+            el.style.left = `${5 + Math.random() * 85}%`;
+            layer.appendChild(el);
+
+            setTimeout(() => el.remove(), 3300);
         }
 
         /* Lehrer-PC: Spickzettel rendern */
@@ -2020,6 +2121,9 @@
             });
 
             showToast(`Punkte für "${team.name}" wurden vorgemerkt (+${pointsToAdd})!`, "success");
+            if (index === 0) {
+                showToast(`⚡ Blitzschnell: "${team.name}" war als Erstes da!`, "info");
+            }
             playSound('up');
             removeLiveAnswerByIndex(index);
             saveState();
@@ -2081,26 +2185,58 @@
 
         /* Countdown Timer Logik (Lehrer) */
         let timerInterval = null;
+        let preTimerCountdownInterval = null;
+
         function startTimer() {
             const durationInput = getEl('timer-duration');
             const duration = parseInt(durationInput ? durationInput.value : 30) || 30;
-            
+
             stopTimer(); // Laufenden Timer zuerst löschen
 
+            const startBtn = getEl('start-timer-btn');
+            const stopBtn = getEl('stop-timer-btn');
+            if (startBtn) startBtn.classList.add('hidden');
+            if (stopBtn) stopBtn.classList.remove('hidden');
+
+            // 3-2-1 Einzähler VOR dem eigentlichen Timerstart
+            let preCount = 3;
+            showCountdownNumber(preCount);
+            playSound('tick');
+
+            preTimerCountdownInterval = setInterval(() => {
+                preCount--;
+                if (preCount > 0) {
+                    showCountdownNumber(preCount);
+                    playSound('tick');
+                } else {
+                    clearInterval(preTimerCountdownInterval);
+                    preTimerCountdownInterval = null;
+                    hideCountdownOverlay();
+                    runTimer(duration);
+                }
+            }, 1000);
+        }
+
+        function runTimer(duration) {
             let secondsLeft = duration;
             const display = getEl('teacher-timer-display');
             if (display) {
                 display.innerText = `${secondsLeft}s`;
-                display.classList.remove('hidden');
+                display.classList.remove('hidden', 'timer-critical');
             }
-            
+
             broadcastControlState(secondsLeft);
 
             timerInterval = setInterval(() => {
                 secondsLeft--;
                 if (display) display.innerText = `${secondsLeft}s`;
-                
+
                 broadcastControlState(secondsLeft);
+
+                if (secondsLeft > 0 && secondsLeft <= 5) {
+                    if (display) display.classList.add('timer-critical');
+                    playSound('tick');
+                }
 
                 if (secondsLeft <= 0) {
                     stopTimer();
@@ -2108,11 +2244,6 @@
                     playSound('down');
                 }
             }, 1000);
-
-            const startBtn = getEl('start-timer-btn');
-            const stopBtn = getEl('stop-timer-btn');
-            if (startBtn) startBtn.classList.add('hidden');
-            if (stopBtn) stopBtn.classList.remove('hidden');
         }
 
         function stopTimer() {
@@ -2120,15 +2251,39 @@
                 clearInterval(timerInterval);
                 timerInterval = null;
             }
+            if (preTimerCountdownInterval) {
+                clearInterval(preTimerCountdownInterval);
+                preTimerCountdownInterval = null;
+            }
             const startBtn = getEl('start-timer-btn');
             const stopBtn = getEl('stop-timer-btn');
             if (startBtn) startBtn.classList.remove('hidden');
             if (stopBtn) stopBtn.classList.add('hidden');
-            
+
             const display = getEl('teacher-timer-display');
             if (display) display.classList.add('hidden');
 
+            hideCountdownOverlay();
+
             broadcastControlState(-1); // Löscht Timer auf den iPads
+        }
+
+        /* Großer 3-2-1 Countdown auf dem Beamer-Bildschirm einblenden */
+        function showCountdownNumber(n) {
+            const overlay = getEl('timer-countdown-overlay');
+            const numberEl = getEl('timer-countdown-number');
+            if (!overlay || !numberEl) return;
+
+            numberEl.textContent = n;
+            overlay.classList.remove('hidden');
+            numberEl.classList.remove('countdown-pop');
+            void numberEl.offsetWidth; // Reflow erzwingen, damit die Animation neu startet
+            numberEl.classList.add('countdown-pop');
+        }
+
+        function hideCountdownOverlay() {
+            const overlay = getEl('timer-countdown-overlay');
+            if (overlay) overlay.classList.add('hidden');
         }
 
         /* QR-Code Generator */
@@ -2394,6 +2549,13 @@
                         noteOsc.start(audioCtx.currentTime + idx * 0.1);
                         noteOsc.stop(audioCtx.currentTime + idx * 0.1 + 0.35);
                     });
+                } else if (type === 'tick') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.05);
                 }
             } catch (e) {
                 console.log("Audio API blockiert.", e);
@@ -2516,10 +2678,15 @@
                 return;
             }
 
+            // Rangliste VOR dieser Runde festhalten - Grundlage für die Auf-/Abstieg-Pfeile
+            const sortedBefore = [...teams].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+            sortedBefore.forEach((t, idx) => { t.rankBeforeRound = idx; });
+
             const activeTeams = teams.filter(t => t.activeThisRound);
+            const roundGains = [];
             activeTeams.forEach(t => {
                 let pts = t.pendingPoints || 1;
-                
+
                 // JOKER-LOGIC: Bei Erfolg werden die Punkte verdoppelt!
                 if (t.jokerActiveThisRound) {
                     pts = pts * 2;
@@ -2529,6 +2696,7 @@
 
                 t.score += pts;
                 t.streak = (t.streak || 0) + 1; // Streak erhöhen
+                roundGains.push({ team: t, pts });
             });
 
             // Joker Misserfolg & Streak Zurücksetzen
@@ -2566,8 +2734,27 @@
             playSound('next');
             saveState();
             renderScoreboard();
-            broadcastControlState(); 
+            broadcastControlState();
             renderHistoryArchive();
+
+            // Comeback-Achievement: von der letzten Position direkt auf Platz 1
+            if (teams.length > 1) {
+                const sortedAfter = [...teams].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+                const newFirst = sortedAfter[0];
+                if (newFirst && newFirst.rankBeforeRound === teams.length - 1) {
+                    showToast(`🔄 Comeback des Tages: "${newFirst.name}" springt von ganz hinten auf Platz 1!`, "success");
+                    playSound('fanfare');
+                }
+            }
+
+            // Mini-Siegerehrung für den klaren Punktsieger dieser Runde
+            if (roundGains.length > 0) {
+                const maxPts = Math.max(...roundGains.map(g => g.pts));
+                const topGainers = roundGains.filter(g => g.pts === maxPts);
+                if (maxPts > 0 && topGainers.length === 1) {
+                    celebrateRoundWinner(topGainers[0].team.name, maxPts);
+                }
+            }
         }
 
         // Sicherer Team-Löschen-Befehl per technischer ID (umgeht Namenskonflikte)
@@ -2636,6 +2823,14 @@
                     borderStyle = 'leader-card bg-slate-900/60';
                 }
 
+                // Auf-/Abstieg seit der letzten Runde (nur sinnvoll bei aktivierter Auto-Sortierung)
+                let rankChangeBadge = '';
+                if (autoSort && typeof team.rankBeforeRound === 'number' && team.rankBeforeRound !== index) {
+                    rankChangeBadge = team.rankBeforeRound > index
+                        ? `<span class="text-emerald-400 text-xs font-black" title="Aufgestiegen seit letzter Runde">▲</span>`
+                        : `<span class="text-rose-400 text-xs font-black" title="Abgestiegen seit letzter Runde">▼</span>`;
+                }
+
                 // Streak Flame Icon
                 let streakBadge = '';
                 if (team.streak >= 3) {
@@ -2666,7 +2861,7 @@
                 card.innerHTML = `
                     ${cardOverlay}
                     <div class="flex items-start justify-between gap-1 font-sans">
-                        <span class="text-[10px] text-slate-500 font-bold tracking-wider">PLATZ ${index + 1}</span>
+                        <span class="text-[10px] text-slate-500 font-bold tracking-wider flex items-center gap-1">PLATZ ${index + 1} ${rankChangeBadge}</span>
                         ${streakBadge}
                         <button 
                             onclick="event.stopPropagation(); deleteTeam('${team.id}')" 
@@ -3110,46 +3305,6 @@
             closeImportModal();
         }
 
-        /* Stand als HTML exportieren */
-        function exportCurrentStand() {
-            const className = prompt("Für welche Klasse möchtest du diesen Stand sichern?", activeClass);
-            if (className === null) return;
-            
-            const sanitizedClassName = className.trim().replace(/[^a-zA-Z0-9_-]/g, "_");
-            const fileName = `scoreboard_${sanitizedClassName}.html`;
-            
-            const docClone = document.documentElement.cloneNode(true);
-            
-            const oldLoader = docClone.querySelector('#state-loader');
-            if (oldLoader) oldLoader.remove();
-            
-            const stateScript = document.createElement('script');
-            stateScript.id = 'state-loader';
-            stateScript.innerHTML = `
-                window.PREBAKED_TEAMS = ${JSON.stringify(teams)};
-                window.PREBAKED_ROUND = ${currentRound};
-            `;
-            
-            docClone.querySelector('head').appendChild(stateScript);
-            
-            const confirmModal = docClone.querySelector('#confirm-modal');
-            if (confirmModal) confirmModal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50";
-            const importModal = docClone.querySelector('#import-modal');
-            if (importModal) importModal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50";
-
-            const htmlContent = "<!DOCTYPE html>\n<html lang=\"de\">" + docClone.innerHTML + "</html>";
-            
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            showToast(`Sicherung als "${fileName}" heruntergeladen!`, 'success');
-        }
-
         const canvas = getEl("confetti-canvas");
         const ctx = canvas ? canvas.getContext("2d") : null;
         let particles = [];
@@ -3197,11 +3352,28 @@
             }
         }
 
-        function initConfetti() {
+        function initConfetti(count = 150) {
             particles = [];
-            for (let i = 0; i < 150; i++) {
+            for (let i = 0; i < count; i++) {
                 particles.push(new ConfettiParticle());
             }
+        }
+
+        /* Kurze, dezente Konfetti-Ehrung für den Rundensieger (kein volles Finale) */
+        function celebrateRoundWinner(name, pts) {
+            showToast(`🏆 Rundensieger: "${name}" (+${pts} Punkte)!`, 'success');
+            playSound('up');
+
+            resizeCanvas();
+            initConfetti(50);
+            isConfettiActive = true;
+            animateConfetti();
+
+            if (confettiInterval) clearTimeout(confettiInterval);
+            confettiInterval = setTimeout(() => {
+                isConfettiActive = false;
+                if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }, 2500);
         }
 
         function animateConfetti() {
