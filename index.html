@@ -59,8 +59,8 @@
         .floating-reaction {
             position: absolute;
             bottom: 0;
-            font-size: 2.5rem;
-            animation: floatUpReaction 3.2s ease-out forwards;
+            font-size: 3.5rem;
+            animation: floatUpReaction 6s ease-out forwards;
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
         }
 
@@ -834,7 +834,6 @@
         // Schüler Runden Synchronisierung Variablen
         let studentCurrentRound = 1;
         let studentSse = null;
-        let studentControlPollInterval = null;
         let studentJokerActive = false;
         
         // Audio Synthesizer Context (Lazy Loading)
@@ -1211,9 +1210,6 @@
             if (studentSse) {
                 studentSse.close();
             }
-            if (studentControlPollInterval) {
-                clearInterval(studentControlPollInterval);
-            }
 
             pollStudentControlState(room);
 
@@ -1235,9 +1231,9 @@
                 } catch(e) {}
             };
 
-            // Sicherheitsnetz: iPads setzen die SSE-Verbindung im Hintergrund manchmal aus.
-            // Dieser periodische Abgleich holt den aktuellen Rundenstand notfalls automatisch nach.
-            studentControlPollInterval = setInterval(() => pollStudentControlState(room), 12000);
+            // Kein periodisches Hintergrund-Polling hier: bei vielen iPads im selben WLAN
+            // (= eine gemeinsame Adresse bei ntfy.sh) würde das schnell an Anfrage-Limits stoßen.
+            // Stattdessen gleicht sich die App beim Zurückkehren aus dem Hintergrund ab (siehe visibilitychange).
         }
 
         /* Rundenzustand & JOKER-SYNC auf dem Schülergerät anwenden */
@@ -1598,7 +1594,8 @@
 
             // Sicherheitsnetz: Falls die Live-Verbindung kurz aussetzt (z.B. bei WLAN-Rucklern),
             // holt dieser periodische Abgleich verpasste Nachrichten (Beitritte, Antworten, Spickzettel) nach.
-            liveRoomPollInterval = setInterval(() => pollLiveRoomBacklog(roomCode), 15000);
+            // Bewusst selten (nur 1 Gerät = die Lehrkraft), um das Anfrage-Limit von ntfy.sh zu schonen.
+            liveRoomPollInterval = setInterval(() => pollLiveRoomBacklog(roomCode), 45000);
         }
 
         /* Verarbeitet ein einzelnes Quiz-Ereignis (Beitritt / Antwort / Spickzettel) - wird sowohl
@@ -1820,7 +1817,7 @@
             el.style.left = `${5 + Math.random() * 85}%`;
             layer.appendChild(el);
 
-            setTimeout(() => el.remove(), 3300);
+            setTimeout(() => el.remove(), 6200);
         }
 
         /* Lehrer-PC: Spickzettel rendern */
