@@ -109,8 +109,6 @@
                         class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 font-sans"
                     >
                 </div>
-               
-                <!-- Emoji Picker Container -->
                 <div>
                     <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Wähle dein Team-Logo:</label>
                     <div class="grid grid-cols-5 gap-2" id="emoji-picker-container">
@@ -118,6 +116,7 @@
                     </div>
                     <input type="hidden" id="student-emoji-input" value="🎵">
                 </div>
+                
                 <button 
                     onclick="joinQuizRoom()" 
                     class="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-violet-900/30 active:scale-95 transition-all text-xs flex items-center justify-center gap-2"
@@ -202,6 +201,7 @@
                 <div id="student-feedback" class="hidden p-3 rounded-xl border text-center text-xs font-semibold"></div>
             </div>
         </div>
+
 
         <!-- Footer / Passwort-geschützter Zugang für die Lehrkraft -->
         <div class="text-center mt-8">
@@ -288,6 +288,13 @@
                 </button>
                 
                 <button 
+                    onclick="openTeamSongsModal()" 
+                    class="bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white p-3 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center"
+                    title="Vorbereitete Songs der Teams ansehen (Spickzettel)"
+                >
+                    <i class="fa-solid fa-user-secret text-lg text-amber-400"></i>
+                </button>
+                <button 
                     onclick="toggleFullscreen()" 
                     id="fullscreen-btn"
                     class="bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white p-3 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center"
@@ -295,25 +302,6 @@
                 >
                     <i class="fa-solid fa-expand text-lg"></i>
                 </button>
-                
-                <!-- Spickzettel-Button -->
-                <button 
-                    onclick="openTeamSongsModal()" 
-                    class="bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white p-3 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center"
-                    title="Vorbereitete Songs der Teams ansehen (Spickzettel)"
-                >
-                    <i class="fa-solid fa-user-secret text-lg text-amber-400"></i>
-                </button>
-
-                <!-- Zahnrad-Button für Einstellungen -->
-                <button 
-                    onclick="openSettingsModal()" 
-                    class="bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white p-3 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center"
-                    title="Einstellungen & Optionen öffnen"
-                >
-                    <i class="fa-solid fa-gear text-lg"></i>
-                </button>
-
                 <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl px-5 py-2 flex items-center gap-4 shadow-lg">
                     <span class="text-xs uppercase tracking-widest text-slate-400 font-bold">Aktuelle Runde:</span>
                     <span id="header-round-display" class="text-2xl font-black text-violet-400 font-mono">1</span>
@@ -321,13 +309,11 @@
             </div>
         </header>
 
-        <!-- ========================================== -->
-        <!-- LOBBY & SETUP-BEREICH (PHASE 1)            -->
-        <!-- ========================================== -->
-        <div id="setup-lobby-panel" class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4 font-sans">
+        <!-- Extrem kompakter zweispaltiger Steuerungsbereich -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             
             <!-- 1. LIVE-BUZZER & IPAD VERBINDUNG (LINKS) -->
-            <div class="md:col-span-5 bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-3">
+            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-2">
                 <h3 class="text-sm font-bold text-violet-400 flex items-center justify-between gap-2">
                     <span class="flex items-center gap-2"><i class="fa-solid fa-wifi text-violet-400"></i> iPad Live-Empfänger 📡</span>
                     <button 
@@ -339,23 +325,15 @@
                     </button>
                 </h3>
                 
-                <div class="space-y-3 text-xs">
-                    <!-- Dropdown für gespeicherte Räume & Sichern -->
-                    <div>
-                        <label class="text-[10px] text-slate-400 block mb-0.5">Gespeicherte Klassen/Räume:</label>
-                        <select id="class-select" onchange="handleClassChange(event)" class="w-full bg-slate-950 border border-slate-700/60 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none">
-                            <option value="Standard-Sitzung">-- Standard-Sitzung --</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="text-[10px] text-slate-400 block mb-0.5">Neuer Raum-Code (z.B. 7c):</label>
+                <div class="flex items-center gap-2">
+                    <div class="flex-grow">
+                        <label class="text-[10px] text-slate-400 block mb-0.5">Raum-Code (z.B. Klasse):</label>
                         <div class="flex gap-1.5">
                             <input 
                                 type="text" 
                                 id="room-code-input" 
                                 value="" 
-                                placeholder="Raum eingeben (z. B. 7c)..." 
+                                placeholder="Raum-Code (z.B. 7c)..." 
                                 maxlength="8"
                                 class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500 font-mono font-bold"
                             >
@@ -367,30 +345,30 @@
                             </button>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Team manuell hinzufügen -->
-                    <div class="border-t border-slate-700/30 pt-2 mt-1">
-                        <label class="text-[10px] text-slate-400 block mb-0.5">Team manuell hinzufügen:</label>
-                        <form onsubmit="handleManualTeamAdd(event)" class="flex gap-1.5">
-                            <input 
-                                type="text" 
-                                id="manual-team-input" 
-                                placeholder="Teamname..." 
-                                maxlength="12"
-                                class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
-                            >
-                            <button 
-                                type="submit" 
-                                class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1 rounded-xl text-xs active:scale-95 transition-all"
-                            >
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
-                        </form>
-                    </div>
+                <!-- Team manuell hinzufügen mit Enter-Taste -->
+                <div class="border-t border-slate-700/30 pt-1.5 mt-0.5">
+                    <label class="text-[10px] text-slate-400 block mb-0.5">Team manuell hinzufügen (Enter drücken):</label>
+                    <form onsubmit="handleManualTeamAdd(event)" class="flex gap-1.5">
+                        <input 
+                            type="text" 
+                            id="manual-team-input" 
+                            placeholder="z. B. Kiwi, Team Alpha..." 
+                            maxlength="12"
+                            class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        >
+                        <button 
+                            type="submit" 
+                            class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1 rounded-xl text-xs active:scale-95 transition-all"
+                        >
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </form>
                 </div>
 
                 <!-- Live Verbindung Status & QR Code Trigger -->
-                <div class="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-700/30">
+                <div class="flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t border-slate-700/30">
                     <div id="connection-status" class="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
                         <span class="h-2 w-2 rounded-full bg-rose-500"></span> Live-Empfang offline
                     </div>
@@ -404,42 +382,100 @@
                 </div>
             </div>
 
-            <!-- 2. ANLEITUNGS- & LIVE-BEITRITT-PANEL (RECHTS) -->
-            <div class="md:col-span-7 bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-3">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5 font-sans">
-                        <i class="fa-solid fa-circle-play"></i> 1. Beitrittsphase (Lobby)
-                    </h3>
-                    <!-- NEUE SITZUNG STARTEN (RESET) -->
-                    <button 
-                        onclick="confirmReset()" 
-                        class="bg-rose-950/40 hover:bg-rose-900 border border-rose-900/50 text-rose-300 text-[10px] font-bold px-3 py-1 rounded-lg transition-all active:scale-95 font-sans"
-                    >
-                        <i class="fa-solid fa-rotate-left mr-1"></i> Neue Sitzung starten
-                    </button>
+            <!-- 2. EINSTELLUNGEN & KLASSEN-SPEICHER (RECHTS) -->
+            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-2 text-xs">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-slate-300 flex items-center gap-1">
+                        <i class="fa-solid fa-volume-high text-slate-400"></i> Sounds
+                    </span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="sound-toggle" checked class="sr-only peer" onchange="saveState()">
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                    </label>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-slate-300 flex items-center gap-1">
+                        <i class="fa-solid fa-arrow-down-1-9 text-slate-400"></i> Auto-Sortierung
+                    </span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="auto-sort-toggle" checked class="sr-only peer" onchange="handleAutoSortToggle()">
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                    </label>
+                </div>
+                
+                <!-- Klassen-Speicher (Dropdown & Sichern) -->
+                <div class="border-t border-slate-700/40 pt-1.5 mt-0.5 space-y-1">
+                    <div class="flex items-center justify-between gap-1">
+                        <select id="class-select" onchange="handleClassChange(event)" class="bg-slate-900 border border-slate-700 text-slate-200 text-[11px] rounded-lg p-1 flex-grow focus:outline-none">
+                            <option value="Standard-Sitzung">-- Standard-Sitzung --</option>
+                        </select>
+                        <button onclick="deleteCurrentClass()" class="bg-rose-950/40 hover:bg-rose-900/60 border border-rose-900/40 text-rose-300 p-1 rounded-lg text-xs transition-all active:scale-95" title="Klasse löschen">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                    <div class="flex gap-1.5">
+                        <input 
+                            type="text" 
+                            id="class-name-input" 
+                            placeholder="Name (z.B. 7c)..." 
+                            class="bg-slate-900/60 border border-slate-700/50 text-slate-200 placeholder-slate-500 rounded-lg px-2.5 py-0.5 text-[11px] flex-grow focus:outline-none"
+                        >
+                        <button onclick="saveNewClass()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3.5 py-0.5 rounded-lg text-[11px] active:scale-95 transition-all">
+                            Sichern
+                        </button>
+                    </div>
                 </div>
 
-                <div class="text-xs text-slate-300 space-y-2 leading-relaxed">
-                    <p>Lass deine Schüler den QR-Code einscannen und dem Raum beitreten. Sobald sich ein Team einloggt, erscheint es sofort unten auf der Tafel mit 0 Punkten!</p>
-                    <p class="text-slate-400">Sie können jetzt auch bereits ihre 4 geheimen Songs über ihre iPads eintragen, damit du sie über den Spickzettel-Button (🤫) oben rechts einsehen kannst.</p>
+                <!-- Passwort ändern Bereich -->
+                <div class="border-t border-slate-700/40 pt-1.5 space-y-1">
+                    <div class="flex gap-1.5 items-center justify-between font-medium">
+                        <span class="text-slate-400 text-[10px]"><i class="fa-solid fa-key text-violet-400"></i> Lehrer-Passwort:</span>
+                        <div class="flex gap-1">
+                            <div class="relative flex items-center">
+                                <input 
+                                    type="password" 
+                                    id="change-password-input" 
+                                    value="musik" 
+                                    placeholder="Neu..." 
+                                    class="w-24 bg-slate-900/60 border border-slate-700/50 text-slate-200 text-[10px] rounded pl-1.5 pr-6 py-0.5 focus:outline-none"
+                                >
+                                <button 
+                                    type="button" 
+                                    onclick="togglePasswordVisibility('change-password-input', 'toggle-pw-icon')" 
+                                    class="absolute right-1 text-slate-500 hover:text-slate-300 text-[10px] p-0.5"
+                                    title="Passwort anzeigen/verbergen"
+                                >
+                                    <i class="fa-solid fa-eye" id="toggle-pw-icon"></i>
+                                </button>
+                            </div>
+                            <button onclick="changeTeacherPassword()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all">
+                                Sichern
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="pt-2 border-t border-slate-700/30 flex justify-end gap-2">
-                    <button 
-                        onclick="startLiveGame()" 
-                        class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2.5 px-6 rounded-xl shadow-lg shadow-emerald-900/30 active:scale-95 transition-all text-sm flex items-center gap-2 animate-pulse"
-                    >
-                        <span>Spiel starten 🎮</span>
-                        <i class="fa-solid fa-gamepad"></i>
+                <!-- Reset, Finale & Export -->
+                <div class="flex flex-col gap-1 mt-1 pt-1 border-t border-slate-700/40 font-bold">
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button onclick="confirmReset()" class="bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 border border-rose-900/40 font-bold py-1 rounded-lg text-[10px] transition-all font-sans">
+                            <i class="fa-solid fa-trash-can"></i> Reset
+                        </button>
+                        <button onclick="triggerWinConfetti()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-1 rounded-lg text-[10px] transition-all shadow-md">
+                            <i class="fa-solid fa-crown"></i> Finale 🏆
+                        </button>
+                    </div>
+                    <button onclick="exportCurrentStand()" class="w-full bg-violet-600/30 hover:bg-violet-600/50 border border-violet-500/40 text-violet-200 font-bold py-1 rounded-lg text-[10px] transition-all flex items-center justify-center gap-1" title="Speichert diesen Spielstand als HTML-Datei">
+                        <i class="fa-solid fa-file-export"></i> Stand als HTML exportieren 💾
                     </button>
                 </div>
             </div>
         </div>
 
         <!-- ========================================== -->
-        <!-- LIVE QR-CODE PANEL                         -->
+        <!-- LIVE QR-CODE UND EINRICHTUNGS PANEL       -->
         <!-- ========================================== -->
-        <div id="qr-code-panel" class="hidden bg-slate-900/90 border-2 border-violet-500/50 rounded-2xl p-4 mb-4 backdrop-blur-md transition-all grid grid-cols-1 md:grid-cols-12 gap-4 items-center animate-fadeIn">
+        <div id="qr-code-panel" class="hidden bg-slate-900/90 border-2 border-violet-500/50 rounded-2xl p-4 mb-4 backdrop-blur-md transition-all grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
             <div class="md:col-span-3 flex justify-center bg-white p-3 rounded-xl shadow-lg border border-slate-700">
                 <img id="qr-code-img" src="" alt="iPad Connection QR Code" class="w-40 h-40 object-contain">
             </div>
@@ -451,7 +487,7 @@
                     <li>Veröffentliche diese Seite auf GitHub Pages (wie in der Anleitung beschrieben).</li>
                     <li>Lass die Schüler den links angezeigten <strong>QR-Code</strong> mit ihren iPads einscannen.</li>
                     <li>Gib ihnen dann einfach deinen oben eingestellten Raum-Code (z. B. <strong class="text-violet-400 font-mono font-bold" id="qr-room-code-display">7c</strong>) durch!</li>
-                    <li>Sobald sie beitreten, landen sie live auf der Tafel!</li>
+                    <li>Sobald sie absenden, landen die Antworten live und sortiert auf dieser Tafel!</li>
                 </ul>
                 <div class="pt-2 text-[10px] text-slate-400 flex flex-col md:flex-row md:items-center gap-2">
                     <span>Manuelle URL (falls im Internet gehostet):</span>
@@ -467,66 +503,56 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- SPIELSTEUERUNG-OBERFLÄCHE (PHASE 2)        -->
+        <!-- EINZEILIGER RUNDEN-MANAGER (ÜBER ANTWORTEN)-->
         <!-- ========================================== -->
-        <div id="game-controls-panel" class="hidden animate-fadeIn mb-4">
-            
-            <!-- EINZEILIGER RUNDEN-MANAGER -->
-            <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 flex flex-col xl:flex-row items-center justify-between gap-3 animate-fadeIn">
-                <div class="flex flex-wrap items-center gap-2.5 text-xs">
-                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 font-sans">
-                        <i class="fa-solid fa-play-circle text-emerald-400 animate-pulse"></i> Runden-Manager
-                    </span>
-                    
-                    <span class="bg-violet-500/25 text-violet-300 border border-violet-500/45 px-3 py-1 rounded-lg font-bold font-mono flex items-center gap-1">
-                        Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400 font-mono">1</span>
-                    </span>
+        <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 mb-3 flex flex-col xl:flex-row items-center justify-between gap-3 animate-fadeIn">
+            <div class="flex flex-wrap items-center gap-2.5 text-xs">
+                <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 animate-sans">
+                    <i class="fa-solid fa-play-circle text-emerald-400 animate-pulse"></i> Runden-Manager
+                </span>
+                
+                <!-- Neue, hochsichtbare Rundenanzeige direkt im Rundenmanager -->
+                <span class="bg-violet-500/25 text-violet-300 border border-violet-500/45 px-3 py-1 rounded-lg font-bold font-mono flex items-center gap-1">
+                    Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400">1</span>
+                </span>
 
-                    <!-- Countdown Timer direkt hier einzeilig integriert -->
-                    <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px] font-sans">
-                        <span class="text-slate-300 font-bold flex items-center gap-1"><i class="fa-solid fa-hourglass-start text-amber-500"></i> Timer:</span>
-                        <input type="number" id="timer-duration" value="30" min="5" max="120" class="w-10 bg-slate-950 text-slate-100 rounded text-center text-xs focus:outline-none focus:ring-1 focus:ring-violet-500 font-black font-mono">
-                        <span class="text-slate-400 text-[10px]">Sek.</span>
-                        <button id="start-timer-btn" onclick="startTimer()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all">Start ⏱️</button>
-                        <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">Stop 🛑</button>
-                        <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-1.5 py-0.5 rounded font-mono">30s</div>
-                    </div>
-                    
-                    <span class="text-slate-400 text-[11px] hidden xl:inline font-medium font-sans">Punkte vergeben oder iPad-Buzzer auswerten.</span>
+                <!-- Countdown Timer direkt hier einzeilig integriert! -->
+                <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px]">
+                    <span class="text-slate-300 font-bold flex items-center gap-1"><i class="fa-solid fa-hourglass-start text-amber-500"></i> Timer:</span>
+                    <input type="number" id="timer-duration" value="30" min="5" max="120" class="w-10 bg-slate-950 text-slate-100 rounded text-center text-xs focus:outline-none focus:ring-1 focus:ring-violet-500 font-black">
+                    <span class="text-slate-400 text-[10px]">Sek.</span>
+                    <button id="start-timer-btn" onclick="startTimer()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all">Start ⏱️</button>
+                    <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">Stop 🛑</button>
+                    <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-1.5 py-0.5 rounded">30s</div>
                 </div>
-                <div class="flex items-center gap-2 w-full xl:w-auto justify-end font-sans">
-                    <button 
-                        onclick="prevRound()" 
-                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1 font-sans"
-                        title="Gehe eine Spielrunde zurück"
-                    >
-                        <i class="fa-solid fa-arrow-left"></i>
-                        <span>Runde zurück</span>
-                    </button>
-                    <button 
-                        onclick="markAllActive()" 
-                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
-                        title="Alle Teams aus- oder abwählen"
-                    >
-                        <i class="fa-solid fa-check-double text-emerald-400"></i>
-                        <span>Alle Richtig / Null</span>
-                    </button>
-                    <button 
-                        onclick="nextRound()" 
-                        class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-1.5 px-4.5 rounded-lg text-[11px] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 font-sans"
-                        title="Punkte für diese Runde gutschreiben und nächste Runde starten"
-                    >
-                        <span>Nächste Runde</span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                    <button 
-                        onclick="stopLiveGame()" 
-                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-400 hover:text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1 font-sans"
-                        title="Zurück zur Setup-Lobby wechseln"
-                    >
-                        <i class="fa-solid fa-users"></i> Lobby zeigen
-                    </button>
-                </div>
+                
+                <span class="text-slate-400 text-[11px] hidden xl:inline font-medium">Nutze das +1, +2, +3 System oder werte die iPad-Buzzer aus.</span>
+            </div>
+            <div class="flex items-center gap-2 w-full xl:w-auto justify-end">
+                <button 
+                    onclick="prevRound()" 
+                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1 font-sans"
+                    title="Gehe eine Spielrunde zurück"
+                >
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Runde zurück</span>
+                </button>
+                <button 
+                    onclick="markAllActive()" 
+                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
+                    title="Alle Teams aus- oder abwählen"
+                >
+                    <i class="fa-solid fa-check-double text-emerald-400"></i>
+                    <span>Alle Richtig / Null</span>
+                </button>
+                <button 
+                    onclick="nextRound()" 
+                    class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-1.5 px-4.5 rounded-lg text-[11px] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 font-sans"
+                    title="Punkte für diese Runde gutschreiben und nächste Runde starten"
+                >
+                    <span>Nächste Runde</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
             </div>
         </div>
 
@@ -575,7 +601,7 @@
             <i class="fa-solid fa-people-group text-4xl text-slate-600 mb-2 block"></i>
             <h4 class="text-base font-bold text-slate-400">Keine Teams in dieser Sitzung</h4>
             <p class="text-slate-500 text-xs mt-1 max-w-sm mx-auto">
-                Lass deine Schüler über ihre iPads mitspielen, um das Live-Scoreboard automatisch zu befüllen!
+                Trage über das <strong>Massen-Import Tool</strong> oben deine Schülergruppen ein oder lass sie über ihre iPads mitspielen!
             </p>
         </div>
 
@@ -596,91 +622,7 @@
 
     </div>
 
-    <!-- ========================================== -->
-    <!-- SETTINGS MODAL DIALOG                      -->
-    <!-- ========================================== -->
-    <div id="settings-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50 font-sans">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-md w-full shadow-2xl animate-fadeIn space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
-                <h3 class="text-base font-bold text-violet-400 flex items-center gap-1.5 font-sans">
-                    <i class="fa-solid fa-gear"></i> Scoreboard-Einstellungen
-                </h3>
-                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark text-base"></i>
-                </button>
-            </div>
-
-            <div class="space-y-3.5 text-xs text-slate-300">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="flex items-center gap-1.5">
-                        <i class="fa-solid fa-volume-high text-slate-400"></i> Soundeffekte abspielen
-                    </span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="sound-toggle" checked class="sr-only peer" onchange="saveState()">
-                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
-                    </label>
-                </div>
-
-                <div class="flex items-center justify-between gap-2">
-                    <span class="flex items-center gap-1.5">
-                        <i class="fa-solid fa-arrow-down-1-9 text-slate-400"></i> Führende Teams auto-sortieren
-                    </span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="auto-sort-toggle" checked class="sr-only peer" onchange="handleAutoSortToggle()">
-                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
-                    </label>
-                </div>
-
-                <!-- API Key Config -->
-                <div class="border-t border-slate-800 pt-3 mt-1.5 space-y-1">
-                    <span class="text-slate-400 font-bold block mb-0.5"><i class="fa-solid fa-key text-amber-500 mr-1"></i>Gemini API-Schlüssel (für Dokumenten-KI):</span>
-                    <input 
-                        type="password" 
-                        id="api-key-input" 
-                        placeholder="API-Key eintragen..." 
-                        class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1.5 text-slate-300 placeholder-slate-650 focus:outline-none focus:ring-1 focus:ring-violet-500 font-sans text-xs"
-                        onchange="saveState()"
-                    >
-                </div>
-
-                <!-- Passwort ändern Bereich -->
-                <div class="border-t border-slate-800 pt-3 mt-1.5 space-y-1">
-                    <span class="text-slate-400 font-bold block mb-0.5"><i class="fa-solid fa-lock text-violet-400 mr-1"></i>Lehrer-Bereichs Passwort ändern:</span>
-                    <div class="flex gap-1.5">
-                        <div class="relative flex items-center flex-grow">
-                            <input 
-                                type="password" 
-                                id="change-password-input" 
-                                value="musik" 
-                                placeholder="Neues Passwort..." 
-                                class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1.5 text-slate-300 text-xs focus:outline-none"
-                            >
-                            <button 
-                                type="button" 
-                                onclick="togglePasswordVisibility('change-password-input', 'toggle-pw-icon')" 
-                                class="absolute right-2 text-slate-500 hover:text-slate-300 text-xs p-1 animate-fadeIn"
-                            >
-                                <i class="fa-solid fa-eye animate-fadeIn" id="toggle-pw-icon"></i>
-                            </button>
-                        </div>
-                        <button onclick="changeTeacherPassword()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs active:scale-95 transition-all">
-                            Ändern
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="pt-2.5 border-t border-slate-800 flex justify-end">
-                <button onclick="closeSettingsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs active:scale-95">
-                    Schließen
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- 🤫 SECRET TEAM SONGS PREP MODAL              -->
-    <!-- ========================================== -->
+    <!-- SPICKZETTEL: Vorbereitete Songs der Teams -->
     <div id="team-songs-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50 font-sans">
         <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-lg w-full shadow-2xl animate-fadeIn space-y-4">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 font-sans">
@@ -711,10 +653,22 @@
     <!-- Toast Benachrichtigungen -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
 
+    <!-- Bestätigungs-Modal für Reset & Deletion (Eigene, schicke Modals) -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50 font-sans">
+        <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl max-w-xs w-full shadow-2xl animate-scaleIn">
+            <h3 id="confirm-title" class="text-lg font-bold text-white mb-2">Wirklich zurücksetzen?</h3>
+            <p id="confirm-desc" class="text-slate-400 text-xs mb-4 font-medium">Alle Teams und Punkte der aktuellen Klasse werden gelöscht. Die Runde startet wieder bei 1.</p>
+            <div class="flex gap-3 justify-end">
+                <button onclick="closeModal()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700 transition-all font-bold">Abbrechen</button>
+                <button id="confirm-action-btn" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs transition-all font-bold">Ja, ausführen</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MASSEN-IMPORT / KI MODAL -->
     <div id="import-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50 font-sans">
-        <div class="bg-slate-900 border border-slate-700/80 p-5 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col gap-4 animate-scaleIn">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2 font-sans">
+        <div class="bg-slate-900 border border-slate-700/80 p-5 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col gap-4 animate-scaleIn font-sans">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
                 <h3 class="text-lg font-bold text-violet-400 flex items-center gap-2">
                     <i class="fa-solid fa-file-import"></i> Teamnamen-Importer & KI-Erkennung
                 </h3>
@@ -723,8 +677,21 @@
                 </button>
             </div>
 
+            <!-- Optionaler API-Key Config -->
+            <div class="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs">
+                <span class="text-slate-400 font-medium leading-tight">
+                    <i class="fa-solid fa-key text-amber-500"></i> Gemini API-Schlüssel (für lokale KI-Bilderkennung):
+                </span>
+                <input 
+                    type="password" 
+                    id="api-key-input" 
+                    placeholder="API-Key hier eintragen (optional)..." 
+                    class="bg-slate-900 border border-slate-700/60 rounded px-2.5 py-1 text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-violet-500 text-[11px]"
+                >
+            </div>
+
             <!-- Tabs Navigation -->
-            <div class="flex border-b border-slate-800 text-xs font-sans">
+            <div class="flex border-b border-slate-800 text-xs">
                 <button id="tab-btn-text" onclick="switchImportTab('text')" class="py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400">
                     <i class="fa-solid fa-align-left mr-1"></i> Text kopieren & einfügen
                 </button>
@@ -734,7 +701,7 @@
             </div>
 
             <!-- Tab 1: Manual Text Input -->
-            <div id="tab-content-text" class="space-y-3 font-sans">
+            <div id="tab-content-text" class="space-y-3">
                 <p class="text-xs text-slate-400">Gib hier deine Teamnamen ein (jeder Name in einer neuen Zeile oder getrennt durch Kommas):</p>
                 <textarea 
                     id="bulk-text-input" 
@@ -756,7 +723,7 @@
                 
                 <div 
                     id="dropzone"
-                    class="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center hover:border-slate-500 transition-all cursor-pointer bg-slate-950/20 flex flex-col items-center justify-center gap-3 font-sans"
+                    class="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center hover:border-slate-500 transition-all cursor-pointer bg-slate-950/20 flex flex-col items-center justify-center gap-3"
                     onclick="document.getElementById('file-input').click()"
                 >
                     <i class="fa-solid fa-cloud-arrow-up text-3xl text-violet-500"></i>
@@ -808,15 +775,15 @@
         let beamerProtectionActive = true; 
         
         let classes = {
-            "Standard-Sitzung": { teams: [], currentRound: 1, teamSongs: {} }
+            "Standard-Sitzung": { teams: [], currentRound: 1 }
         };
         let teams = [];
         let currentRound = 1;
-        let teamSongs = {}; // Geheimes Songverzeichnis der Teams
+        let teamSongs = {}; // Geheimes Songverzeichnis der Teams (Spickzettel)
 
         let sseSource = null;
         let incomingAnswers = [];
-        let answerHistory = []; // Backup für alte Antworten
+        let answerHistory = []; // Neues Backupsystem für alte Antworten
 
         let confettiInterval = null;
         let isConfettiActive = false;
@@ -838,38 +805,16 @@
             "🎸", "👑", "🎈", "🛸", "👻", 
             "🦄", "🌮", "👾", "🍩", "🦕", 
             "🍿", "🥑", "🐯", "🎨", "🧩", 
-            "⚽", "🎮", "🎤", "🍦", "🍍", 
+            "⚽", "🎮", "🎤", "🍦", " Pineapple", 
             "🐸", "🐱", "🐶", "🦉", "🐨"
         ];
-/* Emoji Picker Initialisierung */
-function initEmojiPicker() {
-    const container = getEl('emoji-picker-container');
-    const hiddenInput = getEl('student-emoji-input');
-    if (!container) return;
 
-    container.innerHTML = '';
-    emojis.forEach(emoji => {
-        const btn = document.createElement('button');
-        btn.type = "button";
-        btn.className = "text-xl p-1 rounded-lg hover:bg-slate-800 transition-all";
-        btn.innerText = emoji;
-        
-        if (emoji === hiddenInput.value) btn.classList.add('bg-violet-600');
-
-        btn.onclick = () => {
-            document.querySelectorAll('#emoji-picker-container button').forEach(b => b.classList.remove('bg-violet-600'));
-            btn.classList.add('bg-violet-600');
-            hiddenInput.value = emoji;
-        };
-        container.appendChild(btn);
-    });
-}
         /* Sicherer Elementzugriff mit Fallback */
         function getEl(id) {
             return document.getElementById(id) || null;
         }
 
-        /* LocalStorage Speicher-Funktionen mit kontinuierlichem Autosave */
+        /* LocalStorage Speicher-Funktionen */
         function saveState() {
             try {
                 classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {} };
@@ -878,7 +823,6 @@ function initEmojiPicker() {
                     classes[activeClass] = {
                         teams: teams,
                         currentRound: currentRound,
-                        answerHistory: answerHistory,
                         teamSongs: teamSongs
                     };
                 }
@@ -894,10 +838,11 @@ function initEmojiPicker() {
                     autoSort: autoSortEl ? autoSortEl.checked : true,
                     soundEnabled: soundEl ? soundEl.checked : true,
                     geminiKey: apiKeyEl ? apiKeyEl.value.trim() : "",
-                    beamerProtectionActive: beamerProtectionActive
+                    beamerProtectionActive: beamerProtectionActive,
+                    answerHistory: answerHistory
                 };
                 
-                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2_stable', JSON.stringify(saveDataObj));
+                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys', JSON.stringify(saveDataObj));
             } catch (err) {
                 console.error("Fehler beim Speichern des Zustands:", err);
             }
@@ -906,7 +851,7 @@ function initEmojiPicker() {
         /* Serverless Broadcast für Runden-Synchronisierung auf Schülergeräten */
         async function broadcastControlState(timerSeconds = -1) {
             const codeInput = getEl('room-code-input');
-            const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "";
+            const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "7c";
             if (!roomCode) return;
             
             const jokersUsed = teams.filter(t => t.jokerUsed).map(t => t.name.toLowerCase());
@@ -946,17 +891,15 @@ function initEmojiPicker() {
                     const managerRoundDisplay = getEl('manager-round-display');
                     if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
                     
-                    updateClassDropdown();
                     updateActiveBadge();
                     renderScoreboard();
                     renderHistoryArchive();
-                    renderTeamSongsList();
                     showToast("Exportierter Spielstand erfolgreich geladen!", "success");
                     switchView('teacher'); 
                     return;
                 }
 
-                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2_stable');
+                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys');
                 if (savedData) {
                     const parsed = JSON.parse(savedData);
                     if (parsed) {
@@ -964,6 +907,7 @@ function initEmojiPicker() {
                         activeClass = parsed.activeClass || "Standard-Sitzung";
                         teacherPassword = parsed.teacherPassword || "musik";
                         beamerProtectionActive = parsed.beamerProtectionActive !== false;
+                        answerHistory = parsed.answerHistory || [];
                         
                         const autoSortEl = getEl('auto-sort-toggle');
                         if (autoSortEl) autoSortEl.checked = parsed.autoSort !== false;
@@ -979,18 +923,18 @@ function initEmojiPicker() {
                         "Standard-Sitzung": { teams: [], currentRound: 1, teamSongs: {} }
                     };
                     activeClass = "Standard-Sitzung";
+                    answerHistory = [];
                 }
 
                 classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {} };
 
                 if (!classes[activeClass]) {
-                    classes[activeClass] = { teams: [], currentRound: 1, answerHistory: [], teamSongs: {} };
+                    classes[activeClass] = { teams: [], currentRound: 1, teamSongs: {} };
                 }
 
                 const currentData = classes[activeClass];
                 teams = currentData.teams || [];
                 currentRound = currentData.currentRound || 1;
-                answerHistory = currentData.answerHistory || [];
                 teamSongs = currentData.teamSongs || {};
 
                 teams.forEach(t => {
@@ -1001,9 +945,9 @@ function initEmojiPicker() {
                     t.jokerActiveThisRound = false;
                 });
 
+                // Standard-Sitzung soll immer mit absolut leerem Verlauf starten!
                 if (activeClass === "Standard-Sitzung") {
                     answerHistory = [];
-                    teamSongs = {};
                 }
 
                 const roundDisplay = getEl('header-round-display');
@@ -1036,62 +980,34 @@ function initEmojiPicker() {
             }
         }
 
-        /* Modalssteuerung für Zahnrad & Settings */
-        function openSettingsModal() {
-            const modal = getEl('settings-modal');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
+        /* Emoji Picker Initialisierung auf Schüler-Join-Modul */
+        function initEmojiPicker() {
+            const container = getEl('emoji-picker-container');
+            if (!container) return;
+            container.innerHTML = '';
+            emojis.forEach((emoji, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `p-2 text-xl rounded-xl bg-slate-950 border border-slate-800 hover:border-violet-500/50 transition-all ${idx === 0 ? 'ring-2 ring-violet-500' : ''}`;
+                btn.innerHTML = emoji;
+                btn.onclick = () => selectEmoji(emoji, btn);
+                container.appendChild(btn);
+            });
+            const hiddenInput = getEl('student-emoji-input');
+            if (hiddenInput) hiddenInput.value = emojis[0];
         }
 
-        function closeSettingsModal() {
-            const modal = getEl('settings-modal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        }
-
-        /* Modalssteuerung für Team Spickzettel */
-        function openTeamSongsModal() {
-            renderTeamSongsList();
-            const modal = getEl('team-songs-modal');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-        }
-
-        function closeTeamSongsModal() {
-            const modal = getEl('team-songs-modal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        }
-
-        /* Lobby vs. Spielmodus Wechsel */
-        function startLiveGame() {
-            const roomCode = getEl('room-code-input').value.trim();
-            if (!roomCode) {
-                showToast("Bitte gib zuerst einen Raumcode ein, um das Spiel zu starten!", "danger");
-                return;
-            }
-            getEl('setup-lobby-panel').classList.add('hidden');
-            getEl('game-controls-panel').classList.remove('hidden');
+        function selectEmoji(emoji, element) {
+            const hiddenInput = getEl('student-emoji-input');
+            if (hiddenInput) hiddenInput.value = emoji;
             
-            beamerProtectionActive = true;
-            renderIncomingAnswersList();
-
-            showToast("Spielmodus gestartet! QR-Codes wurden ausgeblendet.", "success");
-            playSound('up');
-        }
-
-        function stopLiveGame() {
-            getEl('setup-lobby-panel').classList.remove('hidden');
-            getEl('game-controls-panel').classList.add('hidden');
-            showToast("Zurück in den Lobby-Modus geschaltet.", "info");
+            const container = getEl('emoji-picker-container');
+            if (container) {
+                container.querySelectorAll('button').forEach(btn => {
+                    btn.classList.remove('ring-2', 'ring-violet-500');
+                });
+            }
+            element.classList.add('ring-2', 'ring-violet-500');
         }
 
         function switchView(view) {
@@ -1132,12 +1048,549 @@ function initEmojiPicker() {
             }
         }
 
-        /* Spickzettel-Sperrung auf Schülergeräten laden */
+        /* Passwort-Schutz für Lehrkraft */
+        function promptTeacherLogin() {
+            const modal = getEl('teacher-password-modal');
+            const input = getEl('teacher-password-input');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+            if (input) input.focus();
+        }
+
+        function closeTeacherLogin() {
+            const modal = getEl('teacher-password-modal');
+            const input = getEl('teacher-password-input');
+            if (modal) modal.classList.add('hidden');
+            if (modal) modal.classList.remove('flex');
+            if (input) input.value = '';
+        }
+
+        function checkTeacherPassword() {
+            const input = getEl('teacher-password-input');
+            const val = input ? input.value.trim() : "";
+            if (val === teacherPassword) {
+                closeTeacherLogin();
+                switchView('teacher');
+                showToast("Erfolgreich eingeloggt!", "success");
+            } else {
+                showToast("Passwort falsch!", "danger");
+                playSound('down');
+            }
+        }
+
+        function changeTeacherPassword() {
+            const input = getEl('change-password-input');
+            const newPw = input ? input.value.trim() : "";
+            if (newPw.length < 3) {
+                showToast("Das Passwort muss mindestens 3 Zeichen lang sein!", "danger");
+                return;
+            }
+            teacherPassword = newPw;
+            saveState();
+            showToast("Lehrer-Passwort erfolgreich geändert!", "success");
+        }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = getEl(inputId);
+            const icon = getEl(iconId);
+            if (input && icon) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+        }
+
+        /* Custom Modal Controller */
+        function showCustomConfirm(title, description, onConfirm) {
+            const modal = getEl('confirm-modal');
+            const titleEl = getEl('confirm-title');
+            const descEl = getEl('confirm-desc');
+            const btn = getEl('confirm-action-btn');
+
+            if (titleEl) titleEl.innerText = title;
+            if (descEl) descEl.innerText = description;
+            confirmActionCallback = onConfirm;
+            
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            if (btn) {
+                btn.onclick = function() {
+                    if (confirmActionCallback) confirmActionCallback();
+                    closeModal();
+                };
+            }
+        }
+
+        function closeModal() {
+            const modal = getEl('confirm-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function connectStudentControlChannel(room) {
+            if (studentSse) {
+                studentSse.close();
+            }
+
+            fetch(`https://ntfy.sh/mq-ntfy-${room}-control/json?poll=1`)
+                .then(r => r.text())
+                .then(text => {
+                    const lines = text.trim().split('\n');
+                    for (let i = lines.length - 1; i >= 0; i--) {
+                        try {
+                            const data = JSON.parse(lines[i]);
+                            if (data.message) {
+                                const payload = JSON.parse(data.message);
+                                if (payload) {
+                                    updateStudentRound(payload.round || 1, payload.jokersUsed || []);
+                                    break;
+                                }
+                            }
+                        } catch(e) {}
+                    }
+                }).catch(e => console.error(e));
+
+            studentSse = new EventSource(`https://ntfy.sh/mq-ntfy-${room}-control/sse`);
+            studentSse.onmessage = function(event) {
+                try {
+                    const rawData = JSON.parse(event.data);
+                    if (rawData && rawData.message) {
+                        const payload = JSON.parse(rawData.message);
+                        if (payload) {
+                            if (payload.round !== undefined) {
+                                updateStudentRound(payload.round, payload.jokersUsed || []);
+                            }
+                            if (payload.timer !== undefined) {
+                                updateStudentTimer(payload.timer);
+                            }
+                        }
+                    }
+                } catch(e) {}
+            };
+        }
+
+        /* Rundenzustand & JOKER-SYNC auf dem Schülergerät anwenden */
+        function updateStudentRound(newRound, jokersUsedArray) {
+            studentCurrentRound = newRound;
+            const roundBadge = getEl('student-round-badge');
+            if (roundBadge) {
+                roundBadge.innerText = `Runde ${newRound}`;
+                roundBadge.classList.remove('hidden');
+            }
+            
+            const room = localStorage.getItem('student_room_code');
+            const myName = localStorage.getItem('student_team_name') || "";
+            const lastSubmitted = localStorage.getItem(`last_sub_round_${room}`);
+            const btn = getEl('student-submit-btn');
+            const feedback = getEl('student-feedback');
+            const textarea = getEl('student-answer-input');
+            const jokerBtn = getEl('student-joker-btn');
+
+            let serverSaysJokerUsed = false;
+            if (jokersUsedArray && Array.isArray(jokersUsedArray)) {
+                serverSaysJokerUsed = jokersUsedArray.includes(myName.toLowerCase());
+            }
+
+            if (serverSaysJokerUsed) {
+                localStorage.setItem(`joker_used_${room}`, 'true'); 
+                studentJokerActive = false;
+                if (jokerBtn) {
+                    jokerBtn.disabled = true;
+                    jokerBtn.className = "w-full bg-slate-950/40 border border-slate-900 text-slate-600 py-2.5 rounded-xl text-xs cursor-not-allowed text-center";
+                    jokerBtn.innerHTML = `<span>🃏 Joker verbraucht (Lehrer-Sperre)</span>`;
+                }
+            } else {
+                const localJokerUsed = localStorage.getItem(`joker_used_${room}`);
+                if (localJokerUsed) {
+                    studentJokerActive = false;
+                    if (jokerBtn) {
+                        jokerBtn.disabled = true;
+                        jokerBtn.className = "w-full bg-slate-950/40 border border-slate-900 text-slate-600 py-2.5 rounded-xl text-xs cursor-not-allowed text-center";
+                        jokerBtn.innerHTML = `<span>🃏 Joker bereits verbraucht</span>`;
+                    }
+                } else {
+                    if (jokerBtn) {
+                        jokerBtn.disabled = false;
+                        if (studentJokerActive) {
+                            jokerBtn.className = "w-full bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-500 text-amber-300 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-95 animate-pulse";
+                            jokerBtn.innerHTML = `<span>🃏 Doppel-Joker AKTIV! (Risikorunde)</span>`;
+                        } else {
+                            jokerBtn.className = "w-full bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95";
+                            jokerBtn.innerHTML = `<span>🃏 Doppel-Joker aktivieren</span>`;
+                        }
+                    }
+                }
+            }
+
+            if (lastSubmitted && parseInt(lastSubmitted) === newRound) {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = `<i class="fa-solid fa-check"></i> Antwort gesendet! ✔`;
+                    btn.className = "w-full bg-emerald-950/40 border border-emerald-800/30 text-emerald-400 font-bold py-4 rounded-2xl cursor-not-allowed text-sm flex items-center justify-center gap-2 transition-all";
+                }
+                if (textarea) textarea.disabled = true;
+                if (feedback) {
+                    feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-850 text-amber-200 animate-scaleIn";
+                    feedback.innerHTML = `<i class="fa-solid fa-circle-info text-amber-400"></i> Du hast für Runde ${newRound} bereits geantwortet. Warte auf die nächste Runde!`;
+                    feedback.classList.remove('hidden');
+                }
+            } else {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Antwort abschicken! 🚀</span>`;
+                    btn.className = "w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2";
+                }
+                if (textarea) textarea.disabled = false;
+                if (feedback) {
+                    feedback.classList.add('hidden');
+                }
+            }
+        }
+
+        /* Echtzeit Countdown Timer auf den iPads einblenden & sperren */
+        function updateStudentTimer(seconds) {
+            const room = localStorage.getItem('student_room_code');
+            const lastSubmitted = localStorage.getItem(`last_sub_round_${room}`);
+            const submitBtn = getEl('student-submit-btn');
+            const textarea = getEl('student-answer-input');
+            const feedback = getEl('student-feedback');
+
+            const alreadySubmitted = lastSubmitted && parseInt(lastSubmitted) === studentCurrentRound;
+
+            if (seconds > 0) {
+                if (!alreadySubmitted) {
+                    if (feedback) {
+                        feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-850 text-amber-200 animate-pulse";
+                        feedback.innerHTML = `<i class="fa-solid fa-hourglass-half text-amber-400"></i> Noch ${seconds} Sekunden zum Raten! Schnell abgeben! ⏱️`;
+                        feedback.classList.remove('hidden');
+                    }
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.className = "w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2";
+                    }
+                    if (textarea) textarea.disabled = false;
+                }
+            } else if (seconds === 0) {
+                if (feedback) {
+                    feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-rose-950/40 border-rose-850 text-rose-200";
+                    feedback.innerHTML = `<i class="fa-solid fa-clock text-rose-400 animate-bounce"></i> Zeit abgelaufen! Keine Antwort mehr möglich! ⏰`;
+                    feedback.classList.remove('hidden');
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.className = "w-full bg-rose-950/30 border border-rose-900/30 text-rose-400 font-bold py-4 rounded-2xl cursor-not-allowed text-sm flex items-center justify-center gap-2";
+                }
+                if (textarea) textarea.disabled = true;
+            } else {
+                if (feedback && feedback.innerHTML.includes('Sekunden')) {
+                    feedback.classList.add('hidden');
+                }
+            }
+        }
+
+        function joinQuizRoom() {
+            const roomEl = getEl('student-room-input');
+            const nameEl = getEl('student-name-input');
+            const emojiEl = getEl('student-emoji-input');
+            const room = roomEl ? roomEl.value.trim().toLowerCase() : "";
+            const name = nameEl ? nameEl.value.trim() : "";
+            const emoji = emojiEl ? emojiEl.value : "🎵";
+
+            if (!room || !name) {
+                showToast("Raum-Code und Teamname sind erforderlich!", "danger");
+                return;
+            }
+
+            localStorage.setItem('student_team_name', name);
+            localStorage.setItem('student_room_code', room);
+            localStorage.setItem('student_team_emoji', emoji);
+
+            const studentJoinCard = getEl('student-join-card');
+            const studentBuzzerCard = getEl('student-buzzer-card');
+            if (studentJoinCard) studentJoinCard.classList.add('hidden');
+            
+            const badge = getEl('student-badge-info');
+            if (badge) badge.innerText = `Verbunden: ${emoji} ${name}`;
+            if (studentBuzzerCard) studentBuzzerCard.classList.remove('hidden');
+            
+            connectStudentControlChannel(room);
+            loadStudentPrepSongs(room);
+            
+            // NEU: Sende ein "Join"-Signal über den ntfy-Kanal, damit die Lehrkraft das Team sofort mit 0 Punkten sieht
+            try {
+                const topic = `mq-ntfy-${room}`;
+                const payload = {
+                    action: "join",
+                    team: name,
+                    emoji: emoji,
+                    timestamp: Date.now()
+                };
+                fetch(`https://ntfy.sh/${topic}`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+            } catch(e) {
+                console.error("Fehler beim Senden des Beitritts-Signals:", e);
+            }
+            
+            showToast(`Raum ${room.toUpperCase()} erfolgreich beigetreten!`, "success");
+            playSound('up');
+        }
+
+        function leaveQuizRoom() {
+            localStorage.removeItem('student_team_name');
+            localStorage.removeItem('student_room_code');
+            localStorage.removeItem('student_team_emoji');
+            if (studentSse) {
+                studentSse.close();
+                studentSse = null;
+            }
+            const studentJoinCard = getEl('student-join-card');
+            const studentBuzzerCard = getEl('student-buzzer-card');
+            if (studentJoinCard) studentJoinCard.classList.remove('hidden');
+            if (studentBuzzerCard) studentBuzzerCard.classList.add('hidden');
+            showToast("Raum verlassen.", "info");
+        }
+
+        function toggleStudentJoker() {
+            const room = localStorage.getItem('student_room_code');
+            const jokerUsedKey = `joker_used_${room}`;
+            if (localStorage.getItem(jokerUsedKey)) {
+                showToast("Du hast deinen Doppel-Joker in diesem Spiel bereits verbraucht!", "danger");
+                return;
+            }
+
+            studentJokerActive = !studentJokerActive;
+            updateStudentRound(studentCurrentRound, []); 
+        }
+
+        async function sendStudentAnswer() {
+            const room = localStorage.getItem('student_room_code');
+            const name = localStorage.getItem('student_team_name');
+            const emoji = localStorage.getItem('student_team_emoji') || "🎵";
+            const answerEl = getEl('student-answer-input');
+            const answer = answerEl ? answerEl.value.trim() : "";
+            const btn = getEl('student-submit-btn');
+
+            if (!answer) {
+                showToast("Deine Antwort ist leer!", "danger");
+                return;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Übertrage...`;
+            }
+
+            try {
+                const topic = `mq-ntfy-${room}`;
+                const payload = {
+                    team: name,
+                    emoji: emoji,
+                    answer: answer,
+                    joker: studentJokerActive,
+                    time: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                    timestamp: Date.now()
+                };
+
+                const res = await fetch(`https://ntfy.sh/${topic}`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: {
+                        'Title': 'greenboys Scoreboard Antwort',
+                        'Tags': 'musical_note'
+                    }
+                });
+
+                if (res.ok) {
+                    localStorage.setItem(`last_sub_round_${room}`, studentCurrentRound);
+                    
+                    if (studentJokerActive) {
+                        localStorage.setItem(`joker_used_${room}`, 'true');
+                        studentJokerActive = false;
+                    }
+
+                    updateStudentRound(studentCurrentRound, []); 
+                    
+                    const statusBox = getEl('student-feedback');
+                    if (statusBox) {
+                        statusBox.className = "p-3 rounded-xl border text-center text-xs font-semibold animate-scaleIn bg-emerald-950/40 border-emerald-800 text-emerald-200";
+                        statusBox.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i> Antwort für Runde ${studentCurrentRound} gesendet!`;
+                        statusBox.classList.remove('hidden');
+                    }
+                    if (answerEl) answerEl.value = '';
+                    showToast("Erfolgreich abgesendet! 📡", "success");
+                    playSound('up');
+                } else {
+                    throw new Error("Sende-Fehler");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Fehler bei der Verbindung. Bitte erneut versuchen!", "danger");
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Antwort abschicken! 🚀</span>`;
+                }
+            }
+        }
+
+        /* Team manuell hinzufügen (von Lehrerseite) */
+        function handleManualTeamAdd(e) {
+            if (e) e.preventDefault();
+            const input = getEl('manual-team-input');
+            const name = input ? input.value.trim() : "";
+            if (!name) return;
+            
+            const formattedName = name.substring(0, 12);
+            if (teams.some(t => t.name.toLowerCase() === formattedName.toLowerCase())) {
+                showToast(`Das Team "${formattedName}" existiert bereits!`, 'danger');
+                return;
+            }
+
+            const newTeam = {
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                name: formattedName,
+                score: 0,
+                activeThisRound: false,
+                pendingPoints: 0,
+                streak: 0,
+                jokerUsed: false,
+                jokerActiveThisRound: false
+            };
+
+            teams.push(newTeam);
+            showToast(`Team "${formattedName}" manuell hinzugefügt!`, 'success');
+            playSound('up');
+            if (input) input.value = '';
+            saveState();
+            renderScoreboard();
+        }
+
+        function connectLiveRoom() {
+            const codeInput = getEl('room-code-input');
+            const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "";
+
+            if (!roomCode) {
+                showToast("Bitte gib einen Raum-Code ein!", "danger");
+                const statusDiv = getEl('connection-status');
+                if (statusDiv) {
+                    statusDiv.innerHTML = `<span class="h-2 w-2 rounded-full bg-rose-500"></span> Bitte Code eingeben und Starten klicken`;
+                }
+                return;
+            }
+
+            if (sseSource) {
+                sseSource.close();
+            }
+
+            const topic = `mq-ntfy-${roomCode}`;
+            const statusDiv = getEl('connection-status');
+
+            if (statusDiv) statusDiv.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-amber-500"></i> Verbinde Live-Empfang...`;
+
+            sseSource = new EventSource(`https://ntfy.sh/${topic}/sse`);
+
+            sseSource.onopen = function() {
+                if (statusDiv) statusDiv.innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping"></span> Live-Empfang aktiv (Raum: ${roomCode.toUpperCase()})`;
+                showToast(`Live-Kanal "${roomCode.toUpperCase()}" erfolgreich geöffnet!`, "success");
+                const livePanel = getEl('live-answers-panel');
+                if (livePanel) livePanel.classList.remove('hidden');
+                generateQRCode();
+                broadcastControlState(); 
+            };
+
+            sseSource.onerror = function() {
+                if (statusDiv) statusDiv.innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span> Live-Empfang getrennt`;
+            };
+
+            sseSource.onmessage = function(event) {
+                try {
+                    const rawData = JSON.parse(event.data);
+                    if (rawData && rawData.message) {
+                        const quizPayload = JSON.parse(rawData.message);
+                        if (quizPayload && quizPayload.team) {
+                            if (quizPayload.action === "join") {
+                                handleLiveJoin(quizPayload.team, quizPayload.emoji || "🎵");
+                            } else if (quizPayload.action === "secret_songs") {
+                                teamSongs[quizPayload.team.toLowerCase()] = {
+                                    team: quizPayload.team,
+                                    songs: quizPayload.songs
+                                };
+                                saveState();
+                                renderTeamSongsList();
+                                showToast(`🤫 Spickzettel von Team "${quizPayload.team}" erhalten!`, "success");
+                            } else if (quizPayload.answer) {
+                                addIncomingAnswer(quizPayload);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // System-Meldungen ignorieren
+                }
+            };
+        }
+
+        function addIncomingAnswer(answerObj) {
+            if (incomingAnswers.some(ans => ans.team === answerObj.team && ans.answer === answerObj.answer)) {
+                return;
+            }
+
+            incomingAnswers.push(answerObj);
+            incomingAnswers.sort((a, b) => a.timestamp - b.timestamp);
+
+            renderIncomingAnswersList();
+            playSound('up');
+        }
+
+        /* NEU: Verarbeitet das Beitritts-Signal eines Schülergeräts und legt das Team sofort mit 0 Punkten an */
+        function handleLiveJoin(teamName, emoji) {
+            let team = teams.find(t => t.name.toLowerCase() === teamName.toLowerCase());
+            if (!team) {
+                const newTeam = {
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                    name: teamName.substring(0, 12),
+                    score: 0,
+                    activeThisRound: false,
+                    pendingPoints: 0,
+                    streak: 0,
+                    jokerUsed: false,
+                    jokerActiveThisRound: false,
+                    emoji: emoji || "🎵"
+                };
+                teams.push(newTeam);
+                saveState();
+                renderScoreboard();
+                showToast(`🚀 "${teamName}" ist dem Spiel beigetreten!`, "success");
+                playSound('up');
+            } else {
+                // Falls sie bereits existieren, aktualisieren wir ggf. das Emoji
+                if (emoji && emoji !== "🎵" && team.emoji !== emoji) {
+                    team.emoji = emoji;
+                    saveState();
+                    renderScoreboard();
+                }
+            }
+        }
+
+        /* Schüler-PC: Zustand des Spickzettel-Formulars laden (bereits gesendet?) */
         function loadStudentPrepSongs(room) {
             const sentPrep = localStorage.getItem(`prep_songs_sent_${room}`);
             const prepDataStr = localStorage.getItem(`prep_songs_data_${room}`);
             const btn = getEl('student-send-songs-btn');
-            
+
             if (sentPrep && prepDataStr) {
                 if (btn) {
                     btn.disabled = true;
@@ -1175,7 +1628,7 @@ function initEmojiPicker() {
             const room = localStorage.getItem('student_room_code');
             const name = localStorage.getItem('student_team_name');
             const btn = getEl('student-send-songs-btn');
-            
+
             const s1 = getEl('prep-song-1').value.trim();
             const s2 = getEl('prep-song-2').value.trim();
             const s3 = getEl('prep-song-3').value.trim();
@@ -1209,7 +1662,7 @@ function initEmojiPicker() {
                     showToast("Dein Spickzettel wurde heimlich gesendet! 🤫", "success");
                     btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Gesendet! 🤫`;
                     btn.className = "w-full bg-emerald-600 text-white font-bold py-2 rounded-xl text-xs cursor-not-allowed mt-1";
-                    
+
                     localStorage.setItem(`prep_songs_sent_${room}`, "true");
                     localStorage.setItem(`prep_songs_data_${room}`, JSON.stringify([s1, s2, s3, s4]));
                     loadStudentPrepSongs(room);
@@ -1241,7 +1694,7 @@ function initEmojiPicker() {
                 const record = teamSongs[teamKey];
                 const card = document.createElement('div');
                 card.className = "bg-slate-950/60 border border-slate-800 p-3 rounded-2xl space-y-2 animate-fadeIn";
-                
+
                 if (record && record.songs && record.songs.some(s => s.trim() !== "")) {
                     card.innerHTML = `
                         <div class="flex justify-between items-center border-b border-slate-850 pb-1.5 font-sans">
@@ -1300,133 +1753,25 @@ function initEmojiPicker() {
             }
         }
 
-        /* Lehrer-PC: Raum laden und starten */
-        function connectLiveRoom() {
-            const codeInput = getEl('room-code-input');
-            const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "";
-
-            if (!roomCode) {
-                showToast("Bitte gib einen Raum-Code ein!", "danger");
-                const statusDiv = getEl('connection-status');
-                if (statusDiv) {
-                    statusDiv.innerHTML = `<span class="h-2 w-2 rounded-full bg-rose-500"></span> Bitte Code eingeben und Starten klicken`;
-                }
-                return;
-            }
-
-            if (sseSource) {
-                sseSource.close();
-            }
-
-            activeClass = roomCode;
-            if (!classes[activeClass]) {
-                classes[activeClass] = { teams: [], currentRound: 1, answerHistory: [], teamSongs: {} };
-            }
-            
-            const currentData = classes[activeClass];
-            teams = currentData.teams || [];
-            currentRound = currentData.currentRound || 1;
-            answerHistory = currentData.answerHistory || [];
-            teamSongs = currentData.teamSongs || {};
-
-            const roundDisplay = getEl('header-round-display');
-            if (roundDisplay) roundDisplay.innerText = currentRound;
-            const managerRoundDisplay = getEl('manager-round-display');
-            if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
-
-            updateClassDropdown();
-            updateActiveBadge();
-            renderScoreboard();
-            renderHistoryArchive();
+        /* Modalssteuerung für Team-Spickzettel */
+        function openTeamSongsModal() {
             renderTeamSongsList();
-
-            const topic = `mq-ntfy-${roomCode}`;
-            const statusDiv = getEl('connection-status');
-
-            if (statusDiv) statusDiv.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-amber-500"></i> Verbinde Live-Empfang...`;
-
-            sseSource = new EventSource(`https://ntfy.sh/${topic}/sse`);
-
-            sseSource.onopen = function() {
-                if (statusDiv) statusDiv.innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping"></span> Live-Empfang aktiv (Raum: ${roomCode.toUpperCase()})`;
-                showToast(`Live-Kanal "${roomCode.toUpperCase()}" erfolgreich geöffnet!`, "success");
-                const livePanel = getEl('live-answers-panel');
-                if (livePanel) livePanel.classList.remove('hidden');
-                generateQRCode();
-                broadcastControlState(); 
-                saveState();
-            };
-
-            sseSource.onerror = function() {
-                if (statusDiv) statusDiv.innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span> Live-Empfang getrennt`;
-            };
-
-            sseSource.onmessage = function(event) {
-                try {
-                    const rawData = JSON.parse(event.data);
-                    if (rawData && rawData.message) {
-                        const quizPayload = JSON.parse(rawData.message);
-                        if (quizPayload && quizPayload.team) {
-                            if (quizPayload.action === "join") {
-                                handleLiveJoin(quizPayload.team, quizPayload.emoji || "🎵");
-                            } else if (quizPayload.action === "secret_songs") {
-                                teamSongs[quizPayload.team.toLowerCase()] = {
-                                    team: quizPayload.team,
-                                    songs: quizPayload.songs
-                                };
-                                saveState();
-                                renderTeamSongsList();
-                                showToast(`🤫 Spickzettel von Team "${quizPayload.team}" erhalten!`, "success");
-                            } else if (quizPayload.answer) {
-                                addIncomingAnswer(quizPayload);
-                            }
-                        }
-                    }
-                } catch (e) {}
-            };
-        }
-
-        /* Automatisches Beitritts-Signal der iPads auf dem Beamer */
-        function handleLiveJoin(teamName, emoji) {
-            let team = teams.find(t => t.name.toLowerCase() === teamName.toLowerCase());
-            if (!team) {
-                const newTeam = {
-                    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                    name: teamName.substring(0, 12),
-                    score: 0,
-                    activeThisRound: false,
-                    pendingPoints: 0,
-                    streak: 0,
-                    jokerUsed: false,
-                    jokerActiveThisRound: false,
-                    emoji: emoji || "🎵"
-                };
-                teams.push(newTeam);
-                saveState();
-                renderScoreboard();
-                showToast(`🚀 "${teamName}" ist der Lobby beigetreten!`, "success");
-                playSound('up');
-            } else {
-                if (emoji && emoji !== "🎵" && team.emoji !== emoji) {
-                    team.emoji = emoji;
-                    saveState();
-                    renderScoreboard();
-                }
+            const modal = getEl('team-songs-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
             }
         }
 
-        function addIncomingAnswer(answerObj) {
-            if (incomingAnswers.some(ans => ans.team === answerObj.team && ans.answer === answerObj.answer)) {
-                return;
+        function closeTeamSongsModal() {
+            const modal = getEl('team-songs-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
             }
-
-            incomingAnswers.push(answerObj);
-            incomingAnswers.sort((a, b) => a.timestamp - b.timestamp);
-
-            renderIncomingAnswersList();
-            playSound('up');
         }
 
+        /* Beamer Sichtschutz steuern */
         function toggleBeamerProtection() {
             beamerProtectionActive = !beamerProtectionActive;
             saveState();
@@ -1441,6 +1786,7 @@ function initEmojiPicker() {
             if (!list) return;
             list.innerHTML = '';
 
+            // Sichtschutz Button-Status (Auge / Durchgestrichen) dynamisch aktualisieren
             const toggleBtn = getEl('beamer-protection-toggle-btn');
             if (toggleBtn) {
                 if (beamerProtectionActive) {
@@ -1459,6 +1805,7 @@ function initEmojiPicker() {
                 if (emptyDiv) emptyDiv.classList.add('hidden');
             }
 
+            // Beamer Sichtschutz Banner einfügen
             const protectionBanner = document.createElement('div');
             protectionBanner.className = "w-full col-span-full mb-1";
             if (beamerProtectionActive) {
@@ -1475,8 +1822,8 @@ function initEmojiPicker() {
                 `;
             } else {
                 protectionBanner.innerHTML = `
-                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn font-sans">
-                        <span class="text-[11px] text-slate-300 font-bold flex items-center gap-1.5 font-sans">
+                    <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn">
+                        <span class="text-[11px] text-slate-300 font-bold flex items-center gap-1.5">
                             <i class="fa-solid fa-eye text-emerald-400 text-sm"></i> 
                             Antworten und Absender sind vollständig aufgedeckt.
                         </span>
@@ -1488,6 +1835,7 @@ function initEmojiPicker() {
             }
             list.appendChild(protectionBanner);
 
+            // Chronologische Kärtchen rendern (Kompakte Kärtchen im mehrspaltigen Grid)
             incomingAnswers.forEach((ans, index) => {
                 const item = document.createElement('div');
                 item.className = "flex flex-col justify-between gap-1.5 bg-slate-900 border border-slate-800 p-2 rounded-xl animate-scaleIn h-full relative font-sans";
@@ -1503,6 +1851,7 @@ function initEmojiPicker() {
                         </span>`;
                 }
 
+                // Falls Joker aktiv war
                 let jokerBadge = '';
                 if (ans.joker) {
                     jokerBadge = `<span class="bg-amber-500 text-slate-950 text-[8px] font-black px-1.5 py-0.5 rounded animate-pulse" title="Doppel-Joker ist aktiv!"><i class="fa-solid fa-masks-theater"></i> JOKER!</span>`;
@@ -1516,7 +1865,7 @@ function initEmojiPicker() {
 
                 if (beamerProtectionActive) {
                     teamHeader = `
-                        <div class="flex justify-between items-center gap-1.5">
+                        <div class="flex justify-between items-center gap-1.5 font-sans">
                             <span class="font-bold text-slate-500 text-[11px] flex items-center gap-1">
                                 <i class="fa-solid fa-user-secret text-violet-500/80"></i> Team verdeckt
                             </span>
@@ -1543,7 +1892,7 @@ function initEmojiPicker() {
                     `;
                 } else {
                     teamHeader = `
-                        <div class="flex justify-between items-center gap-1.5">
+                        <div class="flex justify-between items-center gap-1.5 font-sans">
                             <span class="font-bold text-violet-400 text-xs truncate max-w-[90px]" title="${ans.team}">${ans.team}</span>
                             <div class="flex items-center gap-1">
                                 ${jokerBadge}
@@ -1572,7 +1921,7 @@ function initEmojiPicker() {
                             </button>
                             <button 
                                 onclick="applyLiveAnswer('${teamNameEscaped}', 1, ${index}, ${hasJoker})"
-                                class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[9px] font-bold px-2 py-1 rounded transition-all active:scale-95"
+                                class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[9px] font-bold px-2 py-1 rounded transition-all active:scale-95 font-sans"
                             >
                                 +1
                             </button>
@@ -1598,8 +1947,9 @@ function initEmojiPicker() {
             });
         }
 
+        /* Einloggen der Punkte von der Live-Antwort und Archivierung im Backup-System */
         function applyLiveAnswer(teamName, pointsToAdd, index, hasJoker = false) {
-            let team = teams.find(t => t.name.toLowerCase() === teamName.toLowerCase());
+            let team = teams.find(t => t.id === teamName || t.name.toLowerCase() === teamName.toLowerCase());
             const incomingAns = incomingAnswers[index];
             const emoji = incomingAns ? (incomingAns.emoji || "🎵") : "🎵";
 
@@ -1645,12 +1995,14 @@ function initEmojiPicker() {
             renderHistoryArchive();
         }
 
+        /* Verlauf-Archiv rendern */
         function renderHistoryArchive() {
             const list = getEl('history-archive-list');
             const empty = getEl('history-archive-empty');
             if (!list) return;
             list.innerHTML = '';
 
+            // Filtert den Verlauf für die aktuell gewählte Runden-Ansicht
             const currentHistory = answerHistory.filter(h => h.round === currentRound);
 
             if (currentHistory.length === 0) {
@@ -1701,7 +2053,7 @@ function initEmojiPicker() {
             const durationInput = getEl('timer-duration');
             const duration = parseInt(durationInput ? durationInput.value : 30) || 30;
             
-            stopTimer(); 
+            stopTimer(); // Laufenden Timer zuerst löschen
 
             let secondsLeft = duration;
             const display = getEl('teacher-timer-display');
@@ -1744,7 +2096,7 @@ function initEmojiPicker() {
             const display = getEl('teacher-timer-display');
             if (display) display.classList.add('hidden');
 
-            broadcastControlState(-1); 
+            broadcastControlState(-1); // Löscht Timer auf den iPads
         }
 
         /* QR-Code Generator */
@@ -1752,7 +2104,7 @@ function initEmojiPicker() {
             const qrImg = getEl('qr-code-img');
             const customUrlInput = getEl('custom-url-input');
             const roomCodeInput = getEl('room-code-input');
-            const roomCode = roomCodeInput ? roomCodeInput.value.trim().toLowerCase() : "";
+            const roomCode = roomCodeInput ? roomCodeInput.value.trim().toLowerCase() : "7c";
             
             const qrRoomDisplay = getEl('qr-room-code-display');
             if (qrRoomDisplay) qrRoomDisplay.innerText = roomCode.toUpperCase();
@@ -1832,17 +2184,15 @@ function initEmojiPicker() {
             activeClass = event.target.value;
             
             if (activeClass === "Standard-Sitzung") {
-                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, answerHistory: [], teamSongs: {} };
-                answerHistory = []; 
-                teamSongs = {};
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {} };
+                answerHistory = []; // Verlauf für Standard-Sitzung leeren!
             }
 
-            const targetData = classes[activeClass] || { teams: [], currentRound: 1, answerHistory: [], teamSongs: {} };
+            const targetData = classes[activeClass] || { teams: [], currentRound: 1, teamSongs: {} };
             teams = targetData.teams || [];
             currentRound = targetData.currentRound || 1;
-            answerHistory = targetData.answerHistory || [];
             teamSongs = targetData.teamSongs || {};
-
+            
             teams.forEach(t => {
                 t.activeThisRound = false;
                 t.pendingPoints = 0;
@@ -1853,16 +2203,41 @@ function initEmojiPicker() {
             const managerRoundDisplay = getEl('manager-round-display');
             if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
-            beamerProtectionActive = true;
-
-            updateClassDropdown();
             updateActiveBadge();
             renderScoreboard();
-            renderHistoryArchive();
+            renderHistoryArchive(); // Archiv-Anzeige aktualisieren!
             renderTeamSongsList();
             broadcastControlState(); 
             showToast(`Klasse "${activeClass}" geladen.`, 'success');
             saveState();
+        }
+
+        function saveNewClass() {
+            const input = getEl('class-name-input');
+            const name = input ? input.value.trim() : "";
+            
+            if (!name) {
+                showToast("Bitte trage einen Namen für die Klasse ein!", "danger");
+                return;
+            }
+            if (name.toLowerCase() === 'standard-sitzung' || name.toLowerCase() === 'standard') {
+                showToast("Dieser Name ist reserviert!", "danger");
+                return;
+            }
+
+            classes[name] = {
+                teams: [...teams],
+                currentRound: currentRound,
+                teamSongs: teamSongs
+            };
+            
+            activeClass = name;
+            if (input) input.value = '';
+            
+            saveState();
+            updateClassDropdown();
+            updateActiveBadge();
+            showToast(`Klasse "${name}" erfolgreich gesichert!`, 'success');
         }
 
         function deleteCurrentClass() {
@@ -1877,19 +2252,17 @@ function initEmojiPicker() {
                 function() {
                     delete classes[activeClass];
                     activeClass = 'Standard-Sitzung';
-                    classes["Standard-Sitzung"] = { teams: [], currentRound: 1, answerHistory: [], teamSongs: {} };
+                    classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {} };
                     
                     const targetData = classes[activeClass];
                     teams = targetData.teams;
                     currentRound = targetData.currentRound;
-                    answerHistory = [];
-                    teamSongs = {};
+                    teamSongs = targetData.teamSongs || {};
                     
                     saveState();
                     updateClassDropdown();
                     updateActiveBadge();
                     renderScoreboard();
-                    renderHistoryArchive(); 
                     renderTeamSongsList();
                     showToast("Klasse wurde gelöscht. Zurück zur Standard-Sitzung.", "info");
                 }
@@ -1924,33 +2297,33 @@ function initEmojiPicker() {
                 }
 
                 const osc = audioCtx.createOscillator();
-                const bgain = audioCtx.createGain();
+                const gain = audioCtx.createGain();
                 
-                osc.connect(bgain);
-                bgain.connect(audioCtx.destination);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
 
                 if (type === 'up') {
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(550, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.1);
-                    bgain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-                    bgain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.1);
                 } else if (type === 'down') {
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(300, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.15);
-                    bgain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-                    bgain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.15);
                 } else if (type === 'next') {
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(440, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2);
-                    bgain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    bgain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.2);
                 } else if (type === 'fanfare') {
@@ -2075,8 +2448,6 @@ function initEmojiPicker() {
                 const managerRoundDisplay = getEl('manager-round-display');
                 if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
                 
-                beamerProtectionActive = true;
-
                 saveState();
                 renderScoreboard();
                 broadcastControlState();
@@ -2098,34 +2469,38 @@ function initEmojiPicker() {
             activeTeams.forEach(t => {
                 let pts = t.pendingPoints || 1;
                 
+                // JOKER-LOGIC: Bei Erfolg werden die Punkte verdoppelt!
                 if (t.jokerActiveThisRound) {
                     pts = pts * 2;
-                    t.jokerUsed = true; 
+                    t.jokerUsed = true; // Jetzt fest auf dem Scoreboard für immer verbraucht!
                     showToast(`🃏 Joker-Erfolg für "${t.name}"! Punkte verdoppelt: +${pts}!`, "success");
                 }
 
                 t.score += pts;
-                t.streak = (t.streak || 0) + 1; 
+                t.streak = (t.streak || 0) + 1; // Streak erhöhen
             });
 
             // Joker Misserfolg & Streak Zurücksetzen
             teams.forEach(t => {
                 if (!t.activeThisRound) {
-                    t.streak = 0; 
+                    t.streak = 0; // Streak gerissen!
                     
+                    // JOKER-LOGIC: Bei Fehler oder Ausbleiben verliert das Team 1 Punkt
                     if (t.jokerActiveThisRound) {
                         t.score = Math.max(0, t.score - 1);
-                        t.jokerUsed = true; 
+                        t.jokerUsed = true; // Jetzt fest auf dem Scoreboard für immer verbraucht!
                         showToast(`💀 Joker-Risiko fehlgeschlagen! "${t.name}" verliert 1 Punkt!`, "danger");
                         playSound('down');
                     }
                 }
                 
+                // Zurücksetzen für neue Runde
                 t.activeThisRound = false;
                 t.pendingPoints = 0;
                 t.jokerActiveThisRound = false;
             });
 
+            // ECHTZEITANZEIGE BEI RUNDENWECHSEL KOMPLETT LEEREN!
             incomingAnswers = [];
             renderIncomingAnswersList();
 
@@ -2135,8 +2510,6 @@ function initEmojiPicker() {
             const managerRoundDisplay = getEl('manager-round-display');
             if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
             
-            beamerProtectionActive = true;
-
             playSound('next');
             saveState();
             renderScoreboard();
@@ -2144,7 +2517,7 @@ function initEmojiPicker() {
             renderHistoryArchive();
         }
 
-        // Sicherer Team-Löschen-Befehl per technischer ID
+        // Sicherer Team-Löschen-Befehl per technischer ID (umgeht Namenskonflikte)
         function deleteTeam(id) {
             const team = teams.find(t => t.id === id);
             const name = team ? team.name : "Team";
@@ -2227,6 +2600,7 @@ function initEmojiPicker() {
                             <i class="fa-solid fa-masks-theater"></i> JOKER AKTIV (Doppelt / Risiko!)
                         </div>`;
                 } else {
+                    // Zeigt an, ob das Team seinen Joker in diesem Spiel noch hat oder verbraucht hat
                     jokerCardBadge = team.jokerUsed ? 
                         `<span class="text-[9px] text-slate-500 font-bold block mt-1"><i class="fa-solid fa-ban"></i> Joker verbraucht</span>` : 
                         `<span class="text-[9px] text-emerald-500/85 font-bold block mt-1"><i class="fa-solid fa-masks-theater"></i> Joker bereit</span>`;
@@ -2235,9 +2609,10 @@ function initEmojiPicker() {
                 card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-48 select-none ${borderStyle}`;
                 card.onclick = () => toggleTeamActive(team.id);
 
+                // GRUPPENNAME FÄRBT SICH HIER DIREKT GRÜN BEI AUSWAHL
                 card.innerHTML = `
                     ${cardOverlay}
-                    <div class="flex items-start justify-between gap-1">
+                    <div class="flex items-start justify-between gap-1 font-sans">
                         <span class="text-[10px] text-slate-500 font-bold tracking-wider">PLATZ ${index + 1}</span>
                         ${streakBadge}
                         <button 
@@ -2306,7 +2681,7 @@ function initEmojiPicker() {
                 container.appendChild(card);
             });
 
-            // FLIP Animation: Neuer Ort berechnen und verschieben
+            // FLIP Animation: Neuer Ort berechnen und sanft verschieben
             const newCards = container.querySelectorAll('[data-team-id]');
             newCards.forEach(card => {
                 const id = card.getAttribute('data-team-id');
@@ -2318,7 +2693,7 @@ function initEmojiPicker() {
                     if (deltaX !== 0 || deltaY !== 0) {
                         card.style.transition = 'none';
                         card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                        card.getBoundingClientRect(); 
+                        card.getBoundingClientRect(); // Repaint erzwingen
                         card.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
                         card.style.transform = 'none';
                     }
@@ -2682,7 +3057,169 @@ function initEmojiPicker() {
             closeImportModal();
         }
 
-        /* Automatische Erkennung für ungestylte OneDrive-Vorschau */
+        /* Stand als HTML exportieren */
+        function exportCurrentStand() {
+            const className = prompt("Für welche Klasse möchtest du diesen Stand sichern?", activeClass);
+            if (className === null) return;
+            
+            const sanitizedClassName = className.trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+            const fileName = `scoreboard_${sanitizedClassName}.html`;
+            
+            const docClone = document.documentElement.cloneNode(true);
+            
+            const oldLoader = docClone.querySelector('#state-loader');
+            if (oldLoader) oldLoader.remove();
+            
+            const stateScript = document.createElement('script');
+            stateScript.id = 'state-loader';
+            stateScript.innerHTML = `
+                window.PREBAKED_TEAMS = ${JSON.stringify(teams)};
+                window.PREBAKED_ROUND = ${currentRound};
+            `;
+            
+            docClone.querySelector('head').appendChild(stateScript);
+            
+            const confirmModal = docClone.querySelector('#confirm-modal');
+            if (confirmModal) confirmModal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50";
+            const importModal = docClone.querySelector('#import-modal');
+            if (importModal) importModal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50";
+
+            const htmlContent = "<!DOCTYPE html>\n<html lang=\"de\">" + docClone.innerHTML + "</html>";
+            
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast(`Sicherung als "${fileName}" heruntergeladen!`, 'success');
+        }
+
+        const canvas = getEl("confetti-canvas");
+        const ctx = canvas ? canvas.getContext("2d") : null;
+        let particles = [];
+        const colors = ["#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#ef4444"];
+
+        function resizeCanvas() {
+            if (!canvas) return;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+
+        class ConfettiParticle {
+            constructor() {
+                this.x = Math.random() * (canvas ? canvas.width : 500);
+                this.y = Math.random() * -(canvas ? canvas.height : 500) - 20;
+                this.size = Math.random() * 8 + 6;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.speedX = Math.random() * 4 - 2;
+                this.speedY = Math.random() * 5 + 3;
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = Math.random() * 4 - 2;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.rotation += this.rotationSpeed;
+
+                if (canvas && this.y > canvas.height) {
+                    this.y = -20;
+                    this.x = Math.random() * canvas.width;
+                }
+            }
+
+            draw() {
+                if (!ctx) return;
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate((this.rotation * Math.PI) / 180);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                ctx.restore();
+            }
+        }
+
+        function initConfetti() {
+            particles = [];
+            for (let i = 0; i < 150; i++) {
+                particles.push(new ConfettiParticle());
+            }
+        }
+
+        function animateConfetti() {
+            if (!isConfettiActive || !ctx || !canvas) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p) => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateConfetti);
+        }
+
+        function triggerWinConfetti() {
+            let winnerName = "Niemand";
+            if (teams.length > 0) {
+                const highestScore = Math.max(...teams.map(t => t.score));
+                const winners = teams.filter(t => t.score === highestScore);
+                if (highestScore > 0) {
+                    winnerName = winners.map(w => w.name).join(" & ");
+                }
+            }
+
+            showToast(`🏆 Glückwunsch an das Siegerteam: ${winnerName}! 🎉`, 'success');
+            playSound('fanfare');
+            
+            resizeCanvas();
+            initConfetti();
+            isConfettiActive = true;
+            animateConfetti();
+
+            if (confettiInterval) clearTimeout(confettiInterval);
+            confettiInterval = setTimeout(() => {
+                isConfettiActive = false;
+                if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }, 8000);
+        }
+
+        function confirmReset() {
+            showCustomConfirm(
+                "Wirklich zurücksetzen?",
+                "Alle Teams und Punkte der aktuellen Klasse werden gelöscht. Die Runde startet wieder bei 1.",
+                executeReset
+            );
+        }
+
+        function executeReset() {
+            teams = [];
+            currentRound = 1;
+            const roundDisplay = getEl('header-round-display');
+            if (roundDisplay) roundDisplay.innerText = currentRound;
+            const managerRoundDisplay = getEl('manager-round-display');
+            if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
+            
+            classes[activeClass] = {
+                teams: [],
+                currentRound: 1,
+                teamSongs: {}
+            };
+            
+            teamSongs = {};
+            answerHistory = []; // Verlauf bei Reset komplett löschen!
+            
+            saveState();
+            closeModal();
+            renderScoreboard();
+            renderHistoryArchive(); // Archiv-Anzeige leeren!
+            renderTeamSongsList();
+            showToast("Sitzung komplett zurückgesetzt!", "danger");
+        }
+
+        // Automatische Erkennung für ungestylte OneDrive-Vorschau
         function checkOneDriveEnvironment() {
             try {
                 const hasStyles = document.styleSheets.length > 0;
@@ -2695,141 +3232,19 @@ function initEmojiPicker() {
             }
         }
 
-        /* Passwort-Schutz für Lehrkraft */
-        function promptTeacherLogin() {
-            const modal = getEl('teacher-password-modal');
-            const input = getEl('teacher-password-input');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-            if (input && typeof input.focus === 'function') {
-                setTimeout(() => {
-                    try {
-                        input.focus();
-                    } catch(e){}
-                }, 100);
-            }
-        }
-
-        function closeTeacherLogin() {
-            const modal = getEl('teacher-password-modal');
-            const input = getEl('teacher-password-input');
-            if (modal) modal.classList.add('hidden');
-            if (modal) modal.classList.remove('flex');
-            if (input) input.value = '';
-        }
-
-        function checkTeacherPassword() {
-            const input = getEl('teacher-password-input');
-            const val = input ? input.value.trim() : "";
-            if (val === teacherPassword) {
-                closeTeacherLogin();
-                switchView('teacher');
-                showToast("Erfolgreich eingeloggt!", "success");
-            } else {
-                showToast("Passwort falsch!", "danger");
-                playSound('down');
-            }
-        }
-
-        function changeTeacherPassword() {
-            const input = getEl('change-password-input');
-            const newPw = input ? input.value.trim() : "";
-            if (newPw.length < 3) {
-                showToast("Das Passwort muss mindestens 3 Zeichen lang sein!", "danger");
-                return;
-            }
-            teacherPassword = newPw;
-            saveState();
-            showToast("Lehrer-Passwort erfolgreich geändert!", "success");
-        }
-
-        function togglePasswordVisibility(inputId, iconId) {
-            const input = getEl(inputId);
-            const icon = getEl(iconId);
-            if (input && icon) {
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    icon.classList.remove('fa-eye');
-                    icon.classList.add('fa-eye-slash');
-                } else {
-                    input.type = 'password';
-                    icon.classList.remove('fa-eye-slash');
-                    icon.classList.add('fa-eye');
-                }
-            }
-        }
-
-        /* Custom Modal Controller */
-        function showCustomConfirm(title, description, onConfirm) {
-            const modal = getEl('confirm-modal');
-            const titleEl = getEl('confirm-title');
-            const descEl = getEl('confirm-desc');
-            const btn = getEl('confirm-action-btn');
-
-            if (titleEl) titleEl.innerText = title;
-            if (descEl) descEl.innerText = description;
-            confirmActionCallback = onConfirm;
-            
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-
-            if (btn) {
-                btn.onclick = function() {
-                    if (confirmActionCallback) confirmActionCallback();
-                    closeModal();
-                };
-            }
-        }
-
-        function closeModal() {
-            const modal = getEl('confirm-modal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        }
-/* SCHÜLER BEITRITT (inkl. Emoji-Picker) */
-        function joinQuizRoom() {
-            const name = getEl('student-name-input').value.trim();
-            const room = getEl('student-room-input').value.trim().toLowerCase();
-            const emoji = getEl('student-emoji-input').value; // <-- Hier wird das Emoji gegriffen
-            
-            if (!name || !room) {
-                showToast("Bitte Namen und Raumcode eingeben!", "danger");
-                return;
-            }
-
-            // Daten auf dem Gerät des Schülers speichern
-            localStorage.setItem('student_team_name', name);
-            localStorage.setItem('student_room_code', room);
-            localStorage.setItem('student_team_emoji', emoji);
-
-            // Beitritts-Event an das Lehrer-Scoreboard senden
-            const topic = `mq-ntfy-${room}`;
-            fetch(`https://ntfy.sh/${topic}`, {
-                method: 'POST',
-                body: JSON.stringify({ 
-                    action: "join", 
-                    team: name, 
-                    emoji: emoji // <-- Hier wird es an die Lehrkraft geschickt
-                })
-            }).then(() => {
-                showToast("Erfolgreich beigetreten!", "success");
-                switchView('student');
-            }).catch(() => {
-                showToast("Verbindungsfehler beim Beitreten.", "danger");
-            });
-        }
-        /* Starten */
+        // Starten
         window.onload = function() {
-        initEmojiPicker(); // HIER EINFÜGEN
-        resizeCanvas();
-        loadState();
-        checkOneDriveEnvironment();
-    };
+            resizeCanvas();
+            loadState();
+            checkOneDriveEnvironment();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryRoom = urlParams.get('room');
+            if (queryRoom) {
+                const roomInput = getEl('student-room-input');
+                if (roomInput) roomInput.value = queryRoom;
+            }
+        };
+    </script>
 </body>
 </html>
