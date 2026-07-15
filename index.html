@@ -323,7 +323,7 @@
         <!-- ========================================== -->
         <!-- LOBBY & SETUP-BEREICH (PHASE 1)            -->
         <!-- ========================================== -->
-        <div id="setup-lobby-panel" class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+        <div id="setup-lobby-panel" class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4 font-sans">
             
             <!-- 1. LIVE-BUZZER & IPAD VERBINDUNG (LINKS) -->
             <div class="md:col-span-5 bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-3">
@@ -406,13 +406,13 @@
             <!-- 2. ANLEITUNGS- & LIVE-BEITRITT-PANEL (RECHTS) -->
             <div class="md:col-span-7 bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-3">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+                    <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5 font-sans">
                         <i class="fa-solid fa-circle-play"></i> 1. Beitrittsphase (Lobby)
                     </h3>
                     <!-- NEUE SITZUNG STARTEN (RESET) -->
                     <button 
                         onclick="confirmReset()" 
-                        class="bg-rose-950/40 hover:bg-rose-900 border border-rose-900/50 text-rose-300 text-[10px] font-bold px-3 py-1 rounded-lg transition-all active:scale-95"
+                        class="bg-rose-950/40 hover:bg-rose-900 border border-rose-900/50 text-rose-300 text-[10px] font-bold px-3 py-1 rounded-lg transition-all active:scale-95 font-sans"
                     >
                         <i class="fa-solid fa-rotate-left mr-1"></i> Neue Sitzung starten
                     </button>
@@ -471,32 +471,32 @@
         <div id="game-controls-panel" class="hidden animate-fadeIn mb-4">
             
             <!-- EINZEILIGER RUNDEN-MANAGER -->
-            <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 flex flex-col xl:flex-row items-center justify-between gap-3">
+            <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 flex flex-col xl:flex-row items-center justify-between gap-3 animate-fadeIn">
                 <div class="flex flex-wrap items-center gap-2.5 text-xs">
-                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5">
+                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 font-sans">
                         <i class="fa-solid fa-play-circle text-emerald-400 animate-pulse"></i> Runden-Manager
                     </span>
                     
                     <span class="bg-violet-500/25 text-violet-300 border border-violet-500/45 px-3 py-1 rounded-lg font-bold font-mono flex items-center gap-1">
-                        Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400">1</span>
+                        Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400 font-mono">1</span>
                     </span>
 
                     <!-- Countdown Timer direkt hier einzeilig integriert -->
-                    <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px]">
+                    <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px] font-sans">
                         <span class="text-slate-300 font-bold flex items-center gap-1"><i class="fa-solid fa-hourglass-start text-amber-500"></i> Timer:</span>
-                        <input type="number" id="timer-duration" value="30" min="5" max="120" class="w-10 bg-slate-950 text-slate-100 rounded text-center text-xs focus:outline-none focus:ring-1 focus:ring-violet-500 font-black">
+                        <input type="number" id="timer-duration" value="30" min="5" max="120" class="w-10 bg-slate-950 text-slate-100 rounded text-center text-xs focus:outline-none focus:ring-1 focus:ring-violet-500 font-black font-mono">
                         <span class="text-slate-400 text-[10px]">Sek.</span>
                         <button id="start-timer-btn" onclick="startTimer()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all">Start ⏱️</button>
                         <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">Stop 🛑</button>
-                        <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-1.5 py-0.5 rounded">30s</div>
+                        <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-1.5 py-0.5 rounded font-mono">30s</div>
                     </div>
                     
-                    <span class="text-slate-400 text-[11px] hidden xl:inline font-medium">Punkte vergeben oder iPad-Buzzer auswerten.</span>
+                    <span class="text-slate-400 text-[11px] hidden xl:inline font-medium font-sans">Punkte vergeben oder iPad-Buzzer auswerten.</span>
                 </div>
-                <div class="flex items-center gap-2 w-full xl:w-auto justify-end">
+                <div class="flex items-center gap-2 w-full xl:w-auto justify-end font-sans">
                     <button 
                         onclick="prevRound()" 
-                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1"
+                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1 font-sans"
                         title="Gehe eine Spielrunde zurück"
                     >
                         <i class="fa-solid fa-arrow-left"></i>
@@ -504,7 +504,7 @@
                     </button>
                     <button 
                         onclick="markAllActive()" 
-                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5"
+                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
                         title="Alle Teams aus- oder abwählen"
                     >
                         <i class="fa-solid fa-check-double text-emerald-400"></i>
@@ -512,7 +512,7 @@
                     </button>
                     <button 
                         onclick="nextRound()" 
-                        class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-1.5 px-4.5 rounded-lg text-[11px] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 flex items-center gap-1.5"
+                        class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-1.5 px-4.5 rounded-lg text-[11px] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 font-sans"
                         title="Punkte für diese Runde gutschreiben und nächste Runde starten"
                     >
                         <span>Nächste Runde</span>
@@ -520,7 +520,7 @@
                     </button>
                     <button 
                         onclick="stopLiveGame()" 
-                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-400 hover:text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1"
+                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-400 hover:text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1 font-sans"
                         title="Zurück zur Setup-Lobby wechseln"
                     >
                         <i class="fa-solid fa-users"></i> Lobby zeigen
@@ -534,7 +534,7 @@
         <!-- ========================================== -->
         <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-3 mb-4 hidden animate-fadeIn resize-y overflow-auto min-h-[160px] h-[240px]">
             <div class="flex justify-between items-center mb-2.5 border-b border-slate-800 pb-2">
-                <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5 font-sans">
                     <i class="fa-solid fa-clock-rotate-left"></i> Eingehende iPad-Antworten (Echtzeit-Anzeige)
                 </h3>
                 <div class="flex gap-1.5">
@@ -542,13 +542,13 @@
                     <button 
                         id="beamer-protection-toggle-btn" 
                         onclick="toggleBeamerProtection()" 
-                        class="text-[9px] bg-slate-700 hover:bg-violet-600 border border-slate-600/40 text-slate-300 px-2.5 py-1 rounded transition-all font-bold"
+                        class="text-[9px] bg-slate-700 hover:bg-violet-600 border border-slate-600/40 text-slate-300 px-2.5 py-1 rounded transition-all font-bold font-sans"
                     >
                         <i class="fa-solid fa-user-secret mr-1"></i> Sichtschutz umschalten
                     </button>
                     <button 
                         onclick="clearIncomingAnswers()" 
-                        class="text-[9px] bg-slate-700 hover:bg-rose-950 hover:text-rose-300 border border-slate-600/40 text-slate-300 px-2 py-1 rounded transition-all font-bold"
+                        class="text-[9px] bg-slate-700 hover:bg-rose-950 hover:text-rose-300 border border-slate-600/40 text-slate-300 px-2 py-1 rounded transition-all font-bold font-sans"
                     >
                         Liste leeren 🗑️
                     </button>
@@ -570,10 +570,10 @@
         </div>
 
         <!-- Leerer Zustand -->
-        <div id="empty-state" class="hidden text-center py-10 px-4 bg-slate-800/20 border border-slate-700/20 rounded-3xl mt-2">
+        <div id="empty-state" class="hidden text-center py-10 px-4 bg-slate-800/20 border border-slate-700/20 rounded-3xl mt-2 font-sans">
             <i class="fa-solid fa-people-group text-4xl text-slate-600 mb-2 block"></i>
             <h4 class="text-base font-bold text-slate-400">Keine Teams in dieser Sitzung</h4>
-            <p class="text-slate-500 text-xs mt-1 max-w-sm mx-auto font-medium">
+            <p class="text-slate-500 text-xs mt-1 max-w-sm mx-auto">
                 Lass deine Schüler über ihre iPads mitspielen, um das Live-Scoreboard automatisch zu befüllen!
             </p>
         </div>
@@ -598,10 +598,10 @@
     <!-- ========================================== -->
     <!-- SETTINGS MODAL DIALOG                      -->
     <!-- ========================================== -->
-    <div id="settings-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+    <div id="settings-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50 font-sans">
         <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-md w-full shadow-2xl animate-fadeIn space-y-4">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
-                <h3 class="text-base font-bold text-violet-400 flex items-center gap-1.5">
+                <h3 class="text-base font-bold text-violet-400 flex items-center gap-1.5 font-sans">
                     <i class="fa-solid fa-gear"></i> Scoreboard-Einstellungen
                 </h3>
                 <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-200">
@@ -657,7 +657,7 @@
                             <button 
                                 type="button" 
                                 onclick="togglePasswordVisibility('change-password-input', 'toggle-pw-icon')" 
-                                class="absolute right-2 text-slate-500 hover:text-slate-300 text-xs p-1"
+                                class="absolute right-2 text-slate-500 hover:text-slate-300 text-xs p-1 animate-fadeIn"
                             >
                                 <i class="fa-solid fa-eye animate-fadeIn" id="toggle-pw-icon"></i>
                             </button>
@@ -680,10 +680,10 @@
     <!-- ========================================== -->
     <!-- 🤫 SECRET TEAM SONGS PREP MODAL              -->
     <!-- ========================================== -->
-    <div id="team-songs-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+    <div id="team-songs-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50 font-sans">
         <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-lg w-full shadow-2xl animate-fadeIn space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
-                <h3 class="text-base font-bold text-amber-400 flex items-center gap-1.5">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 font-sans">
+                <h3 class="text-base font-bold text-amber-400 flex items-center gap-1.5 font-sans">
                     <i class="fa-solid fa-user-secret"></i> 🤫 Spickzettel: Vorbereitete Songs der Teams
                 </h3>
                 <button onclick="closeTeamSongsModal()" class="text-slate-400 hover:text-slate-200">
@@ -691,7 +691,7 @@
                 </button>
             </div>
 
-            <div class="text-xs text-slate-400 leading-normal mb-2">
+            <div class="text-xs text-slate-400 leading-normal mb-2 font-sans">
                 <p>Hier siehst du die 4 Songs, die die Teams vorab eingetragen haben. Die Liste ist standardmäßig <strong>verschwommen (Sichtschutz)</strong>, falls du deinen Bildschirm auf dem Beamer spiegelst. Klicke auf das Auge, um die Songs eines Teams anzuzeigen!</p>
             </div>
 
@@ -711,9 +711,9 @@
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
 
     <!-- MASSEN-IMPORT / KI MODAL -->
-    <div id="import-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-        <div class="bg-slate-900 border border-slate-700/80 p-5 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col gap-4 animate-scaleIn font-sans">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+    <div id="import-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50 font-sans">
+        <div class="bg-slate-900 border border-slate-700/80 p-5 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col gap-4 animate-scaleIn">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2 font-sans">
                 <h3 class="text-lg font-bold text-violet-400 flex items-center gap-2">
                     <i class="fa-solid fa-file-import"></i> Teamnamen-Importer & KI-Erkennung
                 </h3>
@@ -723,7 +723,7 @@
             </div>
 
             <!-- Tabs Navigation -->
-            <div class="flex border-b border-slate-800 text-xs">
+            <div class="flex border-b border-slate-800 text-xs font-sans">
                 <button id="tab-btn-text" onclick="switchImportTab('text')" class="py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400">
                     <i class="fa-solid fa-align-left mr-1"></i> Text kopieren & einfügen
                 </button>
@@ -733,7 +733,7 @@
             </div>
 
             <!-- Tab 1: Manual Text Input -->
-            <div id="tab-content-text" class="space-y-3">
+            <div id="tab-content-text" class="space-y-3 font-sans">
                 <p class="text-xs text-slate-400">Gib hier deine Teamnamen ein (jeder Name in einer neuen Zeile oder getrennt durch Kommas):</p>
                 <textarea 
                     id="bulk-text-input" 
@@ -755,7 +755,7 @@
                 
                 <div 
                     id="dropzone"
-                    class="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center hover:border-slate-500 transition-all cursor-pointer bg-slate-950/20 flex flex-col items-center justify-center gap-3"
+                    class="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center hover:border-slate-500 transition-all cursor-pointer bg-slate-950/20 flex flex-col items-center justify-center gap-3 font-sans"
                     onclick="document.getElementById('file-input').click()"
                 >
                     <i class="fa-solid fa-cloud-arrow-up text-3xl text-violet-500"></i>
@@ -831,7 +831,7 @@
         // Audio Synthesizer Context (Lazy Loading)
         let audioCtx = null;
 
-        // Emojis für Team-Logos
+        // Emojis für Team-Logos (Erweitert auf 6 Reihen / 30 Emojis)
         const emojis = [
             "🦁", "🍕", "🚀", "🦊", "🐼", 
             "🎸", "👑", "🎈", "🛸", "👻", 
@@ -874,7 +874,7 @@
                     beamerProtectionActive: beamerProtectionActive
                 };
                 
-                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2', JSON.stringify(saveDataObj));
+                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2_stable', JSON.stringify(saveDataObj));
             } catch (err) {
                 console.error("Fehler beim Speichern des Zustands:", err);
             }
@@ -933,7 +933,7 @@
                     return;
                 }
 
-                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2');
+                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2_stable');
                 if (savedData) {
                     const parsed = JSON.parse(savedData);
                     if (parsed) {
@@ -1347,7 +1347,6 @@
                             if (quizPayload.action === "join") {
                                 handleLiveJoin(quizPayload.team, quizPayload.emoji || "🎵");
                             } else if (quizPayload.action === "secret_songs") {
-                                // Spickzettel erhalten!
                                 teamSongs[quizPayload.team.toLowerCase()] = {
                                     team: quizPayload.team,
                                     songs: quizPayload.songs
@@ -1550,7 +1549,7 @@
                             </button>
                             <button 
                                 onclick="applyLiveAnswer('${teamNameEscaped}', 1, ${index}, ${hasJoker})"
-                                class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[9px] font-bold px-2 py-1 rounded transition-all active:scale-95 font-sans"
+                                class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[9px] font-bold px-2 py-1 rounded transition-all active:scale-95"
                             >
                                 +1
                             </button>
@@ -1833,6 +1832,7 @@
             
             beamerProtectionActive = true;
 
+            updateClassDropdown();
             updateActiveBadge();
             renderScoreboard();
             renderHistoryArchive();
@@ -2121,51 +2121,660 @@
             renderHistoryArchive();
         }
 
-        function confirmReset() {
-            showCustomConfirm(
-                "Neue Sitzung starten?",
-                "Alle Teams, Punkte, der Antwort-Verlauf und die vorbereiteten Songs dieses Raums werden gelöscht. Die Runde startet wieder bei 1.",
-                executeReset
-            );
-        }
-
-        function executeReset() {
-            teams = [];
-            currentRound = 1;
-            incomingAnswers = [];
-            answerHistory = [];
-            teamSongs = {};
-
-            const roundDisplay = getEl('header-round-display');
-            if (roundDisplay) roundDisplay.innerText = currentRound;
-            const managerRoundDisplay = getEl('manager-round-display');
-            if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
-            
-            classes[activeClass] = {
-                teams: [],
-                currentRound: 1,
-                answerHistory: [],
-                teamSongs: {}
-            };
-            
-            beamerProtectionActive = true;
-
-            getEl('setup-lobby-panel').classList.remove('hidden');
-            getEl('game-controls-panel').classList.add('hidden');
-
+        // Sicherer Team-Löschen-Befehl per technischer ID
+        function deleteTeam(id) {
+            const team = teams.find(t => t.id === id);
+            const name = team ? team.name : "Team";
+            teams = teams.filter(t => t.id !== id);
+            showToast(`Team "${name}" gelöscht.`, 'danger');
             saveState();
-            closeModal();
             renderScoreboard();
-            renderIncomingAnswersList();
-            renderHistoryArchive();
-            renderTeamSongsList();
-            showToast("Eine neue, leere Sitzung wurde gestartet!", "danger");
         }
 
-        // Starten
+        /* Scoreboard rendern mit FLIP-Methode für fließenden Platzwechsel (Smooth CSS Reordering) */
+        function renderScoreboard() {
+            const container = getEl('scoreboard-container');
+            const emptyState = getEl('empty-state');
+            
+            if (!container) return;
+
+            // FLIP Animation: Vorherige Positionen sichern
+            const cards = container.querySelectorAll('[data-team-id]');
+            const firstPositions = {};
+            cards.forEach(card => {
+                const id = card.getAttribute('data-team-id');
+                firstPositions[id] = card.getBoundingClientRect();
+            });
+
+            container.innerHTML = '';
+
+            if (teams.length === 0) {
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            } else {
+                if (emptyState) emptyState.classList.add('hidden');
+            }
+
+            let renderTeams = [...teams];
+            const autoSortEl = getEl('auto-sort-toggle');
+            const autoSort = autoSortEl ? autoSortEl.checked : true;
+            
+            if (autoSort) {
+                renderTeams.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+            }
+
+            const highestScore = Math.max(...teams.map(t => t.score));
+            const hasLeader = teams.length > 1 && highestScore > 0;
+
+            renderTeams.forEach((team, index) => {
+                const isLeader = hasLeader && team.score === highestScore;
+                const isSelected = team.activeThisRound;
+                
+                const card = document.createElement('div');
+                card.setAttribute('data-team-id', team.id); // Wichtig für den FLIP-Effekt!
+                
+                let borderStyle = 'border-slate-800/80 bg-slate-900/40 hover:bg-slate-800/40 hover:border-slate-700/60';
+                let cardOverlay = '';
+
+                if (isSelected) {
+                    borderStyle = 'border-emerald-500 bg-emerald-950/60 shadow-lg shadow-emerald-900/30 ring-2 ring-emerald-500/20';
+                    cardOverlay = `
+                        <div class="absolute top-2 left-2 bg-emerald-500 text-slate-950 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black shadow animate-bounce">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                    `;
+                } else if (isLeader) {
+                    borderStyle = 'leader-card bg-slate-900/60';
+                }
+
+                // Streak Flame Icon
+                let streakBadge = '';
+                if (team.streak >= 3) {
+                    streakBadge = `
+                        <span class="bg-orange-500/15 text-orange-400 border border-orange-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
+                            <i class="fa-solid fa-fire text-[10px]"></i> ${team.streak}x Streak
+                        </span>`;
+                }
+
+                // Joker Statusanzeige auf dem Lehrerboard
+                let jokerCardBadge = '';
+                if (team.jokerActiveThisRound) {
+                    jokerCardBadge = `
+                        <div class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black px-1.5 py-0.5 rounded animate-pulse text-center mt-1">
+                            <i class="fa-solid fa-masks-theater"></i> JOKER AKTIV (Doppelt / Risiko!)
+                        </div>`;
+                } else {
+                    jokerCardBadge = team.jokerUsed ? 
+                        `<span class="text-[9px] text-slate-500 font-bold block mt-1"><i class="fa-solid fa-ban"></i> Joker verbraucht</span>` : 
+                        `<span class="text-[9px] text-emerald-500/85 font-bold block mt-1"><i class="fa-solid fa-masks-theater"></i> Joker bereit</span>`;
+                }
+
+                card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-48 select-none ${borderStyle}`;
+                card.onclick = () => toggleTeamActive(team.id);
+
+                card.innerHTML = `
+                    ${cardOverlay}
+                    <div class="flex items-start justify-between gap-1">
+                        <span class="text-[10px] text-slate-500 font-bold tracking-wider">PLATZ ${index + 1}</span>
+                        ${streakBadge}
+                        <button 
+                            onclick="event.stopPropagation(); deleteTeam('${team.id}')" 
+                            class="text-slate-500 hover:text-rose-400 p-1 rounded transition-all font-sans"
+                            title="Team entfernen"
+                        >
+                            <i class="fa-solid fa-trash-can text-[11px]"></i>
+                        </button>
+                    </div>
+
+                    <div class="text-center flex-grow flex flex-col justify-center">
+                        <h3 class="text-sm font-black ${isSelected ? 'text-emerald-400 font-black' : 'text-slate-200'} tracking-wide truncate px-1" title="${team.name}">
+                            <span class="text-lg">${team.emoji || '🎵'}</span> ${team.name}
+                        </h3>
+                        <span class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-b ${isLeader ? 'from-amber-200 to-amber-500' : 'from-slate-100 to-slate-400'}">
+                            ${team.score}
+                        </span>
+                        ${jokerCardBadge}
+                    </div>
+
+                    <!-- Runden-Optionen für nächste Runde (+1, +2, +3) -->
+                    <div class="flex gap-1 justify-center my-1" onclick="event.stopPropagation();">
+                        <button 
+                            onclick="setPendingRoundPoints('${team.id}', 1)"
+                            class="flex-grow py-1 rounded text-[10px] font-black transition-all ${isSelected && team.pendingPoints === 1 ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}"
+                            title="Nächste Runde +1 Punkt"
+                        >
+                            +1
+                        </button>
+                        <button 
+                            onclick="setPendingRoundPoints('${team.id}', 2)"
+                            class="flex-grow py-1 rounded text-[10px] font-black transition-all ${isSelected && team.pendingPoints === 2 ? 'bg-emerald-600 text-white font-bold animate-pulse' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}"
+                            title="Nächste Runde +2 Punkte"
+                        >
+                            +2
+                        </button>
+                        <button 
+                            onclick="setPendingRoundPoints('${team.id}', 3)"
+                            class="flex-grow py-1 rounded text-[10px] font-black transition-all ${isSelected && team.pendingPoints === 3 ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}"
+                            title="Nächste Runde +3 Punkte"
+                        >
+                            +3
+                        </button>
+                    </div>
+
+                    <!-- Direkt-Änderungstasten (-1 Pkt, +1 Pkt) -->
+                    <div class="flex gap-1 justify-center pt-1 border-t border-slate-800/40 font-sans" onclick="event.stopPropagation();">
+                        <button 
+                            onclick="adjustScore('${team.id}', -1)" 
+                            class="flex-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 py-1 rounded text-[10px] font-bold transition-all active:scale-90"
+                            title="Sofort minus 1"
+                        >
+                            -1 Pkt
+                        </button>
+                        <button 
+                            onclick="adjustScore('${team.id}', 1)" 
+                            class="flex-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 py-1 rounded text-[10px] font-bold transition-all active:scale-90"
+                            title="Sofort plus 1"
+                        >
+                            +1 Pkt
+                        </button>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            // FLIP Animation: Neuer Ort berechnen und verschieben
+            const newCards = container.querySelectorAll('[data-team-id]');
+            newCards.forEach(card => {
+                const id = card.getAttribute('data-team-id');
+                const first = firstPositions[id];
+                if (first) {
+                    const last = card.getBoundingClientRect();
+                    const deltaX = first.left - last.left;
+                    const deltaY = first.top - last.top;
+                    if (deltaX !== 0 || deltaY !== 0) {
+                        card.style.transition = 'none';
+                        card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                        card.getBoundingClientRect(); 
+                        card.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+                        card.style.transform = 'none';
+                    }
+                }
+            });
+        }
+
+        /* Massen-Import / KI Parser */
+        function openImportModal() {
+            const modal = getEl('import-modal');
+            const input = getEl('bulk-text-input');
+            const preview = getEl('preview-container');
+
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+            if (input) input.value = '';
+            if (preview) preview.classList.add('hidden');
+            extractedTeams = [];
+            setupDragAndDrop();
+        }
+
+        function closeImportModal() {
+            const modal = getEl('import-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function switchImportTab(tab) {
+            activeImportTab = tab;
+            const textBtn = getEl('tab-btn-text');
+            const fileBtn = getEl('tab-btn-file');
+            const textContent = getEl('tab-content-text');
+            const fileContent = getEl('tab-content-file');
+
+            if (!textBtn || !fileBtn || !textContent || !fileContent) return;
+
+            if (tab === 'text') {
+                textBtn.className = "py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400";
+                fileBtn.className = "py-2 px-4 font-medium text-slate-400 hover:text-slate-200";
+                textContent.classList.remove('hidden');
+                fileContent.classList.add('hidden');
+            } else {
+                fileBtn.className = "py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400";
+                textBtn.className = "py-2 px-4 font-medium text-slate-400 hover:text-slate-200";
+                fileContent.classList.remove('hidden');
+                textContent.classList.add('hidden');
+            }
+        }
+
+        function processTextImport() {
+            try {
+                const textEl = getEl('bulk-text-input');
+                const rawText = textEl ? textEl.value.trim() : "";
+                if (!rawText) {
+                    showToast("Bitte trage zuerst ein paar Namen ein!", "danger");
+                    return;
+                }
+
+                const rawList = rawText.split(/[\n,]+/);
+                let importedCount = 0;
+
+                rawList.forEach(rawName => {
+                    const name = rawName.trim();
+                    if (name && name.length > 0) {
+                        const formattedName = name.substring(0, 12);
+                        if (!teams.some(t => t.name.toLowerCase() === formattedName.toLowerCase())) {
+                            teams.push({
+                                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                                name: formattedName,
+                                score: 0,
+                                activeThisRound: false,
+                                pendingPoints: 0,
+                                streak: 0,
+                                jokerUsed: false,
+                                jokerActiveThisRound: false
+                            });
+                            importedCount++;
+                        }
+                    }
+                });
+
+                if (importedCount > 0) {
+                    showToast(`${importedCount} Teams erfolgreich importiert!`, 'success');
+                    playSound('up');
+                    saveState();
+                    renderScoreboard();
+                    closeImportModal();
+                } else {
+                    showToast("Keine neuen Teams hinzugefügt.", "info");
+                }
+            } catch (err) {
+                console.error("Fehler beim Verarbeiten des Imports:", err);
+                showToast("Fehler beim Importieren.", "danger");
+            }
+        }
+
+        function setupDragAndDrop() {
+            const dropzone = getEl('dropzone');
+            if (!dropzone) return;
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.add('drag-active');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove('drag-active');
+                }, false);
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFiles(files);
+            }, false);
+        }
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            const file = files[0];
+            
+            const aiLoading = getEl('ai-loading');
+            const previewContainer = getEl('preview-container');
+            if (aiLoading) aiLoading.classList.remove('hidden');
+            if (previewContainer) previewContainer.classList.add('hidden');
+
+            const reader = new FileReader();
+
+            if (file.type.startsWith('image/')) {
+                reader.onload = async function(event) {
+                    const base64Data = event.target.result.split(',')[1];
+                    const mimeType = file.type;
+                    await scanImageWithAI(base64Data, mimeType);
+                };
+                reader.readAsDataURL(file);
+            } else if (file.type === 'text/plain') {
+                reader.onload = function(event) {
+                    const text = event.target.result;
+                    processRawScannedText(text);
+                };
+                reader.readAsText(file);
+            } else if (file.name.endsWith('.pdf')) {
+                reader.onload = async function(event) {
+                    const typedarray = new Uint8Array(event.target.result);
+                    await parsePDFAndScan(typedarray);
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                if (aiLoading) aiLoading.classList.add('hidden');
+                showToast("Format nicht unterstützt!", "danger");
+            }
+        }
+
+        async function parsePDFAndScan(typedarray) {
+            try {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+                const pdf = await pdfjsLib.getDocument({data: typedarray}).promise;
+                let fullText = "";
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(" ");
+                    fullText += pageText + "\n";
+                }
+
+                if (fullText.trim().length > 0) {
+                    await scanTextWithAI(fullText);
+                } else {
+                    throw new Error("Kein lesbarer Text.");
+                }
+            } catch (err) {
+                console.error("PDF Parser Fehler:", err);
+                const aiLoading = getEl('ai-loading');
+                if (aiLoading) aiLoading.classList.add('hidden');
+                showToast("PDF konnte nicht gelesen werden.", "danger");
+            }
+        }
+
+        async function scanImageWithAI(base64Data, mimeType) {
+            const apiKeyInput = getEl('api-key-input');
+            const apiKey = apiKeyInput ? apiKeyInput.value.trim() : "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: "Analysiere dieses Bild oder Dokument und ziehe alle Gruppen-, Schüler- oder Teamnamen heraus. Ignoriere Überschriften oder Punktestände. Gib mir ausschließlich eine JSON-Liste mit den extrahierten, bereinigten Namen zurück. Kürze jeden Namen auf maximal 12 Zeichen, falls er länger ist. Beispiel: [\"BLJ\", \"Didi\", \"KA\"]" },
+                            {
+                                inlineData: {
+                                    mimeType: mimeType,
+                                    data: base64Data
+                                }
+                            }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: { "type": "STRING" }
+                    }
+                }
+            };
+
+            await callGeminiAPI(apiUrl, payload);
+        }
+
+        async function scanTextWithAI(rawText) {
+            const apiKeyInput = getEl('api-key-input');
+            const apiKey = apiKeyInput ? apiKeyInput.value.trim() : "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: `Analysiere diesen Text und extrahiere alle Teamnamen oder Gruppenbezeichnungen. Bereinige sie und gib sie als saubere JSON-Array-Liste zurück (max. 12 Zeichen pro Name). Text: \n\n ${rawText}` }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: { "type": "STRING" }
+                    }
+                }
+            };
+
+            await callGeminiAPI(apiUrl, payload);
+        }
+
+        async function callGeminiAPI(apiUrl, payload) {
+            let retries = 3;
+            let delay = 1000;
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const result = await response.json();
+                    
+                    const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (jsonText) {
+                        const parsedNames = JSON.parse(jsonText);
+                        displayExtractedTeams(parsedNames);
+                        return;
+                    }
+                    throw new Error("Antwort unvollständig");
+                } catch (err) {
+                    if (i === retries - 1) {
+                        console.error("Gemini API Fehler:", err);
+                        const aiLoading = getEl('ai-loading');
+                        if (aiLoading) aiLoading.classList.add('hidden');
+                        showToast("KI Verbindung fehlgeschlagen. Nutze Copy & Paste.", "danger");
+                    } else {
+                        await new Promise(res => setTimeout(res, delay));
+                        delay *= 2;
+                    }
+                }
+            }
+        }
+
+        function processRawScannedText(text) {
+            const rawList = text.split(/[\n,]+/);
+            const cleaned = [];
+            rawList.forEach(name => {
+                const clean = name.trim().substring(0, 12);
+                if (clean) cleaned.push(clean);
+            });
+            displayExtractedTeams(cleaned);
+        }
+
+        function displayExtractedTeams(namesList) {
+            const aiLoading = getEl('ai-loading');
+            if (aiLoading) aiLoading.classList.add('hidden');
+            
+            if (!namesList || namesList.length === 0) {
+                showToast("Keine Namen im Dokument gefunden.", "info");
+                return;
+            }
+
+            extractedTeams = namesList.map((name, idx) => ({
+                id: idx,
+                name: name,
+                selected: true
+            }));
+
+            const listContainer = getEl('extracted-teams-list');
+            if (!listContainer) return;
+            listContainer.innerHTML = '';
+
+            extractedTeams.forEach(item => {
+                const label = document.createElement('label');
+                label.className = "flex items-center gap-2 bg-slate-900 border border-slate-800 hover:border-slate-700 p-2 rounded-xl text-xs cursor-pointer select-none text-slate-300 animate-scaleIn font-bold";
+                label.innerHTML = `
+                    <input type="checkbox" checked onchange="toggleExtractedItem(${item.id})" class="accent-violet-500 rounded">
+                    <span>${item.name}</span>
+                `;
+                listContainer.appendChild(label);
+            });
+
+            const preview = getEl('preview-container');
+            if (preview) preview.classList.remove('hidden');
+        }
+
+        function toggleExtractedItem(id) {
+            const item = extractedTeams.find(t => t.id === id);
+            if (item) item.selected = !item.selected;
+        }
+
+        function commitExtractedImport() {
+            const toImport = extractedTeams.filter(t => t.selected).map(t => t.name);
+            let addedCount = 0;
+
+            toImport.forEach(name => {
+                if (!teams.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+                    teams.push({
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                        name: name,
+                        score: 0,
+                        activeThisRound: false,
+                        pendingPoints: 0,
+                        streak: 0,
+                        jokerUsed: false,
+                        jokerActiveThisRound: false
+                    });
+                    addedCount++;
+                }
+            });
+
+            showToast(`${addedCount} neue Teams erfolgreich hinzugefügt!`, 'success');
+            playSound('up');
+            saveState();
+            renderScoreboard();
+            closeImportModal();
+        }
+
+        /* Automatische Erkennung für ungestylte OneDrive-Vorschau */
+        function checkOneDriveEnvironment() {
+            try {
+                const hasStyles = document.styleSheets.length > 0;
+                if (!hasStyles || typeof EventSource === "undefined") {
+                    const banner = getEl('onedrive-safety-banner');
+                    if (banner) banner.classList.remove('hidden');
+                }
+            } catch (e) {
+                // Fallback
+            }
+        }
+
+        /* Passwort-Schutz für Lehrkraft */
+        function promptTeacherLogin() {
+            const modal = getEl('teacher-password-modal');
+            const input = getEl('teacher-password-input');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+            if (input && typeof input.focus === 'function') {
+                setTimeout(() => {
+                    try {
+                        input.focus();
+                    } catch(e){}
+                }, 100);
+            }
+        }
+
+        function closeTeacherLogin() {
+            const modal = getEl('teacher-password-modal');
+            const input = getEl('teacher-password-input');
+            if (modal) modal.classList.add('hidden');
+            if (modal) modal.classList.remove('flex');
+            if (input) input.value = '';
+        }
+
+        function checkTeacherPassword() {
+            const input = getEl('teacher-password-input');
+            const val = input ? input.value.trim() : "";
+            if (val === teacherPassword) {
+                closeTeacherLogin();
+                switchView('teacher');
+                showToast("Erfolgreich eingeloggt!", "success");
+            } else {
+                showToast("Passwort falsch!", "danger");
+                playSound('down');
+            }
+        }
+
+        function changeTeacherPassword() {
+            const input = getEl('change-password-input');
+            const newPw = input ? input.value.trim() : "";
+            if (newPw.length < 3) {
+                showToast("Das Passwort muss mindestens 3 Zeichen lang sein!", "danger");
+                return;
+            }
+            teacherPassword = newPw;
+            saveState();
+            showToast("Lehrer-Passwort erfolgreich geändert!", "success");
+        }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = getEl(inputId);
+            const icon = getEl(iconId);
+            if (input && icon) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+        }
+
+        /* Custom Modal Controller */
+        function showCustomConfirm(title, description, onConfirm) {
+            const modal = getEl('confirm-modal');
+            const titleEl = getEl('confirm-title');
+            const descEl = getEl('confirm-desc');
+            const btn = getEl('confirm-action-btn');
+
+            if (titleEl) titleEl.innerText = title;
+            if (descEl) descEl.innerText = description;
+            confirmActionCallback = onConfirm;
+            
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            if (btn) {
+                btn.onclick = function() {
+                    if (confirmActionCallback) confirmActionCallback();
+                    closeModal();
+                };
+            }
+        }
+
+        function closeModal() {
+            const modal = getEl('confirm-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        /* Starten */
         window.onload = function() {
             resizeCanvas();
             loadState();
+            checkOneDriveEnvironment();
         };
     </script>
 </body>
