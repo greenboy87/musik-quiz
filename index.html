@@ -471,18 +471,18 @@
         <div id="game-controls-panel" class="hidden animate-fadeIn mb-4">
             
             <!-- EINZEILIGER RUNDEN-MANAGER -->
-            <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 flex flex-col xl:flex-row items-center justify-between gap-3 animate-fadeIn">
+            <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 flex flex-col xl:flex-row items-center justify-between gap-3">
                 <div class="flex flex-wrap items-center gap-2.5 text-xs">
-                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 font-sans">
+                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 animate-sans">
                         <i class="fa-solid fa-play-circle text-emerald-400 animate-pulse"></i> Runden-Manager
                     </span>
                     
                     <span class="bg-violet-500/25 text-violet-300 border border-violet-500/45 px-3 py-1 rounded-lg font-bold font-mono flex items-center gap-1">
-                        Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400 font-mono">1</span>
+                        Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400">1</span>
                     </span>
 
                     <!-- Countdown Timer direkt hier einzeilig integriert -->
-                    <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px] font-sans">
+                    <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px]">
                         <span class="text-slate-300 font-bold flex items-center gap-1"><i class="fa-solid fa-hourglass-start text-amber-500"></i> Timer:</span>
                         <input type="number" id="timer-duration" value="30" min="5" max="120" class="w-10 bg-slate-950 text-slate-100 rounded text-center text-xs focus:outline-none focus:ring-1 focus:ring-violet-500 font-black font-mono">
                         <span class="text-slate-400 text-[10px]">Sek.</span>
@@ -491,7 +491,7 @@
                         <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-1.5 py-0.5 rounded font-mono">30s</div>
                     </div>
                     
-                    <span class="text-slate-400 text-[11px] hidden xl:inline font-medium font-sans">Punkte vergeben oder iPad-Buzzer auswerten.</span>
+                    <span class="text-slate-400 text-[11px] hidden xl:inline font-medium">Punkte vergeben oder iPad-Buzzer auswerten.</span>
                 </div>
                 <div class="flex items-center gap-2 w-full xl:w-auto justify-end font-sans">
                     <button 
@@ -534,7 +534,7 @@
         <!-- ========================================== -->
         <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-3 mb-4 hidden animate-fadeIn resize-y overflow-auto min-h-[160px] h-[240px]">
             <div class="flex justify-between items-center mb-2.5 border-b border-slate-800 pb-2">
-                <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5 font-sans">
+                <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
                     <i class="fa-solid fa-clock-rotate-left"></i> Eingehende iPad-Antworten (Echtzeit-Anzeige)
                 </h3>
                 <div class="flex gap-1.5">
@@ -570,7 +570,7 @@
         </div>
 
         <!-- Leerer Zustand -->
-        <div id="empty-state" class="hidden text-center py-10 px-4 bg-slate-800/20 border border-slate-700/20 rounded-3xl mt-2 font-sans">
+        <div id="empty-state" class="hidden text-center py-10 px-4 bg-slate-800/20 border border-slate-700/20 rounded-3xl mt-2">
             <i class="fa-solid fa-people-group text-4xl text-slate-600 mb-2 block"></i>
             <h4 class="text-base font-bold text-slate-400">Keine Teams in dieser Sitzung</h4>
             <p class="text-slate-500 text-xs mt-1 max-w-sm mx-auto">
@@ -581,7 +581,7 @@
         <!-- ========================================== -->
         <!-- ARCHIVIERTER ANTWORT-VERLAUF               -->
         <!-- ========================================== -->
-        <div id="history-archive-panel" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 mt-6 animate-fadeIn font-sans">
+        <div id="history-archive-panel" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 mt-6 animate-fadeIn">
             <h3 class="text-xs font-bold text-slate-400 flex items-center gap-1.5 border-b border-slate-800 pb-2 mb-2.5">
                 <i class="fa-solid fa-box-archive text-slate-500"></i> Antwort-Verlauf (Echtzeit-Backup dieser Runde)
             </h3>
@@ -662,7 +662,7 @@
                                 <i class="fa-solid fa-eye animate-fadeIn" id="toggle-pw-icon"></i>
                             </button>
                         </div>
-                        <button onclick="changeTeacherPassword()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs active:scale-95 transition-all">
+                        <button onclick="changeTeacherPassword()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs active:scale-95 transition-all font-sans">
                             Ändern
                         </button>
                     </div>
@@ -670,7 +670,7 @@
             </div>
 
             <div class="pt-2.5 border-t border-slate-800 flex justify-end">
-                <button onclick="closeSettingsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs active:scale-95">
+                <button onclick="closeSettingsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs active:scale-95 font-sans">
                     Schließen
                 </button>
             </div>
@@ -682,7 +682,7 @@
     <!-- ========================================== -->
     <div id="team-songs-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50 font-sans">
         <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-lg w-full shadow-2xl animate-fadeIn space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 font-sans">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
                 <h3 class="text-base font-bold text-amber-400 flex items-center gap-1.5 font-sans">
                     <i class="fa-solid fa-user-secret"></i> 🤫 Spickzettel: Vorbereitete Songs der Teams
                 </h3>
@@ -691,7 +691,7 @@
                 </button>
             </div>
 
-            <div class="text-xs text-slate-400 leading-normal mb-2 font-sans">
+            <div class="text-xs text-slate-400 leading-normal mb-2">
                 <p>Hier siehst du die 4 Songs, die die Teams vorab eingetragen haben. Die Liste ist standardmäßig <strong>verschwommen (Sichtschutz)</strong>, falls du deinen Bildschirm auf dem Beamer spiegelst. Klicke auf das Auge, um die Songs eines Teams anzuzeigen!</p>
             </div>
 
@@ -700,7 +700,7 @@
             </div>
 
             <div class="pt-2.5 border-t border-slate-800 flex justify-end">
-                <button onclick="closeTeamSongsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs active:scale-95">
+                <button onclick="closeTeamSongsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs active:scale-95 font-sans">
                     Schließen
                 </button>
             </div>
@@ -708,12 +708,12 @@
     </div>
 
     <!-- Toast Benachrichtigungen -->
-    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none font-sans"></div>
 
     <!-- MASSEN-IMPORT / KI MODAL -->
     <div id="import-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50 font-sans">
         <div class="bg-slate-900 border border-slate-700/80 p-5 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col gap-4 animate-scaleIn">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2 font-sans">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
                 <h3 class="text-lg font-bold text-violet-400 flex items-center gap-2">
                     <i class="fa-solid fa-file-import"></i> Teamnamen-Importer & KI-Erkennung
                 </h3>
@@ -723,7 +723,7 @@
             </div>
 
             <!-- Tabs Navigation -->
-            <div class="flex border-b border-slate-800 text-xs font-sans">
+            <div class="flex border-b border-slate-800 text-xs">
                 <button id="tab-btn-text" onclick="switchImportTab('text')" class="py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400">
                     <i class="fa-solid fa-align-left mr-1"></i> Text kopieren & einfügen
                 </button>
@@ -739,7 +739,7 @@
                     id="bulk-text-input" 
                     rows="6" 
                     placeholder="Team Alpha&#10;Team Beta&#10;BLJ, Didi, Nugget"
-                    class="w-full bg-slate-950/60 border border-slate-700/60 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500 font-mono"
+                    class="w-full bg-slate-950/60 border border-slate-700/60 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-650 focus:outline-none focus:ring-2 focus:ring-violet-500 font-mono"
                 ></textarea>
                 <div class="flex justify-between items-center">
                     <span class="text-[10px] text-amber-400/80"><i class="fa-solid fa-info-circle"></i> Doppelte Namen werden automatisch ignoriert.</span>
@@ -755,7 +755,7 @@
                 
                 <div 
                     id="dropzone"
-                    class="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center hover:border-slate-500 transition-all cursor-pointer bg-slate-950/20 flex flex-col items-center justify-center gap-3 font-sans"
+                    class="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center hover:border-slate-500 transition-all cursor-pointer bg-slate-950/20 flex flex-col items-center justify-center gap-3"
                     onclick="document.getElementById('file-input').click()"
                 >
                     <i class="fa-solid fa-cloud-arrow-up text-3xl text-violet-500"></i>
@@ -874,7 +874,7 @@
                     beamerProtectionActive: beamerProtectionActive
                 };
                 
-                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2_stable', JSON.stringify(saveDataObj));
+                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2_stable_v3', JSON.stringify(saveDataObj));
             } catch (err) {
                 console.error("Fehler beim Speichern des Zustands:", err);
             }
@@ -933,7 +933,7 @@
                     return;
                 }
 
-                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2_stable');
+                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2_stable_v3');
                 if (savedData) {
                     const parsed = JSON.parse(savedData);
                     if (parsed) {
@@ -1809,7 +1809,7 @@
             activeClass = event.target.value;
             
             if (activeClass === "Standard-Sitzung") {
-                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, answerHistory: [], teamSongs: {} };
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {} };
                 answerHistory = []; 
                 teamSongs = {};
             }
@@ -2219,7 +2219,7 @@
                         ${streakBadge}
                         <button 
                             onclick="event.stopPropagation(); deleteTeam('${team.id}')" 
-                            class="text-slate-500 hover:text-rose-400 p-1 rounded transition-all font-sans"
+                            class="text-slate-600 hover:text-rose-400 p-1 rounded transition-all font-sans"
                             title="Team entfernen"
                         >
                             <i class="fa-solid fa-trash-can text-[11px]"></i>
@@ -2659,122 +2659,202 @@
             closeImportModal();
         }
 
-        /* Automatische Erkennung für ungestylte OneDrive-Vorschau */
-        function checkOneDriveEnvironment() {
-            try {
-                const hasStyles = document.styleSheets.length > 0;
-                if (!hasStyles || typeof EventSource === "undefined") {
-                    const banner = getEl('onedrive-safety-banner');
-                    if (banner) banner.classList.remove('hidden');
-                }
-            } catch (e) {
-                // Fallback
-            }
-        }
-
-        /* Passwort-Schutz für Lehrkraft */
-        function promptTeacherLogin() {
-            const modal = getEl('teacher-password-modal');
-            const input = getEl('teacher-password-input');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-            if (input && typeof input.focus === 'function') {
-                setTimeout(() => {
-                    try {
-                        input.focus();
-                    } catch(e){}
-                }, 100);
-            }
-        }
-
-        function closeTeacherLogin() {
-            const modal = getEl('teacher-password-modal');
-            const input = getEl('teacher-password-input');
-            if (modal) modal.classList.add('hidden');
-            if (modal) modal.classList.remove('flex');
-            if (input) input.value = '';
-        }
-
-        function checkTeacherPassword() {
-            const input = getEl('teacher-password-input');
-            const val = input ? input.value.trim() : "";
-            if (val === teacherPassword) {
-                closeTeacherLogin();
-                switchView('teacher');
-                showToast("Erfolgreich eingeloggt!", "success");
-            } else {
-                showToast("Passwort falsch!", "danger");
-                playSound('down');
-            }
-        }
-
-        function changeTeacherPassword() {
-            const input = getEl('change-password-input');
-            const newPw = input ? input.value.trim() : "";
-            if (newPw.length < 3) {
-                showToast("Das Passwort muss mindestens 3 Zeichen lang sein!", "danger");
-                return;
-            }
-            teacherPassword = newPw;
-            saveState();
-            showToast("Lehrer-Passwort erfolgreich geändert!", "success");
-        }
-
-        function togglePasswordVisibility(inputId, iconId) {
-            const input = getEl(inputId);
-            const icon = getEl(iconId);
-            if (input && icon) {
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    icon.classList.remove('fa-eye');
-                    icon.classList.add('fa-eye-slash');
-                } else {
-                    input.type = 'password';
-                    icon.classList.remove('fa-eye-slash');
-                    icon.classList.add('fa-eye');
-                }
-            }
-        }
-
-        /* Custom Modal Controller */
-        function showCustomConfirm(title, description, onConfirm) {
-            const modal = getEl('confirm-modal');
-            const titleEl = getEl('confirm-title');
-            const descEl = getEl('confirm-desc');
-            const btn = getEl('confirm-action-btn');
-
-            if (titleEl) titleEl.innerText = title;
-            if (descEl) descEl.innerText = description;
-            confirmActionCallback = onConfirm;
+        /* Stand als HTML exportieren */
+        function exportCurrentStand() {
+            const className = prompt("Für welche Klasse möchtest du diesen Stand sichern?", activeClass);
+            if (className === null) return;
             
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
+            const sanitizedClassName = className.trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+            const fileName = `scoreboard_${sanitizedClassName}.html`;
+            
+            const docClone = document.documentElement.cloneNode(true);
+            
+            const oldLoader = docClone.querySelector('#state-loader');
+            if (oldLoader) oldLoader.remove();
+            
+            const stateScript = document.createElement('script');
+            stateScript.id = 'state-loader';
+            stateScript.innerHTML = `
+                window.PREBAKED_TEAMS = ${JSON.stringify(teams)};
+                window.PREBAKED_ROUND = ${currentRound};
+            `;
+            
+            docClone.querySelector('head').appendChild(stateScript);
+            
+            const confirmModal = docClone.querySelector('#confirm-modal');
+            if (confirmModal) confirmModal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50";
+            const importModal = docClone.querySelector('#import-modal');
+            if (importModal) importModal.className = "fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50";
+
+            const htmlContent = "<!DOCTYPE html>\n<html lang=\"de\">" + docClone.innerHTML + "</html>";
+            
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast(`Sicherung als "${fileName}" heruntergeladen!`, 'success');
+        }
+
+        const canvas = getEl("confetti-canvas");
+        const ctx = canvas ? canvas.getContext("2d") : null;
+        let particles = [];
+        const colors = ["#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#ef4444"];
+
+        function resizeCanvas() {
+            if (!canvas) return;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+
+        class ConfettiParticle {
+            constructor() {
+                this.x = Math.random() * (canvas ? canvas.width : 500);
+                this.y = Math.random() * -(canvas ? canvas.height : 500) - 20;
+                this.size = Math.random() * 8 + 6;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.speedX = Math.random() * 4 - 2;
+                this.speedY = Math.random() * 5 + 3;
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = Math.random() * 4 - 2;
             }
 
-            if (btn) {
-                btn.onclick = function() {
-                    if (confirmActionCallback) confirmActionCallback();
-                    closeModal();
-                };
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.rotation += this.rotationSpeed;
+
+                if (canvas && this.y > canvas.height) {
+                    this.y = -20;
+                    this.x = Math.random() * canvas.width;
+                }
+            }
+
+            draw() {
+                if (!ctx) return;
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate((this.rotation * Math.PI) / 180);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                ctx.restore();
             }
         }
 
-        function closeModal() {
-            const modal = getEl('confirm-modal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
+        function initConfetti() {
+            particles = [];
+            for (let i = 0; i < 150; i++) {
+                particles.push(new ConfettiParticle());
             }
         }
 
-        /* Starten */
+        function animateConfetti() {
+            if (!isConfettiActive || !ctx || !canvas) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p) => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateConfetti);
+        }
+
+        function triggerWinConfetti() {
+            let winnerName = "Niemand";
+            if (teams.length > 0) {
+                const highestScore = Math.max(...teams.map(t => t.score));
+                const winners = teams.filter(t => t.score === highestScore);
+                if (highestScore > 0) {
+                    winnerName = winners.map(w => w.name).join(" & ");
+                }
+            }
+
+            showToast(`🏆 Glückwunsch an das Siegerteam: ${winnerName}! 🎉`, 'success');
+            playSound('fanfare');
+            
+            resizeCanvas();
+            initConfetti();
+            isConfettiActive = true;
+            animateConfetti();
+
+            if (confettiInterval) clearTimeout(confettiInterval);
+            confettiInterval = setTimeout(() => {
+                isConfettiActive = false;
+                if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }, 8000);
+        }
+
+        function confirmReset() {
+            showCustomConfirm(
+                "Neue Sitzung starten?",
+                "Alle Teams, Punkte, der Antwort-Verlauf und die vorbereiteten Songs dieses Raums werden gelöscht. Die Runde startet wieder bei 1.",
+                executeReset
+            );
+        }
+
+        function executeReset() {
+            teams = [];
+            currentRound = 1;
+            incomingAnswers = [];
+            answerHistory = [];
+            teamSongs = {};
+
+            const roundDisplay = getEl('header-round-display');
+            if (roundDisplay) roundDisplay.innerText = currentRound;
+            const managerRoundDisplay = getEl('manager-round-display');
+            if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
+            
+            classes[activeClass] = {
+                teams: [],
+                currentRound: 1,
+                answerHistory: [],
+                teamSongs: {}
+            };
+            
+            beamerProtectionActive = true;
+
+            getEl('setup-lobby-panel').classList.remove('hidden');
+            getEl('game-controls-panel').classList.add('hidden');
+
+            saveState();
+            closeModal();
+            renderScoreboard();
+            renderIncomingAnswersList();
+            renderHistoryArchive();
+            renderTeamSongsList();
+            showToast("Eine neue, leere Sitzung wurde gestartet!", "danger");
+        }
+
+        // Starten
         window.onload = function() {
             resizeCanvas();
+            
+            // 1. URL Parameter ERST prüfen
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryRoom = urlParams.get('room');
+            const storedRoom = localStorage.getItem('student_room_code');
+            
+            // WICHTIG: Wenn der URL-Raum ungleich dem gespeicherten Raum ist, löschen wir die alte Registrierung!
+            // Das löst sofort das Problem, dass Schüler bei einem neuen QR-Code im alten Raum festhängen!
+            if (queryRoom && queryRoom.toLowerCase() !== (storedRoom || "").toLowerCase()) {
+                localStorage.removeItem('student_team_name');
+                localStorage.removeItem('student_room_code');
+                localStorage.removeItem('student_team_emoji');
+            }
+            
+            // 2. Zustand normal laden (zeigt nun sauber das Anmeldefeld mit Emojis an)
             loadState();
             checkOneDriveEnvironment();
+            
+            // 3. Raumcode-Feld im Beitrittsmodul füllen
+            if (queryRoom) {
+                const roomInput = getEl('student-room-input');
+                if (roomInput) roomInput.value = queryRoom;
+            }
         };
     </script>
 </body>
