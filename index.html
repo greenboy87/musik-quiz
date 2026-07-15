@@ -557,16 +557,8 @@
                     <i class="fa-solid fa-clock-rotate-left"></i> Eingehende iPad-Antworten (Echtzeit-Anzeige)
                 </h3>
                 <div class="flex gap-1.5">
-                    <!-- Beamer Sichtschutz Toggle im Header -->
-                    <button 
-                        id="beamer-protection-toggle-btn" 
-                        onclick="toggleBeamerProtection()" 
-                        class="text-[9px] bg-slate-700 hover:bg-violet-600 border border-slate-600/40 text-slate-300 px-2.5 py-1 rounded transition-all font-bold font-sans"
-                    >
-                        <i class="fa-solid fa-user-secret mr-1"></i> Sichtschutz umschalten
-                    </button>
-                    <button 
-                        onclick="clearIncomingAnswers()" 
+                    <button
+                        onclick="clearIncomingAnswers()"
                         class="text-[9px] bg-slate-700 hover:bg-rose-950 hover:text-rose-300 border border-slate-600/40 text-slate-300 px-2 py-1 rounded transition-all font-bold font-sans"
                     >
                         Liste leeren 🗑️
@@ -902,7 +894,8 @@
                         activeClass = "Standard-Sitzung";
                         answerHistory = [];
                         teacherPassword = parsed.teacherPassword || "musik";
-                        beamerProtectionActive = parsed.beamerProtectionActive !== false;
+                        // Immer verdeckt starten - unabhängig davon, wie die letzte Sitzung beendet wurde.
+                        beamerProtectionActive = true;
 
                         const autoSortEl = getEl('auto-sort-toggle');
                         if (autoSortEl) autoSortEl.checked = parsed.autoSort !== false;
@@ -1836,18 +1829,6 @@
 
             if (!list) return;
             list.innerHTML = '';
-
-            // Sichtschutz Button-Status (Auge / Durchgestrichen) dynamisch aktualisieren
-            const toggleBtn = getEl('beamer-protection-toggle-btn');
-            if (toggleBtn) {
-                if (beamerProtectionActive) {
-                    toggleBtn.innerHTML = `<i class="fa-solid fa-eye-slash mr-1"></i> Sichtschutz: AN 🔒`;
-                    toggleBtn.className = "text-[9px] bg-rose-950/70 hover:bg-rose-900 border border-rose-800/40 text-rose-200 px-2.5 py-1 rounded transition-all font-bold font-sans";
-                } else {
-                    toggleBtn.innerHTML = `<i class="fa-solid fa-eye mr-1"></i> Sichtschutz: AUS 🔓`;
-                    toggleBtn.className = "text-[9px] bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-800/40 text-emerald-200 px-2.5 py-1 rounded transition-all font-bold font-sans";
-                }
-            }
 
             if (incomingAnswers.length === 0) {
                 if (emptyDiv) emptyDiv.classList.remove('hidden');
@@ -3282,12 +3263,15 @@
             
             teamSongs = {};
             answerHistory = []; // Verlauf bei Reset komplett löschen!
-            
+            incomingAnswers = [];
+            beamerProtectionActive = true; // Neue Sitzung startet immer verdeckt
+
             saveState();
             closeModal();
             renderScoreboard();
             renderHistoryArchive(); // Archiv-Anzeige leeren!
             renderTeamSongsList();
+            renderIncomingAnswersList();
             showToast("Neue Sitzung gestartet!", "success");
         }
 
