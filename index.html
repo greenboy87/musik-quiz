@@ -471,7 +471,7 @@
         <div id="game-controls-panel" class="hidden animate-fadeIn mb-4">
             
             <!-- EINZEILIGER RUNDEN-MANAGER -->
-            <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 flex flex-col xl:flex-row items-center justify-between gap-3">
+            <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 flex flex-col xl:flex-row items-center justify-between gap-3 font-sans">
                 <div class="flex flex-wrap items-center gap-2.5 text-xs">
                     <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 animate-sans">
                         <i class="fa-solid fa-play-circle text-emerald-400 animate-pulse"></i> Runden-Manager
@@ -486,7 +486,7 @@
                         <span class="text-slate-300 font-bold flex items-center gap-1"><i class="fa-solid fa-hourglass-start text-amber-500"></i> Timer:</span>
                         <input type="number" id="timer-duration" value="30" min="5" max="120" class="w-10 bg-slate-950 text-slate-100 rounded text-center text-xs focus:outline-none focus:ring-1 focus:ring-violet-500 font-black font-mono">
                         <span class="text-slate-400 text-[10px]">Sek.</span>
-                        <button id="start-timer-btn" onclick="startTimer()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all">Start ⏱️</button>
+                        <button id="start-timer-btn" onclick="startTimer()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all font-sans">Start ⏱️</button>
                         <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">Stop 🛑</button>
                         <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-1.5 py-0.5 rounded font-mono">30s</div>
                     </div>
@@ -534,7 +534,7 @@
         <!-- ========================================== -->
         <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-3 mb-4 hidden animate-fadeIn resize-y overflow-auto min-h-[160px] h-[240px]">
             <div class="flex justify-between items-center mb-2.5 border-b border-slate-800 pb-2">
-                <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5 font-sans">
                     <i class="fa-solid fa-clock-rotate-left"></i> Eingehende iPad-Antworten (Echtzeit-Anzeige)
                 </h3>
                 <div class="flex gap-1.5">
@@ -570,7 +570,7 @@
         </div>
 
         <!-- Leerer Zustand -->
-        <div id="empty-state" class="hidden text-center py-10 px-4 bg-slate-800/20 border border-slate-700/20 rounded-3xl mt-2">
+        <div id="empty-state" class="hidden text-center py-10 px-4 bg-slate-800/20 border border-slate-700/20 rounded-3xl mt-2 font-sans">
             <i class="fa-solid fa-people-group text-4xl text-slate-600 mb-2 block"></i>
             <h4 class="text-base font-bold text-slate-400">Keine Teams in dieser Sitzung</h4>
             <p class="text-slate-500 text-xs mt-1 max-w-sm mx-auto">
@@ -581,7 +581,7 @@
         <!-- ========================================== -->
         <!-- ARCHIVIERTER ANTWORT-VERLAUF               -->
         <!-- ========================================== -->
-        <div id="history-archive-panel" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 mt-6 animate-fadeIn">
+        <div id="history-archive-panel" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 mt-6 animate-fadeIn font-sans">
             <h3 class="text-xs font-bold text-slate-400 flex items-center gap-1.5 border-b border-slate-800 pb-2 mb-2.5">
                 <i class="fa-solid fa-box-archive text-slate-500"></i> Antwort-Verlauf (Echtzeit-Backup dieser Runde)
             </h3>
@@ -601,7 +601,7 @@
     <div id="settings-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50 font-sans">
         <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-md w-full shadow-2xl animate-fadeIn space-y-4">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
-                <h3 class="text-base font-bold text-violet-400 flex items-center gap-1.5 font-sans">
+                <h3 class="text-base font-bold text-violet-400 flex items-center gap-1.5">
                     <i class="fa-solid fa-gear"></i> Scoreboard-Einstellungen
                 </h3>
                 <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-200">
@@ -609,29 +609,29 @@
                 </button>
             </div>
 
-            <div class="space-y-3.5 text-xs text-slate-300">
+            <div class="space-y-3.5 text-xs text-slate-300 font-sans">
                 <div class="flex items-center justify-between gap-2">
                     <span class="flex items-center gap-1.5">
                         <i class="fa-solid fa-volume-high text-slate-400"></i> Soundeffekte abspielen
                     </span>
-                    <label class="relative inline-flex items-center cursor-pointer">
+                    <label class="relative inline-flex items-center cursor-pointer font-sans">
                         <input type="checkbox" id="sound-toggle" checked class="sr-only peer" onchange="saveState()">
                         <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
                     </label>
                 </div>
 
-                <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center justify-between gap-2 font-sans">
                     <span class="flex items-center gap-1.5">
                         <i class="fa-solid fa-arrow-down-1-9 text-slate-400"></i> Führende Teams auto-sortieren
                     </span>
-                    <label class="relative inline-flex items-center cursor-pointer">
+                    <label class="relative inline-flex items-center cursor-pointer font-sans">
                         <input type="checkbox" id="auto-sort-toggle" checked class="sr-only peer" onchange="handleAutoSortToggle()">
                         <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
                     </label>
                 </div>
 
                 <!-- API Key Config -->
-                <div class="border-t border-slate-800 pt-3 mt-1.5 space-y-1">
+                <div class="border-t border-slate-800 pt-3 mt-1.5 space-y-1 font-sans">
                     <span class="text-slate-400 font-bold block mb-0.5"><i class="fa-solid fa-key text-amber-500 mr-1"></i>Gemini API-Schlüssel (für Dokumenten-KI):</span>
                     <input 
                         type="password" 
@@ -643,7 +643,7 @@
                 </div>
 
                 <!-- Passwort ändern Bereich -->
-                <div class="border-t border-slate-800 pt-3 mt-1.5 space-y-1">
+                <div class="border-t border-slate-800 pt-3 mt-1.5 space-y-1 font-sans">
                     <span class="text-slate-400 font-bold block mb-0.5"><i class="fa-solid fa-lock text-violet-400 mr-1"></i>Lehrer-Bereichs Passwort ändern:</span>
                     <div class="flex gap-1.5">
                         <div class="relative flex items-center flex-grow">
@@ -657,7 +657,7 @@
                             <button 
                                 type="button" 
                                 onclick="togglePasswordVisibility('change-password-input', 'toggle-pw-icon')" 
-                                class="absolute right-2 text-slate-500 hover:text-slate-300 text-xs p-1 animate-fadeIn"
+                                class="absolute right-2 text-slate-500 hover:text-slate-300 text-xs p-1"
                             >
                                 <i class="fa-solid fa-eye animate-fadeIn" id="toggle-pw-icon"></i>
                             </button>
@@ -669,8 +669,8 @@
                 </div>
             </div>
 
-            <div class="pt-2.5 border-t border-slate-800 flex justify-end">
-                <button onclick="closeSettingsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs active:scale-95 font-sans">
+            <div class="pt-2.5 border-t border-slate-800 flex justify-end font-sans">
+                <button onclick="closeSettingsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs active:scale-95">
                     Schließen
                 </button>
             </div>
@@ -682,8 +682,8 @@
     <!-- ========================================== -->
     <div id="team-songs-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50 font-sans">
         <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-lg w-full shadow-2xl animate-fadeIn space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
-                <h3 class="text-base font-bold text-amber-400 flex items-center gap-1.5 font-sans">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 font-sans">
+                <h3 class="text-base font-bold text-amber-400 flex items-center gap-1.5">
                     <i class="fa-solid fa-user-secret"></i> 🤫 Spickzettel: Vorbereitete Songs der Teams
                 </h3>
                 <button onclick="closeTeamSongsModal()" class="text-slate-400 hover:text-slate-200">
@@ -691,7 +691,7 @@
                 </button>
             </div>
 
-            <div class="text-xs text-slate-400 leading-normal mb-2">
+            <div class="text-xs text-slate-400 leading-normal mb-2 font-sans">
                 <p>Hier siehst du die 4 Songs, die die Teams vorab eingetragen haben. Die Liste ist standardmäßig <strong>verschwommen (Sichtschutz)</strong>, falls du deinen Bildschirm auf dem Beamer spiegelst. Klicke auf das Auge, um die Songs eines Teams anzuzeigen!</p>
             </div>
 
@@ -699,7 +699,7 @@
                 <!-- Wird dynamisch befüllt -->
             </div>
 
-            <div class="pt-2.5 border-t border-slate-800 flex justify-end">
+            <div class="pt-2.5 border-t border-slate-800 flex justify-end font-sans">
                 <button onclick="closeTeamSongsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs active:scale-95 font-sans">
                     Schließen
                 </button>
@@ -723,7 +723,7 @@
             </div>
 
             <!-- Tabs Navigation -->
-            <div class="flex border-b border-slate-800 text-xs">
+            <div class="flex border-b border-slate-800 text-xs font-sans">
                 <button id="tab-btn-text" onclick="switchImportTab('text')" class="py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400">
                     <i class="fa-solid fa-align-left mr-1"></i> Text kopieren & einfügen
                 </button>
@@ -741,8 +741,8 @@
                     placeholder="Team Alpha&#10;Team Beta&#10;BLJ, Didi, Nugget"
                     class="w-full bg-slate-950/60 border border-slate-700/60 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-650 focus:outline-none focus:ring-2 focus:ring-violet-500 font-mono"
                 ></textarea>
-                <div class="flex justify-between items-center">
-                    <span class="text-[10px] text-amber-400/80"><i class="fa-solid fa-info-circle"></i> Doppelte Namen werden automatisch ignoriert.</span>
+                <div class="flex justify-between items-center font-sans">
+                    <span class="text-[10px] text-amber-400/80 font-bold"><i class="fa-solid fa-info-circle"></i> Doppelte Namen werden automatisch ignoriert.</span>
                     <button onclick="processTextImport()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold py-2 px-5 rounded-xl text-xs active:scale-95 transition-all">
                         Teams hinzufügen
                     </button>
@@ -846,6 +846,35 @@
             return document.getElementById(id) || null;
         }
 
+        /* 
+           MANDATORY SAFETY-WRAPPER FÜR LOCALSTORAGE (IOS PRIVATE MODE CRASH SAFE)
+           Verhindert jegliche Abstürze im Inkognito/Privat-Modus von iOS Safari!
+        */
+        const safeStorage = {
+            getItem(key) {
+                try {
+                    return localStorage.getItem(key);
+                } catch(e) {
+                    console.warn("Storage.getItem blockiert (Privater Modus active)", e);
+                    return null;
+                }
+            },
+            setItem(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                } catch(e) {
+                    console.warn("Storage.setItem blockiert (Privater Modus active)", e);
+                }
+            },
+            removeItem(key) {
+                try {
+                    localStorage.removeItem(key);
+                } catch(e) {
+                    console.warn("Storage.removeItem blockiert (Privater Modus active)", e);
+                }
+            }
+        };
+
         /* LocalStorage Speicher-Funktionen mit kontinuierlichem Autosave */
         function saveState() {
             try {
@@ -874,7 +903,8 @@
                     beamerProtectionActive: beamerProtectionActive
                 };
                 
-                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2_stable_v3', JSON.stringify(saveDataObj));
+                // Nutze safeStorage zum manipulationsgeschützten Sichern!
+                safeStorage.setItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2_stable_v3', JSON.stringify(saveDataObj));
             } catch (err) {
                 console.error("Fehler beim Speichern des Zustands:", err);
             }
@@ -933,7 +963,8 @@
                     return;
                 }
 
-                const savedData = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2_stable_v3');
+                // Nutze safeStorage zum sicheren Laden!
+                const savedData = safeStorage.getItem('quiz_scoreboard_master_data_v5_greenboys_autosave_v2_stable_v3');
                 if (savedData) {
                     const parsed = JSON.parse(savedData);
                     if (parsed) {
@@ -988,8 +1019,8 @@
                 const managerRoundDisplay = getEl('manager-round-display');
                 if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
 
-                const storedStudentName = localStorage.getItem('student_team_name');
-                const storedStudentRoom = localStorage.getItem('student_room_code');
+                const storedStudentName = safeStorage.getItem('student_team_name');
+                const storedStudentRoom = safeStorage.getItem('student_room_code');
                 const studentNameEl = getEl('student-name-input');
                 const studentRoomEl = getEl('student-room-input');
                 if (storedStudentName && studentNameEl) studentNameEl.value = storedStudentName;
@@ -1085,15 +1116,15 @@
                     sseSource.close();
                     sseSource = null;
                 }
-                const registeredName = localStorage.getItem('student_team_name');
-                const registeredRoom = localStorage.getItem('student_room_code');
+                const registeredName = safeStorage.getItem('student_team_name');
+                const registeredRoom = safeStorage.getItem('student_room_code');
                 const studentJoinCard = getEl('student-join-card');
                 const studentBuzzerCard = getEl('student-buzzer-card');
 
                 if (registeredName && registeredRoom) {
                     if (studentJoinCard) studentJoinCard.classList.add('hidden');
                     const badge = getEl('student-badge-info');
-                    const storedEmoji = localStorage.getItem('student_team_emoji') || "🎵";
+                    const storedEmoji = safeStorage.getItem('student_team_emoji') || "🎵";
                     if (badge) badge.innerText = `Verbunden: ${storedEmoji} ${registeredName}`;
                     if (studentBuzzerCard) studentBuzzerCard.classList.remove('hidden');
                     connectStudentControlChannel(registeredRoom);
@@ -1111,8 +1142,8 @@
 
         /* Spickzettel-Sperrung auf Schülergeräten laden */
         function loadStudentPrepSongs(room) {
-            const sentPrep = localStorage.getItem(`prep_songs_sent_${room}`);
-            const prepDataStr = localStorage.getItem(`prep_songs_data_${room}`);
+            const sentPrep = safeStorage.getItem(`prep_songs_sent_${room}`);
+            const prepDataStr = safeStorage.getItem(`prep_songs_data_${room}`);
             const btn = getEl('student-send-songs-btn');
             
             if (sentPrep && prepDataStr) {
@@ -1149,8 +1180,8 @@
 
         /* Spickzettel absenden (Schüler) */
         async function sendPrepSongs() {
-            const room = localStorage.getItem('student_room_code');
-            const name = localStorage.getItem('student_team_name');
+            const room = safeStorage.getItem('student_room_code');
+            const name = safeStorage.getItem('student_team_name');
             const btn = getEl('student-send-songs-btn');
             
             const s1 = getEl('prep-song-1').value.trim();
@@ -1187,8 +1218,8 @@
                     btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Gesendet! 🤫`;
                     btn.className = "w-full bg-emerald-600 text-white font-bold py-2 rounded-xl text-xs cursor-not-allowed mt-1";
                     
-                    localStorage.setItem(`prep_songs_sent_${room}`, "true");
-                    localStorage.setItem(`prep_songs_data_${room}`, JSON.stringify([s1, s2, s3, s4]));
+                    safeStorage.setItem(`prep_songs_sent_${room}`, "true");
+                    safeStorage.setItem(`prep_songs_data_${room}`, JSON.stringify([s1, s2, s3, s4]));
                     loadStudentPrepSongs(room);
                 } else {
                     throw new Error("Fehler beim Senden");
@@ -1453,7 +1484,7 @@
             } else {
                 protectionBanner.innerHTML = `
                     <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn font-sans">
-                        <span class="text-[11px] text-slate-300 font-bold flex items-center gap-1.5 font-sans">
+                        <span class="text-[11px] text-slate-300 font-bold flex items-center gap-1.5 flex-wrap">
                             <i class="fa-solid fa-eye text-emerald-400 text-sm"></i> 
                             Antworten und Absender sind vollständig aufgedeckt.
                         </span>
@@ -1470,12 +1501,12 @@
                 item.className = "flex flex-col justify-between gap-1.5 bg-slate-900 border border-slate-800 p-2 rounded-xl animate-scaleIn h-full relative font-sans";
                 
                 let placementBadge = `
-                    <span class="bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded text-[8px] font-bold">
+                    <span class="bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded text-[8px] font-bold font-mono">
                         ⏱️ ${index + 1}. Antwort
                     </span>`;
                 if (index === 0) {
                     placementBadge = `
-                        <span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold animate-pulse">
+                        <span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded text-[8px] font-bold animate-pulse font-mono">
                             ⚡ 1. Antwort
                         </span>`;
                 }
@@ -1603,7 +1634,6 @@
                 }
             }
 
-            // Neues Backup-Archiv befüllen
             answerHistory.push({
                 round: currentRound,
                 teamName: team.name,
@@ -1910,7 +1940,7 @@
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(550, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.1);
-                    bgain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    bgain.gain.setValueAtTime(0.12, bgain.gain.value);
                     bgain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.1);
@@ -1918,7 +1948,7 @@
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(300, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.15);
-                    bgain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    bgain.gain.setValueAtTime(0.12, bgain.gain.value);
                     bgain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.15);
@@ -1926,7 +1956,7 @@
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(440, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2);
-                    bgain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    bgain.gain.setValueAtTime(0.1, bgain.gain.value);
                     bgain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.2);
@@ -2219,7 +2249,7 @@
                         ${streakBadge}
                         <button 
                             onclick="event.stopPropagation(); deleteTeam('${team.id}')" 
-                            class="text-slate-600 hover:text-rose-400 p-1 rounded transition-all font-sans"
+                            class="text-slate-500 hover:text-rose-400 p-1 rounded transition-all font-sans"
                             title="Team entfernen"
                         >
                             <i class="fa-solid fa-trash-can text-[11px]"></i>
@@ -2343,7 +2373,7 @@
                 fileContent.classList.add('hidden');
             } else {
                 fileBtn.className = "py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400";
-                textBtn.className = "py-2 px-4 font-medium text-slate-400 hover:text-slate-200";
+                textBtn.className = "py-2 px-4 font-medium text-slate-400 hover:text-slate-200 font-bold";
                 fileContent.classList.remove('hidden');
                 textContent.classList.add('hidden');
             }
@@ -2832,29 +2862,7 @@
         // Starten
         window.onload = function() {
             resizeCanvas();
-            
-            // 1. URL Parameter ERST prüfen
-            const urlParams = new URLSearchParams(window.location.search);
-            const queryRoom = urlParams.get('room');
-            const storedRoom = localStorage.getItem('student_room_code');
-            
-            // WICHTIG: Wenn der URL-Raum ungleich dem gespeicherten Raum ist, löschen wir die alte Registrierung!
-            // Das löst sofort das Problem, dass Schüler bei einem neuen QR-Code im alten Raum festhängen!
-            if (queryRoom && queryRoom.toLowerCase() !== (storedRoom || "").toLowerCase()) {
-                localStorage.removeItem('student_team_name');
-                localStorage.removeItem('student_room_code');
-                localStorage.removeItem('student_team_emoji');
-            }
-            
-            // 2. Zustand normal laden (zeigt nun sauber das Anmeldefeld mit Emojis an)
             loadState();
-            checkOneDriveEnvironment();
-            
-            // 3. Raumcode-Feld im Beitrittsmodul füllen
-            if (queryRoom) {
-                const roomInput = getEl('student-room-input');
-                if (roomInput) roomInput.value = queryRoom;
-            }
         };
     </script>
 </body>
