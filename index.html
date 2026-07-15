@@ -3,1014 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>greenboys Scoreboard 🏆</title>
-    <!-- Tailwind CSS für modernes UI -->
+    <title>greenboys Music Scoreboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome für Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Google Fonts: Comfortaa & DM Sans -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- PDF.js für lokales Extrahieren von PDF-Texten -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-
     <style>
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background: linear-gradient(135deg, #090d16 0%, #111026 100%);
-            min-height: 100vh;
-        }
-        h1, h2, h3, h4 {
-            font-family: 'Comfortaa', sans-serif;
-        }
-        
-        /* Sanfter Puls-Effekt für das aktuell führende Team */
-        @keyframes pulse-gold {
-            0%, 100% { border-color: rgba(250, 204, 21, 0.4); box-shadow: 0 0 12px rgba(250, 204, 21, 0.2); }
-            50% { border-color: rgba(250, 204, 21, 0.8); box-shadow: 0 0 18px rgba(250, 204, 21, 0.4); }
-        }
-        .leader-card {
-            animation: pulse-gold 2.5s infinite ease-in-out;
-        }
-
-        /* Drag over style für die KI-Dropzone */
-        .drag-active {
-            border-color: #8b5cf6 !important;
-            background-color: rgba(139, 92, 246, 0.1) !important;
-        }
-
-        /* Sanfte Einblendung */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-            animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
+        .flip-container { transition: transform 0.6s ease; }
+        .blur-sensitive { filter: blur(8px); transition: filter 0.3s; }
+        .blur-sensitive.revealed { filter: blur(0); }
+        .hidden-element { display: none; }
     </style>
 </head>
-<body class="text-slate-100 flex flex-col justify-between overflow-x-hidden relative selection:bg-violet-500/30">
+<body class="bg-gray-900 text-white min-h-screen font-sans">
 
-    <!-- Konfetti Canvas für das Finale -->
-    <canvas id="confetti-canvas" class="absolute inset-0 pointer-events-none z-50 w-full h-full"></canvas>
-
-    <!-- ========================================== -->
-    <!-- DETEKTIERUNG FÜR UNGESTYLTE ANZEIGE (TEAMS/ONEDRIVE) -->
-    <!-- ========================================== -->
-    <div id="onedrive-safety-banner" class="bg-rose-950 border-b border-rose-800 p-4 text-center hidden z-50">
-        <div class="max-w-md mx-auto flex flex-col items-center gap-2">
-            <i class="fa-solid fa-triangle-exclamation text-2xl text-rose-400"></i>
-            <h4 class="font-bold text-sm text-rose-200">OneDrive-Sicherheitsblockade active!</h4>
-            <p class="text-[11px] text-rose-300 leading-normal">
-                Microsoft blockiert die Funktionen in dieser Online-Vorschau. 
-                Bitte klicke oben links auf das <strong>Herunterladen-Symbol (Pfeil nach unten)</strong> und öffne die Datei anschließend aus deinen Downloads in <strong>Safari oder Chrome</strong>!
-            </p>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- SCHÜLER-ANSICHT (DEFAULT VIEW)             -->
-    <!-- ========================================== -->
-    <div id="student-view" class="container mx-auto px-4 py-8 max-w-md flex-grow flex flex-col justify-center animate-fadeIn">
+    <!-- Main Container -->
+    <div id="app" class="p-4 max-w-6xl mx-auto">
         
-        <div class="text-center mb-6">
-            <div class="inline-block p-4 bg-violet-600/20 rounded-3xl border border-violet-500/30 mb-3 shadow-lg shadow-violet-950/40">
-                <i class="fa-solid fa-mobile-screen-button text-4xl text-violet-400"></i>
-            </div>
-            <h1 class="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-pink-400 to-amber-300">
-                greenboys Buzzer 📱
-            </h1>
-            <p class="text-slate-400 text-xs mt-1">Tritt einem Raum bei und schicke deine Antworten live an die Leinwand!</p>
-        </div>
-
-        <!-- 1. SCHÜLER REGISTRIERUNG -->
-        <div id="student-join-card" class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
-            <h3 class="text-base font-bold text-slate-200 border-b border-slate-800 pb-2"><i class="fa-solid fa-right-to-bracket text-violet-400 mr-1"></i> Spiel beitreten</h3>
+        <!-- Lobby View -->
+        <div id="view-lobby" class="space-y-6">
+            <h1 class="text-4xl font-bold text-center text-green-500">greenboys Lobby</h1>
             
-            <div class="space-y-3">
-                <div>
-                    <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Raum-Code der Lehrkraft:</label>
-                    <input 
-                        type="text" 
-                        id="student-room-input" 
-                        placeholder="z. B. 7c" 
-                        maxlength="8"
-                        class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 font-mono font-bold"
-                    >
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Lehrer Sektion -->
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                    <h2 class="text-xl mb-4">Lehrer-Konsole</h2>
+                    <select id="class-select" class="w-full p-2 bg-gray-700 rounded mb-4">
+                        <option value="">Klasse wählen...</option>
+                    </select>
+                    <button onclick="startGame()" class="w-full bg-green-600 py-3 rounded font-bold hover:bg-green-500">Spiel starten</button>
                 </div>
-                <div>
-                    <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Dein Teamname (oder Vorname):</label>
-                    <input 
-                        type="text" 
-                        id="student-name-input" 
-                        placeholder="z. B. Kiwi, Team Alpha..." 
-                        maxlength="12"
-                        class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 font-sans"
-                    >
-                </div>
-                <div>
-                    <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Wähle dein Team-Logo:</label>
-                    <div class="grid grid-cols-5 gap-2" id="emoji-picker-container">
-                        <!-- Wird dynamisch mit Emojis befüllt -->
-                    </div>
-                    <input type="hidden" id="student-emoji-input" value="🎵">
-                </div>
-                
-                <button 
-                    onclick="joinQuizRoom()" 
-                    class="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-violet-900/30 active:scale-95 transition-all text-xs flex items-center justify-center gap-2"
-                >
-                    <span>Raum beitreten 🚀</span>
-                </button>
-            </div>
-        </div>
 
-        <!-- 2. SCHÜLER BUZZER EINGABE (Nach Join sichtbar) -->
-        <div id="student-buzzer-card" class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 hidden font-sans">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                <div class="flex items-center gap-2 flex-wrap">
-                    <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span id="student-badge-info" class="text-xs font-bold text-slate-300">Verbunden: </span>
-                    <span id="student-round-badge" class="hidden text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30 px-2.5 py-0.5 rounded-full">Runde -</span>
+                <!-- Schüler Sektion -->
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                    <h2 class="text-xl mb-4">Schüler-Login</h2>
+                    <input type="text" id="student-name" placeholder="Name" class="w-full p-2 bg-gray-700 mb-2 rounded">
+                    <div id="emoji-grid" class="grid grid-cols-6 gap-2 mb-4"></div>
+                    <button onclick="joinGame()" class="w-full bg-blue-600 py-3 rounded font-bold hover:bg-blue-500">Beitreten</button>
                 </div>
-                <button 
-                    onclick="leaveQuizRoom()" 
-                    class="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                    Wechseln <i class="fa-solid fa-right-from-bracket"></i>
-                </button>
             </div>
 
-            <div class="space-y-4">
-                <div>
-                    <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Deine Antwort:</label>
-                    <textarea 
-                        id="student-answer-input" 
-                        placeholder="Tippe hier den Songnamen, Interpreten oder deine Vermutung ein..." 
-                        rows="3"
-                        class="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 font-sans placeholder-slate-600 resize-none"
-                    ></textarea>
-                </div>
-
-                <!-- Joker Button inside student-buzzer-card -->
-                <div class="border-t border-slate-800/60 pt-3 mt-1 flex flex-col items-center">
-                    <div class="text-[9px] text-slate-500 mb-1.5 flex items-center gap-1 text-center font-bold">
-                        <span>🃏 JOKER (Doppelte Punkte bei Erfolg, aber -1 Punkt bei Fehler!)</span>
-                    </div>
-                    <button 
-                        type="button" 
-                        id="student-joker-btn"
-                        onclick="toggleStudentJoker()"
-                        class="w-full bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95"
-                    >
-                        <span>🃏 Doppel-Joker aktivieren</span>
-                    </button>
-                </div>
-
-                <button 
-                    onclick="sendStudentAnswer()" 
-                    id="student-submit-btn"
-                    class="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2"
-                >
-                    <i class="fa-solid fa-paper-plane"></i>
-                    <span>Antwort abschicken! 🚀</span>
-                </button>
-
-                <!-- 🎯 EXPANDABLE SONG PREPARATION (Pre-entering songs secretly) -->
-                <div class="border-t border-slate-800/60 pt-3 mt-1">
-                    <details class="group bg-slate-950/60 border border-slate-800/80 rounded-2xl overflow-hidden">
-                        <summary class="flex justify-between items-center p-3 text-xs font-bold text-violet-400 cursor-pointer select-none">
-                            <span>🎯 Eure 4 Lieder vorbereiten 🤫</span>
-                            <i class="fa-solid fa-chevron-down transition-transform group-open:rotate-180"></i>
-                        </summary>
-                        <div class="p-3 space-y-2 border-t border-slate-900">
-                            <p class="text-[10px] text-slate-400 leading-tight mb-2">Tragt hier eure 4 vorbereiteten Lieder ein. Nur die Lehrkraft kann sie auf ihrem Bildschirm sehen!</p>
-                            <input type="text" id="prep-song-1" placeholder="Song 1..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
-                            <input type="text" id="prep-song-2" placeholder="Song 2..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
-                            <input type="text" id="prep-song-3" placeholder="Song 3..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
-                            <input type="text" id="prep-song-4" placeholder="Song 4..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
-                            <button onclick="sendPrepSongs()" id="student-send-songs-btn" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-2 rounded-xl text-xs active:scale-95 transition-all mt-1">
-                                An Lehrkraft senden 🤫
-                            </button>
-                        </div>
-                    </details>
-                </div>
-
-                <!-- Feedback-Status-Box (auch für Runden-Limiter und Timer genutzt) -->
-                <div id="student-feedback" class="hidden p-3 rounded-xl border text-center text-xs font-semibold"></div>
-            </div>
-        </div>
-
-        <!-- Footer / Passwort-geschützter Zugang für die Lehrkraft -->
-        <div class="text-center mt-8">
-            <button 
-                onclick="promptTeacherLogin()" 
-                class="text-xs text-slate-500 hover:text-violet-400 transition-colors font-medium flex items-center justify-center gap-1.5 mx-auto"
-            >
-                <i class="fa-solid fa-circle-user"></i>
-                <span>Ich bin die Lehrkraft (Scoreboard öffnen)</span>
-            </button>
+            <!-- Team Liste -->
+            <div id="team-list" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8"></div>
         </div>
     </div>
 
-
-    <!-- ========================================== -->
-    <!-- TEACHER PASSWORD DIALOG MODAL              -->
-    <!-- ========================================== -->
-    <div id="teacher-password-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md hidden items-center justify-center p-4 z-50">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-sm w-full shadow-2xl animate-fadeIn space-y-4 text-center">
-            <div class="inline-block p-4 bg-violet-600/20 rounded-3xl border border-violet-500/30 shadow-lg shadow-violet-950/40">
-                <i class="fa-solid fa-lock text-3xl text-violet-400"></i>
-            </div>
-            <div>
-                <h3 class="text-lg font-bold text-white">Lehrer-Bereich geschützt</h3>
-                <p class="text-slate-400 text-xs mt-1">Bitte gib das Passwort ein, um das Live-Scoreboard freizuschalten.</p>
-            </div>
-            
-            <div class="space-y-3">
-                <input 
-                    type="password" 
-                    id="teacher-password-input" 
-                    placeholder="Lehrer-Passwort..." 
-                    class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 text-center font-sans tracking-widest"
-                    onkeydown="if(event.key === 'Enter') checkTeacherPassword()"
-                >
-                <div class="flex gap-2">
-                    <button 
-                        onclick="closeTeacherLogin()" 
-                        class="w-1/2 px-4 py-3 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-2xl text-xs font-bold transition-all active:scale-95"
-                    >
-                        Abbrechen
-                    </button>
-                    <button 
-                        onclick="checkTeacherPassword()" 
-                        class="w-1/2 px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-lg shadow-violet-900/30"
-                    >
-                        Freischalten 🔑
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- ========================================== -->
-    <!-- LEHRER-ANSICHT (SCOREBOARD)                -->
-    <!-- ========================================== -->
-    <div id="teacher-view" class="container mx-auto px-4 py-4 max-w-7xl flex-grow flex flex-col justify-between hidden animate-fadeIn font-sans">
-        
-        <!-- Header minimaler & kompakter -->
-        <header class="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-800/60 pb-3 mb-4">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-violet-600/20 rounded-xl border border-violet-500/30">
-                    <i class="fa-solid fa-music text-2xl text-violet-400"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-pink-400 to-amber-300 flex items-center gap-2">
-                        greenboys Scoreboard 🏆
-                    </h1>
-                    <span id="active-class-badge" class="inline-block mt-1 text-[11px] bg-violet-500/20 text-violet-300 border border-violet-500/35 px-2.5 py-0.5 rounded-full font-sans font-medium tracking-wide">
-                        <i class="fa-solid fa-graduation-cap text-violet-400 mr-1"></i> Aktiv: Standard-Sitzung
-                    </span>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-3">
-                <button 
-                    onclick="switchView('student')" 
-                    class="bg-violet-600 hover:bg-violet-500 border border-violet-500/45 text-white font-bold py-2.5 px-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center gap-1.5 text-xs md:text-sm"
-                    title="Zu den Schüler-Buzzer-Eingaben wechseln"
-                >
-                    <i class="fa-solid fa-mobile-screen-button"></i>
-                    <span>Buzzer-Ansicht 📱</span>
-                </button>
-                
-                <button 
-                    onclick="toggleFullscreen()" 
-                    id="fullscreen-btn"
-                    class="bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white p-3 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center"
-                    title="Vollbildmodus aktivieren"
-                >
-                    <i class="fa-solid fa-expand text-lg"></i>
-                </button>
-                
-                <!-- Spickzettel-Button -->
-                <button 
-                    onclick="openTeamSongsModal()" 
-                    class="bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white p-3 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center"
-                    title="Vorbereitete Songs der Teams ansehen (Spickzettel)"
-                >
-                    <i class="fa-solid fa-user-secret text-lg text-amber-400"></i>
-                </button>
-
-                <!-- Zahnrad-Button für Einstellungen -->
-                <button 
-                    onclick="openSettingsModal()" 
-                    class="bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white p-3 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center"
-                    title="Einstellungen & Optionen öffnen"
-                >
-                    <i class="fa-solid fa-gear text-lg"></i>
-                </button>
-
-                <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl px-5 py-2 flex items-center gap-4 shadow-lg">
-                    <span class="text-xs uppercase tracking-widest text-slate-400 font-bold">Aktuelle Runde:</span>
-                    <span id="header-round-display" class="text-2xl font-black text-violet-400 font-mono">1</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- ========================================== -->
-        <!-- LOBBY & SETUP-BEREICH (PHASE 1)            -->
-        <!-- ========================================== -->
-        <div id="setup-lobby-panel" class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4 font-sans">
-            
-            <!-- 1. LIVE-BUZZER & IPAD VERBINDUNG (LINKS) -->
-            <div class="md:col-span-5 bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-3">
-                <h3 class="text-sm font-bold text-violet-400 flex items-center justify-between gap-2">
-                    <span class="flex items-center gap-2"><i class="fa-solid fa-wifi text-violet-400"></i> iPad Live-Empfänger 📡</span>
-                    <button 
-                        onclick="openImportModal()" 
-                        class="bg-slate-700 hover:bg-slate-600 border border-slate-600/40 text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded transition-all"
-                        title="Alternativ Teamnamen aus Excel/Word kopieren oder per Bild einlesen"
-                    >
-                        Massen-Import 📋
-                    </button>
-                </h3>
-                
-                <div class="space-y-3 text-xs">
-                    <!-- Dropdown für gespeicherte Räume & Sichern -->
-                    <div>
-                        <label class="text-[10px] text-slate-400 block mb-0.5">Gespeicherte Klassen/Räume:</label>
-                        <select id="class-select" onchange="handleClassChange(event)" class="w-full bg-slate-950 border border-slate-700/60 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none">
-                            <option value="Standard-Sitzung">-- Standard-Sitzung --</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="text-[10px] text-slate-400 block mb-0.5">Neuer Raum-Code (z.B. 7c):</label>
-                        <div class="flex gap-1.5">
-                            <input 
-                                type="text" 
-                                id="room-code-input" 
-                                value="" 
-                                placeholder="Raum eingeben (z. B. 7c)..." 
-                                maxlength="8"
-                                class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500 font-mono font-bold"
-                            >
-                            <button 
-                                onclick="connectLiveRoom()" 
-                                class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1 rounded-xl text-xs active:scale-95 transition-all flex items-center gap-1"
-                            >
-                                <i class="fa-solid fa-plug"></i> Starten
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Team manuell hinzufügen -->
-                    <div class="border-t border-slate-700/30 pt-2 mt-1">
-                        <label class="text-[10px] text-slate-400 block mb-0.5">Team manuell hinzufügen:</label>
-                        <form onsubmit="handleManualTeamAdd(event)" class="flex gap-1.5">
-                            <input 
-                                type="text" 
-                                id="manual-team-input" 
-                                placeholder="Teamname..." 
-                                maxlength="12"
-                                class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
-                            >
-                            <button 
-                                type="submit" 
-                                class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1 rounded-xl text-xs active:scale-95 transition-all"
-                            >
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Live Verbindung Status & QR Code Trigger -->
-                <div class="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-700/30">
-                    <div id="connection-status" class="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-                        <span class="h-2 w-2 rounded-full bg-rose-500"></span> Live-Empfang offline
-                    </div>
-                    <button 
-                        onclick="toggleQRCodePanel()" 
-                        class="text-[10px] bg-slate-700/60 hover:bg-slate-700 text-slate-300 border border-slate-600/40 px-2 py-0.5 rounded-lg font-bold transition-all"
-                        id="qr-toggle-btn"
-                    >
-                        <i class="fa-solid fa-qrcode mr-1"></i> QR-Code zeigen 📱
-                    </button>
-                </div>
-            </div>
-
-            <!-- 2. ANLEITUNGS- & LIVE-BEITRITT-PANEL (RECHTS) -->
-            <div class="md:col-span-7 bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-3">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5 font-sans">
-                        <i class="fa-solid fa-circle-play"></i> 1. Beitrittsphase (Lobby)
-                    </h3>
-                    <!-- NEUE SITZUNG STARTEN (RESET) -->
-                    <button 
-                        onclick="confirmReset()" 
-                        class="bg-rose-950/40 hover:bg-rose-900 border border-rose-900/50 text-rose-300 text-[10px] font-bold px-3 py-1 rounded-lg transition-all active:scale-95 font-sans"
-                    >
-                        <i class="fa-solid fa-rotate-left mr-1"></i> Neue Sitzung starten
-                    </button>
-                </div>
-
-                <div class="text-xs text-slate-300 space-y-2 leading-relaxed">
-                    <p>Lass deine Schüler den QR-Code einscannen und dem Raum beitreten. Sobald sich ein Team einloggt, erscheint es sofort unten auf der Tafel mit 0 Punkten!</p>
-                    <p class="text-slate-400">Sie können jetzt auch bereits ihre 4 geheimen Songs über ihre iPads eintragen, damit du sie über den Spickzettel-Button (🤫) oben rechts einsehen kannst.</p>
-                </div>
-
-                <div class="pt-2 border-t border-slate-700/30 flex justify-end gap-2">
-                    <button 
-                        onclick="startLiveGame()" 
-                        class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2.5 px-6 rounded-xl shadow-lg shadow-emerald-900/30 active:scale-95 transition-all text-sm flex items-center gap-2 animate-pulse"
-                    >
-                        <span>Spiel starten 🎮</span>
-                        <i class="fa-solid fa-gamepad"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- LIVE QR-CODE PANEL                         -->
-        <!-- ========================================== -->
-        <div id="qr-code-panel" class="hidden bg-slate-900/90 border-2 border-violet-500/50 rounded-2xl p-4 mb-4 backdrop-blur-md transition-all grid grid-cols-1 md:grid-cols-12 gap-4 items-center animate-fadeIn">
-            <div class="md:col-span-3 flex justify-center bg-white p-3 rounded-xl shadow-lg border border-slate-700">
-                <img id="qr-code-img" src="" alt="iPad Connection QR Code" class="w-40 h-40 object-contain">
-            </div>
-            <div class="md:col-span-9 space-y-2">
-                <h4 class="text-base font-black text-violet-400 flex items-center gap-2">
-                    <i class="fa-solid fa-qrcode"></i> iPads verbinden – So geht's:
-                </h4>
-                <ul class="text-xs text-slate-300 list-disc list-inside space-y-1">
-                    <li>Veröffentliche diese Seite auf GitHub Pages (wie in der Anleitung beschrieben).</li>
-                    <li>Lass die Schüler den links angezeigten <strong>QR-Code</strong> mit ihren iPads einscannen.</li>
-                    <li>Gib ihnen dann einfach deinen oben eingestellten Raum-Code (z. B. <strong class="text-violet-400 font-mono font-bold" id="qr-room-code-display">7c</strong>) durch!</li>
-                    <li>Sobald sie beitreten, landen sie live auf der Tafel!</li>
-                </ul>
-                <div class="pt-2 text-[10px] text-slate-400 flex flex-col md:flex-row md:items-center gap-2">
-                    <span>Manuelle URL (falls im Internet gehostet):</span>
-                    <input 
-                        type="text" 
-                        id="custom-url-input" 
-                        placeholder="https://deine-plattform.de/datei.html" 
-                        class="bg-slate-950 border border-slate-800 text-slate-300 text-[10px] rounded px-2 py-1 flex-grow focus:outline-none"
-                        oninput="generateQRCode()"
-                    >
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- SPIELSTEUERUNG-OBERFLÄCHE (PHASE 2)        -->
-        <!-- ========================================== -->
-        <div id="game-controls-panel" class="hidden animate-fadeIn mb-4">
-            
-            <!-- EINZEILIGER RUNDEN-MANAGER -->
-            <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 flex flex-col xl:flex-row items-center justify-between gap-3 font-sans">
-                <div class="flex flex-wrap items-center gap-2.5 text-xs">
-                    <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 animate-sans">
-                        <i class="fa-solid fa-play-circle text-emerald-400 animate-pulse"></i> Runden-Manager
-                    </span>
-                    
-                    <span class="bg-violet-500/25 text-violet-300 border border-violet-500/45 px-3 py-1 rounded-lg font-bold font-mono flex items-center gap-1">
-                        Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400 font-mono">1</span>
-                    </span>
-
-                    <!-- Countdown Timer direkt hier einzeilig integriert -->
-                    <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px]">
-                        <span class="text-slate-300 font-bold flex items-center gap-1"><i class="fa-solid fa-hourglass-start text-amber-500"></i> Timer:</span>
-                        <input type="number" id="timer-duration" value="30" min="5" max="120" class="w-10 bg-slate-950 text-slate-100 rounded text-center text-xs focus:outline-none focus:ring-1 focus:ring-violet-500 font-black font-mono">
-                        <span class="text-slate-400 text-[10px]">Sek.</span>
-                        <button id="start-timer-btn" onclick="startTimer()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all font-sans">Start ⏱️</button>
-                        <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">Stop 🛑</button>
-                        <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-1.5 py-0.5 rounded font-mono">30s</div>
-                    </div>
-                    
-                    <span class="text-slate-400 text-[11px] hidden xl:inline font-medium">Punkte vergeben oder iPad-Buzzer auswerten.</span>
-                </div>
-                <div class="flex items-center gap-2 w-full xl:w-auto justify-end font-sans">
-                    <button 
-                        onclick="prevRound()" 
-                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1 font-sans"
-                        title="Gehe eine Spielrunde zurück"
-                    >
-                        <i class="fa-solid fa-arrow-left"></i>
-                        <span>Runde zurück</span>
-                    </button>
-                    <button 
-                        onclick="markAllActive()" 
-                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
-                        title="Alle Teams aus- oder abwählen"
-                    >
-                        <i class="fa-solid fa-check-double text-emerald-400"></i>
-                        <span>Alle Richtig / Null</span>
-                    </button>
-                    <button 
-                        onclick="nextRound()" 
-                        class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-1.5 px-4.5 rounded-lg text-[11px] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 font-sans"
-                        title="Punkte für diese Runde gutschreiben und nächste Runde starten"
-                    >
-                        <span>Nächste Runde</span>
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                    <button 
-                        onclick="stopLiveGame()" 
-                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-400 hover:text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1 font-sans"
-                        title="Zurück zur Setup-Lobby wechseln"
-                    >
-                        <i class="fa-solid fa-users"></i> Lobby zeigen
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- CHRONOLOGISCHE LIVE ANTWORTEN VOM IPAD       -->
-        <!-- ========================================== -->
-        <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-3 mb-4 hidden animate-fadeIn resize-y overflow-auto min-h-[160px] h-[240px]">
-            <div class="flex justify-between items-center mb-2.5 border-b border-slate-800 pb-2">
-                <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5 font-sans">
-                    <i class="fa-solid fa-clock-rotate-left"></i> Eingehende iPad-Antworten (Echtzeit-Anzeige)
-                </h3>
-                <div class="flex gap-1.5">
-                    <!-- Beamer Sichtschutz Toggle im Header -->
-                    <button 
-                        id="beamer-protection-toggle-btn" 
-                        onclick="toggleBeamerProtection()" 
-                        class="text-[9px] bg-slate-700 hover:bg-violet-600 border border-slate-600/40 text-slate-300 px-2.5 py-1 rounded transition-all font-bold font-sans"
-                    >
-                        <i class="fa-solid fa-user-secret mr-1"></i> Sichtschutz umschalten
-                    </button>
-                    <button 
-                        onclick="clearIncomingAnswers()" 
-                        class="text-[9px] bg-slate-700 hover:bg-rose-950 hover:text-rose-300 border border-slate-600/40 text-slate-300 px-2 py-1 rounded transition-all font-bold font-sans"
-                    >
-                        Liste leeren 🗑️
-                    </button>
-                </div>
-            </div>
-
-            <!-- Dashboard-Grid für ultra-schmale, kompakte Kärtchen -->
-            <div id="live-answers-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 p-1">
-                <!-- Wird dynamisch chronologisch befüllt -->
-            </div>
-            <div id="live-answers-empty" class="text-center py-4 text-[11px] text-slate-500 font-sans">
-                <i class="fa-solid fa-spinner animate-spin text-slate-600 mr-1"></i> Warte auf Antworten von den Schüler-iPads... (Beamerbild ist standardmäßig verdeckt 🖥️🔒)
-            </div>
-        </div>
-
-        <!-- SCOREBOARD GRID -->
-        <div id="scoreboard-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 my-2">
-            <!-- Wird dynamisch mit Javascript befüllt -->
-        </div>
-
-        <!-- Leerer Zustand -->
-        <div id="empty-state" class="hidden text-center py-10 px-4 bg-slate-800/20 border border-slate-700/20 rounded-3xl mt-2 font-sans">
-            <i class="fa-solid fa-people-group text-4xl text-slate-600 mb-2 block"></i>
-            <h4 class="text-base font-bold text-slate-400">Keine Teams in dieser Sitzung</h4>
-            <p class="text-slate-500 text-xs mt-1 max-w-sm mx-auto">
-                Lass deine Schüler über ihre iPads mitspielen, um das Live-Scoreboard automatisch zu befüllen!
-            </p>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- ARCHIVIERTER ANTWORT-VERLAUF               -->
-        <!-- ========================================== -->
-        <div id="history-archive-panel" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-4 mt-6 animate-fadeIn font-sans">
-            <h3 class="text-xs font-bold text-slate-400 flex items-center gap-1.5 border-b border-slate-800 pb-2 mb-2.5">
-                <i class="fa-solid fa-box-archive text-slate-500"></i> Antwort-Verlauf (Echtzeit-Backup dieser Runde)
-            </h3>
-            <div id="history-archive-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-48 overflow-y-auto">
-                <!-- Wird dynamisch befüllt -->
-            </div>
-            <div id="history-archive-empty" class="text-center py-2 text-[10px] text-slate-600">
-                Noch keine archivierten Antworten vorhanden. Wenn du Punkte bei den iPad-Antworten vergibst, landen sie hier als Backup!
-            </div>
-        </div>
-
-    </div>
-
-    <!-- ========================================== -->
-    <!-- SETTINGS MODAL DIALOG                      -->
-    <!-- ========================================== -->
-    <div id="settings-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50 font-sans">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-md w-full shadow-2xl animate-fadeIn space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
-                <h3 class="text-base font-bold text-violet-400 flex items-center gap-1.5">
-                    <i class="fa-solid fa-gear"></i> Scoreboard-Einstellungen
-                </h3>
-                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark text-base"></i>
-                </button>
-            </div>
-
-            <div class="space-y-3.5 text-xs text-slate-300 font-sans">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="flex items-center gap-1.5">
-                        <i class="fa-solid fa-volume-high text-slate-400"></i> Soundeffekte abspielen
-                    </span>
-                    <label class="relative inline-flex items-center cursor-pointer font-sans">
-                        <input type="checkbox" id="sound-toggle" checked class="sr-only peer" onchange="saveState()">
-                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
-                    </label>
-                </div>
-
-                <div class="flex items-center justify-between gap-2 font-sans">
-                    <span class="flex items-center gap-1.5">
-                        <i class="fa-solid fa-arrow-down-1-9 text-slate-400"></i> Führende Teams auto-sortieren
-                    </span>
-                    <label class="relative inline-flex items-center cursor-pointer font-sans">
-                        <input type="checkbox" id="auto-sort-toggle" checked class="sr-only peer" onchange="handleAutoSortToggle()">
-                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
-                    </label>
-                </div>
-
-                <!-- API Key Config -->
-                <div class="border-t border-slate-800 pt-3 mt-1.5 space-y-1 font-sans">
-                    <span class="text-slate-400 font-bold block mb-0.5"><i class="fa-solid fa-key text-amber-500 mr-1"></i>Gemini API-Schlüssel (für Dokumenten-KI):</span>
-                    <input 
-                        type="password" 
-                        id="api-key-input" 
-                        placeholder="API-Key eintragen..." 
-                        class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1.5 text-slate-300 placeholder-slate-650 focus:outline-none focus:ring-1 focus:ring-violet-500 font-sans text-xs"
-                        onchange="saveState()"
-                    />
-                </div>
-
-                <!-- Passwort ändern Bereich -->
-                <div class="border-t border-slate-800 pt-3 mt-1.5 space-y-1 font-sans">
-                    <span class="text-slate-400 font-bold block mb-0.5"><i class="fa-solid fa-lock text-violet-400 mr-1"></i>Lehrer-Bereichs Passwort ändern:</span>
-                    <div class="flex gap-1.5">
-                        <div class="relative flex items-center flex-grow">
-                            <input 
-                                type="password" 
-                                id="change-password-input" 
-                                value="musik" 
-                                placeholder="Neues Passwort..." 
-                                class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1.5 text-slate-300 text-xs focus:outline-none"
-                            />
-                            <button 
-                                type="button" 
-                                onclick="togglePasswordVisibility('change-password-input', 'toggle-pw-icon')" 
-                                class="absolute right-2 text-slate-500 hover:text-slate-300 text-xs p-1"
-                            >
-                                <i class="fa-solid fa-eye animate-fadeIn" id="toggle-pw-icon"></i>
-                            </button>
-                        </div>
-                        <button onclick="changeTeacherPassword()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs active:scale-95 transition-all font-sans">
-                            Ändern
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="pt-2.5 border-t border-slate-800 flex justify-end font-sans">
-                <button onclick="closeSettingsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs active:scale-95">
-                    Schließen
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- 🤫 SECRET TEAM SONGS PREP MODAL              -->
-    <!-- ========================================== -->
-    <div id="team-songs-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4 z-50 font-sans">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-lg w-full shadow-2xl animate-fadeIn space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2.5 font-sans">
-                <h3 class="text-base font-bold text-amber-400 flex items-center gap-1.5">
-                    <i class="fa-solid fa-user-secret"></i> 🤫 Spickzettel: Vorbereitete Songs der Teams
-                </h3>
-                <button onclick="closeTeamSongsModal()" class="text-slate-400 hover:text-slate-200">
-                    <i class="fa-solid fa-xmark text-base"></i>
-                </button>
-            </div>
-
-            <div class="text-xs text-slate-400 leading-normal mb-2 font-sans">
-                <p>Hier siehst du die 4 Songs, die die Teams vorab eingetragen haben. Die Liste ist standardmäßig <strong>verschwommen (Sichtschutz)</strong>, falls du deinen Bildschirm auf dem Beamer spiegelst. Klicke auf das Auge, um die Songs eines Teams anzuzeigen!</p>
-            </div>
-
-            <div id="team-songs-list" class="space-y-3 max-h-96 overflow-y-auto pr-1">
-                <!-- Wird dynamisch befüllt -->
-            </div>
-
-            <div class="pt-2.5 border-t border-slate-800 flex justify-end font-sans">
-                <button onclick="closeTeamSongsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs active:scale-95">
-                    Schließen
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Benachrichtigungen -->
-    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none font-sans"></div>
-
-    <!-- MASSEN-IMPORT / KI MODAL -->
-    <div id="import-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50 font-sans">
-        <div class="bg-slate-900 border border-slate-700/80 p-5 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col gap-4 animate-scaleIn">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                <h3 class="text-lg font-bold text-violet-400 flex items-center gap-2">
-                    <i class="fa-solid fa-file-import"></i> Teamnamen-Importer & KI-Erkennung
-                </h3>
-                <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-200 p-1">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-
-            <!-- Tabs Navigation -->
-            <div class="flex border-b border-slate-800 text-xs font-sans">
-                <button id="tab-btn-text" onclick="switchImportTab('text')" class="py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400">
-                    <i class="fa-solid fa-align-left mr-1"></i> Text kopieren & einfügen
-                </button>
-                <button id="tab-btn-file" onclick="switchImportTab('file')" class="py-2 px-4 font-medium text-slate-400 hover:text-slate-200 font-bold">
-                    <i class="fa-solid fa-magic mr-1"></i> KI Dokumenten-/Bild-Scanner 🤖✨
-                </button>
-            </div>
-
-            <!-- Tab 1: Manual Text Input -->
-            <div id="tab-content-text" class="space-y-3 font-sans">
-                <p class="text-xs text-slate-400">Gib hier deine Teamnamen ein (jeder Name in einer neuen Zeile oder getrennt durch Kommas):</p>
-                <textarea 
-                    id="bulk-text-input" 
-                    rows="6" 
-                    placeholder="Team Alpha&#10;Team Beta&#10;BLJ, Didi, Nugget"
-                    class="w-full bg-slate-950/60 border border-slate-700/60 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-650 focus:outline-none focus:ring-2 focus:ring-violet-500 font-mono"
-                ></textarea>
-                <div class="flex justify-between items-center font-sans">
-                    <span class="text-[10px] text-amber-400/80 font-bold"><i class="fa-solid fa-info-circle"></i> Doppelte Namen werden automatisch ignoriert.</span>
-                    <button onclick="processTextImport()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold py-2 px-5 rounded-xl text-xs active:scale-95 transition-all">
-                        Teams hinzufügen
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tab 2: Drag and Drop & AI File Parsing -->
-            <div id="tab-content-file" class="hidden space-y-3 font-sans">
-                <p class="text-xs text-slate-400">Ziehe ein Foto deiner Tafel, deines Rosters, eine Textdatei (.txt) oder eine PDF-Datei hierhin. Die KI liest die Namen für dich aus!</p>
-                
-                <div 
-                    id="dropzone"
-                    class="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center hover:border-slate-500 transition-all cursor-pointer bg-slate-950/20 flex flex-col items-center justify-center gap-3"
-                    onclick="document.getElementById('file-input').click()"
-                >
-                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-violet-500"></i>
-                    <div>
-                        <p class="text-xs font-bold text-slate-300">Datei hierher ziehen oder klicken zum Auswählen</p>
-                        <p class="text-[10px] text-slate-500 mt-1">Unterstützt Fotos (PNG, JPG), TXT & PDF</p>
-                    </div>
-                    <input type="file" id="file-input" accept="image/*,text/plain,.pdf" class="hidden" onchange="handleFileSelect(event)">
-                </div>
-
-                <!-- AI Loading Spinner -->
-                <div id="ai-loading" class="hidden flex-col items-center justify-center p-4 bg-slate-950/55 rounded-xl border border-slate-800">
-                    <svg class="animate-spin h-7 w-7 text-violet-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p class="text-xs text-violet-300 font-bold">Künstliche Intelligenz liest Teamnamen aus... ✨</p>
-                    <p class="text-[9px] text-slate-500 mt-0.5">Gemini analysiert das Dokument auf Textmuster</p>
-                </div>
-
-                <!-- Preview of Extracted Teams -->
-                <div id="preview-container" class="hidden space-y-2 bg-slate-950/40 p-3 rounded-xl border border-slate-800">
-                    <h4 class="text-xs font-bold text-emerald-400"><i class="fa-solid fa-square-check"></i> Erkannte Teams (uncheck zum Ausschließen):</h4>
-                    <div id="extracted-teams-list" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-1 font-bold">
-                        <!-- Wird befüllt -->
-                    </div>
-                    <div class="flex justify-end pt-2 border-t border-slate-800/40 font-bold">
-                        <button onclick="commitExtractedImport()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs active:scale-95 transition-all">
-                            Ausgewählte Teams importieren
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Kompakter Footer -->
-    <footer class="text-center py-2.5 text-slate-600 text-[10px] border-t border-slate-800/30 bg-slate-950/20 select-none">
-        <p>🎵 greenboys Scoreboard • Mentimeter Musik-Quiz Helfer</p>
-    </footer>
-
-    <!-- ========================================== -->
-    <!-- LOGIK & SPEICHERSYSTEM (STABIL)             -->
-    <!-- ========================================== -->
     <script>
-        let currentView = "student"; 
-        let activeClass = "Standard-Sitzung";
-        let teacherPassword = "musik"; 
-        let beamerProtectionActive = true; 
-        
-        let classes = {
-            "Standard-Sitzung": { teams: [], currentRound: 1, teamSongs: {} }
-        };
-        let teams = [];
-        let currentRound = 1;
-        let teamSongs = {}; // Geheimes Songverzeichnis der Teams
-
-        let sseSource = null;
-        let incomingAnswers = [];
-        let answerHistory = []; 
-
-        let confettiInterval = null;
-        let isConfettiActive = false;
-        let activeImportTab = 'text';
-        let extractedTeams = [];
-        let confirmActionCallback = null;
-        
-        let studentCurrentRound = 1;
-        let studentSse = null;
-        let studentJokerActive = false;
-        let audioCtx = null;
-
-        const emojis = ["🦁", "🍕", "🚀", "🦊", "🐼", "🎸", "👑", "🎈", "🛸", "👻", "🦄", "🌮", "👾", "🍩", "🦕", "🍿", "🥑", "🐯", "🎨", "🧩", "⚽", "🎮", "🎤", "🍦", "🍍", "🐸", "🐱", "🐶", "🦉", "🐨"];
-
-        function getEl(id) { return document.getElementById(id) || null; }
-
-        const safeStorage = {
-            getItem(key) { try { return localStorage.getItem(key); } catch(e) { return null; } },
-            setItem(key, value) { try { localStorage.setItem(key, value); } catch(e) {} },
-            removeItem(key) { try { localStorage.removeItem(key); } catch(e) {} }
+        // --- Robuster Storage Wrapper ---
+        const Storage = {
+            set: (key, val) => {
+                try { localStorage.setItem(key, JSON.stringify(val)); } 
+                catch(e) { console.error("Storage blocked or full", e); }
+            },
+            get: (key) => {
+                try { return JSON.parse(localStorage.getItem(key)); }
+                catch(e) { return null; }
+            }
         };
 
-        function saveState() {
-            try {
-                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {} };
-                if (activeClass !== "Standard-Sitzung") {
-                    classes[activeClass] = { teams: teams, currentRound: currentRound, answerHistory: answerHistory, teamSongs: teamSongs };
-                }
-                const autoSortEl = getEl('auto-sort-toggle');
-                const soundEl = getEl('sound-toggle');
-                const apiKeyEl = getEl('api-key-input');
-                const saveDataObj = {
-                    activeClass: activeClass,
-                    classes: classes,
-                    teacherPassword: teacherPassword,
-                    autoSort: autoSortEl ? autoSortEl.checked : true,
-                    soundEnabled: soundEl ? soundEl.checked : true,
-                    geminiKey: apiKeyEl ? apiKeyEl.value.trim() : "",
-                    beamerProtectionActive: beamerProtectionActive
-                };
-                safeStorage.setItem('quiz_scoreboard_master_data_v6_stable', JSON.stringify(saveDataObj));
-            } catch (err) { console.error(err); }
-        }
+        // --- App State ---
+        let state = {
+            teams: [],
+            isTeacher: false,
+            privacyMode: true,
+            currentRound: 1
+        };
 
-        async function broadcastControlState(timerSeconds = -1) {
-            const codeInput = getEl('room-code-input');
-            const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "";
-            if (!roomCode) return;
-            const jokersUsed = teams.filter(t => t.jokerUsed).map(t => t.name.toLowerCase());
-            try { await fetch(`https://ntfy.sh/mq-ntfy-${roomCode}-control`, { method: 'POST', body: JSON.stringify({ round: currentRound, timer: timerSeconds, jokersUsed: jokersUsed }) }); } catch(e) {}
-        }
-
-        function loadState() {
-            try {
-                initEmojiPicker();
-                const savedData = safeStorage.getItem('quiz_scoreboard_master_data_v6_stable');
-                if (savedData) {
-                    const parsed = JSON.parse(savedData);
-                    classes = parsed.classes || { "Standard-Sitzung": { teams: [], currentRound: 1, teamSongs: {} } };
-                    activeClass = parsed.activeClass || "Standard-Sitzung";
-                    teacherPassword = parsed.teacherPassword || "musik";
-                    beamerProtectionActive = parsed.beamerProtectionActive !== false;
-                    const autoSortEl = getEl('auto-sort-toggle'); if (autoSortEl) autoSortEl.checked = parsed.autoSort !== false;
-                    const soundEl = getEl('sound-toggle'); if (soundEl) soundEl.checked = parsed.soundEnabled !== false;
-                    const apiKeyEl = getEl('api-key-input'); if (apiKeyEl) apiKeyEl.value = parsed.geminiKey || "";
-                    const changePwEl = getEl('change-password-input'); if (changePwEl) changePwEl.value = teacherPassword;
-                }
-                
-                const currentData = classes[activeClass] || { teams: [], currentRound: 1, answerHistory: [], teamSongs: {} };
-                teams = currentData.teams || [];
-                currentRound = currentData.currentRound || 1;
-                answerHistory = currentData.answerHistory || [];
-                teamSongs = currentData.teamSongs || {};
-
-                teams.forEach(t => { t.activeThisRound = false; t.pendingPoints = 0; });
-                if (activeClass === "Standard-Sitzung") { answerHistory = []; teamSongs = {}; }
-
-                updateClassDropdown();
-                updateActiveBadge();
-                renderScoreboard();
-                renderHistoryArchive();
-                renderTeamSongsList();
-                
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get('role') === 'teacher') promptTeacherLogin();
-                else switchView('student');
-            } catch (err) { console.error(err); }
-        }
-
-        function openSettingsModal() { getEl('settings-modal').classList.remove('hidden'); getEl('settings-modal').classList.add('flex'); }
-        function closeSettingsModal() { getEl('settings-modal').classList.add('hidden'); getEl('settings-modal').classList.remove('flex'); }
-        function openTeamSongsModal() { renderTeamSongsList(); getEl('team-songs-modal').classList.remove('hidden'); getEl('team-songs-modal').classList.add('flex'); }
-        function closeTeamSongsModal() { getEl('team-songs-modal').classList.add('hidden'); getEl('team-songs-modal').classList.remove('flex'); }
-
-        function startLiveGame() {
-            const roomCode = getEl('room-code-input').value.trim();
-            if (!roomCode) return showToast("Raumcode fehlt!", "danger");
-            getEl('setup-lobby-panel').classList.add('hidden');
-            getEl('game-controls-panel').classList.remove('hidden');
-            beamerProtectionActive = true;
-            renderIncomingAnswersList();
-            showToast("Spielmodus gestartet!", "success");
-            playSound('up');
-        }
-
-        function stopLiveGame() {
-            getEl('setup-lobby-panel').classList.remove('hidden');
-            getEl('game-controls-panel').classList.add('hidden');
-            showToast("Zurück in Lobby.", "info");
-        }
-
-        function switchView(view) {
-            currentView = view;
-            const studentSection = getEl('student-view');
-            const teacherSection = getEl('teacher-view');
-            if (view === 'student') {
-                studentSection.classList.remove('hidden'); teacherSection.classList.add('hidden');
-                const name = safeStorage.getItem('student_team_name'); const room = safeStorage.getItem('student_room_code');
-                if (name && room) { connectStudentControlChannel(room); loadStudentPrepSongs(room); getEl('student-buzzer-card').classList.remove('hidden'); getEl('student-join-card').classList.add('hidden'); getEl('student-badge-info').innerText = `Verbunden: ${name}`; }
-            } else {
-                studentSection.classList.add('hidden'); teacherSection.classList.remove('hidden');
-                connectLiveRoom();
-            }
-        }
-
-        function loadStudentPrepSongs(room) {
-            const sent = safeStorage.getItem(`prep_songs_sent_${room}`);
-            const data = safeStorage.getItem(`prep_songs_data_${room}`);
-            if (sent && data) {
-                const btn = getEl('student-send-songs-btn');
-                if (btn) { btn.disabled = true; btn.innerHTML = "Gesendet! 🤫"; }
-            }
-        }
-
-        async function sendPrepSongs() {
-            const room = safeStorage.getItem('student_room_code');
-            const name = safeStorage.getItem('student_team_name');
-            const songs = [getEl('prep-song-1').value, getEl('prep-song-2').value, getEl('prep-song-3').value, getEl('prep-song-4').value];
-            try {
-                await fetch(`https://ntfy.sh/mq-ntfy-${room}`, { method: 'POST', body: JSON.stringify({ action: "secret_songs", team: name, songs: songs }) });
-                safeStorage.setItem(`prep_songs_sent_${room}`, "true");
-                safeStorage.setItem(`prep_songs_data_${room}`, JSON.stringify(songs));
-                loadStudentPrepSongs(room);
-                showToast("Gesendet! 🤫", "success");
-            } catch(e) { showToast("Fehler!", "danger"); }
-        }
-
-        function renderTeamSongsList() {
-            const list = getEl('team-songs-list'); list.innerHTML = '';
-            teams.forEach(t => {
-                const key = t.name.toLowerCase(); const record = teamSongs[key];
-                const card = document.createElement('div'); card.className = "bg-slate-950 p-3 rounded-xl border border-slate-800";
-                card.innerHTML = `<div class="font-bold">${t.name}</div><div class="blur-[4px] select-none">${record ? record.songs.join(', ') : 'Keine Songs'}</div>`;
-                list.appendChild(card);
+        // Emojis für die Auswahl
+        const emojis = ["🎸", "🥁", "🎹", "🎤", "🎷", "🎺", "🎻", "🎧", "🎼", "🎵", "🎶", "🎼", "🎹", "🥁", "🎸", "🎤", "🎷", "🎺", "🎻", "🎧", "🎵", "🎶", "🎸", "🥁", "🎹", "🎤", "🎷", "🎺", "🎻", "🎧"];
+        
+        function initLobby() {
+            const grid = document.getElementById('emoji-grid');
+            emojis.forEach(e => {
+                grid.innerHTML += `<button class="p-2 bg-gray-700 rounded hover:bg-gray-600" onclick="selectEmoji('${e}')">${e}</button>`;
             });
         }
 
-        function connectLiveRoom() {
-            const roomCode = getEl('room-code-input').value.trim().toLowerCase();
-            if (!roomCode) return;
-            activeClass = roomCode;
-            const topic = `mq-ntfy-${roomCode}`;
-            sseSource = new EventSource(`https://ntfy.sh/${topic}/sse`);
-            sseSource.onmessage = function(e) {
-                try {
-                    const data = JSON.parse(JSON.parse(e.data).message);
-                    if (data.action === "join") handleLiveJoin(data.team, data.emoji);
-                    else if (data.action === "secret_songs") { teamSongs[data.team.toLowerCase()] = { songs: data.songs }; saveState(); renderTeamSongsList(); }
-                    else if (data.answer) addIncomingAnswer(data);
-                } catch(err) {}
-            };
+        let selectedEmoji = "🎸";
+        function selectEmoji(e) { selectedEmoji = e; }
+
+        function joinGame() {
+            const name = document.getElementById('student-name').value;
+            if(!name) return;
+            const team = { name, emoji: selectedEmoji, score: 0, songs: [] };
+            state.teams.push(team);
+            Storage.set('teams', state.teams);
+            renderTeams();
         }
 
-        function handleLiveJoin(name, emoji) {
-            if (!teams.find(t => t.name === name)) {
-                teams.push({ id: Date.now(), name, score: 0, emoji: emoji || "🎵" });
-                saveState(); renderScoreboard();
-            }
+        function renderTeams() {
+            const container = document.getElementById('team-list');
+            container.innerHTML = state.teams.map(t => `
+                <div class="bg-gray-800 p-4 rounded text-center border border-green-500/30">
+                    <div class="text-3xl">${t.emoji}</div>
+                    <div class="font-bold">${t.name}</div>
+                    <div class="text-2xl text-green-400">${t.score}</div>
+                </div>
+            `).join('');
         }
 
-        function nextRound() {
-            teams.forEach(t => { if(t.activeThisRound) t.score += 1; t.activeThisRound = false; });
-            currentRound++;
-            beamerProtectionActive = true;
-            saveState();
-            renderScoreboard();
-            renderIncomingAnswersList();
-            getEl('manager-round-display').innerText = currentRound;
-            getEl('header-round-display').innerText = currentRound;
+        // Init
+        initLobby();
+        renderTeams();
+    </script>
+</body>
+</html>
+<!-- Spiel-Ansicht (Wird dynamisch eingeblendet) -->
+    <div id="view-game" class="hidden space-y-6">
+        <div class="flex justify-between items-center bg-gray-800 p-4 rounded-lg">
+            <div id="timer" class="text-4xl font-mono text-red-500">60</div>
+            <button onclick="togglePrivacy()" id="privacy-btn" class="bg-yellow-600 px-4 py-2 rounded">
+                Sichtschutz: AN
+            </button>
+        </div>
+
+        <div id="scoreboard" class="grid gap-4">
+            <!-- Teams werden hier per FLIP-Logik gerendert -->
+        </div>
+
+        <!-- KI Importer & Spickzettel Modal -->
+        <div class="mt-10 p-6 bg-gray-800 rounded-xl">
+            <h3 class="text-xl mb-4">KI Song-Importer (PDF/Bild)</h3>
+            <div id="dropzone" class="border-2 border-dashed border-gray-600 p-8 text-center cursor-pointer">
+                Dateien hierher ziehen
+            </div>
+            <input type="password" id="gemini-key" placeholder="Gemini API Key" class="mt-4 w-full p-2 bg-gray-900 rounded">
+        </div>
+    </div>
+
+    <script>
+        // --- Spiel-Logik & Synchronisierung ---
+        
+        function startGame() {
+            document.getElementById('view-lobby').classList.add('hidden');
+            document.getElementById('view-game').classList.remove('hidden');
+            updateRound();
         }
 
-        function playSound(type) { if(getEl('sound-toggle').checked) { /* Audio context logic */ } }
-        function showToast(m, t) { /* Toast logic */ }
+        async function updateRound() {
+            state.privacyMode = true; // Automatischer Sichtschutz
+            renderPrivacy();
+            // ntfy.sh Sync-Signal senden
+            await fetch('https://ntfy.sh/greenboys_scoreboard', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'new_round', round: state.currentRound })
+            });
+        }
 
-        window.onload = loadState;
+        function togglePrivacy() {
+            state.privacyMode = !state.privacyMode;
+            renderPrivacy();
+        }
+
+        function renderPrivacy() {
+            const btn = document.getElementById('privacy-btn');
+            btn.innerText = state.privacyMode ? "Sichtschutz: AN" : "Sichtschutz: AUS";
+            const elements = document.querySelectorAll('.song-data');
+            elements.forEach(el => {
+                if(state.privacyMode) el.classList.add('blur-sensitive');
+                else el.classList.remove('blur-sensitive');
+            });
+        }
+
+        // --- FLIP Animation Logik ---
+        function updateScoreboard() {
+            const board = document.getElementById('scoreboard');
+            const sortedTeams = [...state.teams].sort((a, b) => b.score - a.score);
+            
+            // Hier würde in einer komplexeren App die FLIP-Calculation (First-Last-Invert-Play) folgen
+            board.innerHTML = sortedTeams.map(t => `
+                <div class="flip-container bg-gray-800 p-4 rounded flex justify-between">
+                    <span>${t.name}</span>
+                    <span class="song-data blur-sensitive">${t.songs.join(', ')}</span>
+                    <span class="font-bold">${t.score} Pkt</span>
+                </div>
+            `).join('');
+            
+            renderPrivacy();
+        }
+
+        // --- KI Import Dropzone ---
+        const dropzone = document.getElementById('dropzone');
+        dropzone.addEventListener('dragover', (e) => e.preventDefault());
+        dropzone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            const key = document.getElementById('gemini-key').value;
+            if(!key) return alert("API Key fehlt!");
+            
+            // Mock für Gemini API Call
+            console.log("Sende Datei an Gemini...", file.name);
+            // Hier würde der fetch() zum Google Generative Language API Endpoint folgen
+        });
+
+        // ntfy.sh Subscriber (Echtzeit-Timer/Event Empfang)
+        const eventSource = new EventSource('https://ntfy.sh/greenboys_scoreboard/sse');
+        eventSource.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            if(data.timer) document.getElementById('timer').innerText = data.timer;
+        };
+
     </script>
 </body>
 </html>
