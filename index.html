@@ -384,9 +384,9 @@
                                 maxlength="8"
                                 class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500 font-mono font-bold"
                             >
-                            <button 
-                                onclick="connectLiveRoom()" 
-                                class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1 rounded-xl text-xs active:scale-95 transition-all flex items-center gap-1"
+                            <button
+                                onclick="connectLiveRoom()"
+                                class="w-24 bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1 rounded-xl text-xs active:scale-95 transition-all flex items-center justify-center gap-1"
                             >
                                 <i class="fa-solid fa-plug"></i> Starten
                             </button>
@@ -404,9 +404,9 @@
                             maxlength="12"
                             class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
                         >
-                        <button 
-                            type="submit" 
-                            class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1 rounded-xl text-xs active:scale-95 transition-all"
+                        <button
+                            type="submit"
+                            class="w-24 bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1 rounded-xl text-xs active:scale-95 transition-all flex items-center justify-center"
                         >
                             <i class="fa-solid fa-plus"></i>
                         </button>
@@ -514,14 +514,8 @@
             </div>
             <div class="md:col-span-9 space-y-2">
                 <h4 class="text-base font-black text-violet-400 flex items-center gap-2">
-                    <i class="fa-solid fa-qrcode"></i> iPads verbinden – So geht's:
+                    <i class="fa-solid fa-qrcode"></i> Raum: <span class="text-violet-300 font-mono" id="qr-room-code-display">7c</span>
                 </h4>
-                <ul class="text-xs text-slate-300 list-disc list-inside space-y-1">
-                    <li>Veröffentliche diese Seite auf GitHub Pages (wie in der Anleitung beschrieben).</li>
-                    <li>Lass die Schüler den links angezeigten <strong>QR-Code</strong> mit ihren iPads einscannen.</li>
-                    <li>Gib ihnen dann einfach deinen oben eingestellten Raum-Code (z. B. <strong class="text-violet-400 font-mono font-bold" id="qr-room-code-display">7c</strong>) durch!</li>
-                    <li>Sobald sie absenden, landen die Antworten live und sortiert auf dieser Tafel!</li>
-                </ul>
                 <div class="pt-2 text-[10px] text-slate-400 flex flex-col md:flex-row md:items-center gap-2">
                     <span>Manuelle URL (falls im Internet gehostet):</span>
                     <input 
