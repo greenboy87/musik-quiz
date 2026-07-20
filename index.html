@@ -367,9 +367,14 @@
             </div>
         </header>
 
-        <!-- Extrem kompakter zweispaltiger Steuerungsbereich -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            
+        <!-- Einrichtung: iPad-Empfänger & Einstellungen (auf-/zuklappbar, um Platz am Beamer zu sparen) -->
+        <details id="setup-panel-details" class="mb-4 group" open>
+            <summary class="list-none cursor-pointer flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-slate-200 transition-colors mb-2 select-none">
+                <i class="fa-solid fa-chevron-right transition-transform group-open:rotate-90"></i>
+                Einrichtung (Raum-Code, Sounds, Klasse) ein-/ausblenden
+            </summary>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
             <!-- 1. LIVE-BUZZER & IPAD VERBINDUNG (LINKS) -->
             <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-2">
                 <h3 class="text-sm font-bold text-violet-400 flex items-center justify-between gap-2">
@@ -471,9 +476,6 @@
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
-                    <p class="text-[9.5px] text-slate-500 leading-snug">
-                        <i class="fa-solid fa-circle-check text-emerald-500/80"></i> Wird automatisch unter dem Raum-Code gespeichert, sobald du oben auf "Starten" klickst – kein manuelles Sichern nötig.
-                    </p>
                 </div>
 
                 <!-- Passwort ändern Bereich -->
@@ -517,7 +519,8 @@
                     </div>
                 </div>
             </div>
-        </div>
+            </div>
+        </details>
 
         <!-- ========================================== -->
         <!-- LIVE QR-CODE UND EINRICHTUNGS PANEL       -->
@@ -554,10 +557,6 @@
         <!-- ========================================== -->
         <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 mb-3 flex flex-col xl:flex-row items-center justify-between gap-3 animate-fadeIn">
             <div class="flex flex-wrap items-center gap-2.5 text-xs">
-                <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 animate-sans">
-                    <i class="fa-solid fa-play-circle text-emerald-400 animate-pulse"></i> Runden-Manager
-                </span>
-                
                 <!-- Neue, hochsichtbare Rundenanzeige direkt im Rundenmanager -->
                 <span class="bg-violet-500/25 text-violet-300 border border-violet-500/45 px-3 py-1 rounded-lg font-bold font-mono flex items-center gap-1">
                     Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400">1</span>
@@ -572,8 +571,6 @@
                     <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">Stop 🛑</button>
                     <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-1.5 py-0.5 rounded">30s</div>
                 </div>
-                
-                <span class="text-slate-400 text-[11px] hidden xl:inline font-medium">Nutze das +1, +2, +3 System oder werte die iPad-Buzzer aus.</span>
             </div>
             <div class="flex items-center gap-2 w-full xl:w-auto justify-end">
                 <button 
