@@ -805,10 +805,46 @@
     </footer>
 
     <!-- ========================================== -->
+    <!-- FIREBASE-ANBINDUNG (ersetzt ntfy.sh)        -->
+    <!-- ========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import {
+            getDatabase, ref, push, set, onValue, onChildAdded,
+            query, orderByChild, startAfter
+        } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA8aYVFa8XbIwviC4iJDA46gK0rMfF97Ac",
+            authDomain: "greenboys-scoreboard.firebaseapp.com",
+            databaseURL: "https://greenboys-scoreboard-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "greenboys-scoreboard",
+            storageBucket: "greenboys-scoreboard.firebasestorage.app",
+            messagingSenderId: "1059492482424",
+            appId: "1:1059492482424:web:9b4ad8c62ba51a83f8cc8d"
+        };
+
+        const firebaseApp = initializeApp(firebaseConfig);
+        const db = getDatabase(firebaseApp);
+
+        // Als globale Helfer bereitstellen, damit das Hauptskript unten (kein Modul,
+        // damit alle onclick="..." Handler im HTML weiter funktionieren) sie nutzen kann.
+        window.fbDb = db;
+        window.fbRef = ref;
+        window.fbPush = push;
+        window.fbSet = set;
+        window.fbOnValue = onValue;
+        window.fbOnChildAdded = onChildAdded;
+        window.fbQuery = query;
+        window.fbOrderByChild = orderByChild;
+        window.fbStartAfter = startAfter;
+    </script>
+
+    <!-- ========================================== -->
     <!-- LOGIK & SPEICHERSYSTEM (STABIL)             -->
     <!-- ========================================== -->
     <script>
-        let currentView = "student"; 
+        let currentView = "student";
         let activeClass = "Standard-Sitzung";
         let teacherPassword = "musik"; 
         let beamerProtectionActive = true; 
@@ -820,8 +856,6 @@
         let currentRound = 1;
         let teamSongs = {}; // Geheimes Songverzeichnis der Teams (Spickzettel)
 
-        let sseSource = null;
-        let liveRoomPollInterval = null; // Sicherheitsnetz gegen verpasste Live-Nachrichten bei kurzen Verbindungsabbrüchen
         let incomingAnswers = [];
         let answerHistory = []; // Neues Backupsystem für alte Antworten
 
@@ -833,10 +867,7 @@
         
         // Schüler Runden Synchronisierung Variablen
         let studentCurrentRound = 1;
-        let studentSse = null;
         let studentJokerActive = false;
-        let studentLastControlUpdateAt = 0;
-        let studentControlWatchdogInterval = null;
         
         // Audio Synthesizer Context (Lazy Loading)
         let audioCtx = null;
@@ -890,30 +921,19 @@
             }
         }
 
-        /* Schickt wichtige Rundenwechsel/Timer-Änderungen doppelt raus (kurz versetzt),
-           damit ein einzelner Verbindungsaussetzer nicht dazu führt, dass iPads
-           dauerhaft in einem alten Zustand (z.B. "Antwort gesperrt") hängen bleiben. */
-        function broadcastControlStateRedundant(timerSeconds = -1) {
-            broadcastControlState(timerSeconds);
-            setTimeout(() => broadcastControlState(timerSeconds), 800);
-        }
-
-        /* Serverless Broadcast für Runden-Synchronisierung auf Schülergeräten */
+        /* Rundenwechsel/Timer-Synchronisierung auf die Schüler-iPads (über Firebase) */
         async function broadcastControlState(timerSeconds = -1) {
             const codeInput = getEl('room-code-input');
             const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "7c";
             if (!roomCode) return;
-            
+
             const jokersUsed = teams.filter(t => t.jokerUsed).map(t => t.name.toLowerCase());
-            
+
             try {
-                await fetch(`https://ntfy.sh/mq-ntfy-${roomCode}-control`, {
-                    method: 'POST',
-                    body: JSON.stringify({ 
-                        round: currentRound, 
-                        timer: timerSeconds,
-                        jokersUsed: jokersUsed
-                    })
+                await window.fbSet(window.fbRef(window.fbDb, `rooms/${roomCode}/control`), {
+                    round: currentRound,
+                    timer: timerSeconds,
+                    jokersUsed: jokersUsed
                 });
             } catch(e) {
                 console.error("Fehler beim Senden des Updates:", e);
@@ -1075,9 +1095,9 @@
             if (view === 'student') {
                 studentSection.classList.remove('hidden');
                 teacherSection.classList.add('hidden');
-                if (sseSource) {
-                    sseSource.close();
-                    sseSource = null;
+                if (fbUnsubscribeMessages) {
+                    fbUnsubscribeMessages();
+                    fbUnsubscribeMessages = null;
                 }
                 const registeredName = localStorage.getItem('student_team_name');
                 const registeredRoom = localStorage.getItem('student_room_code');
@@ -1195,66 +1215,29 @@
             }
         }
 
-        /* Holt den letzten bekannten Runden-/Joker-Stand vom Kontrollkanal (Sicherheitsnetz gegen verpasste SSE-Events) */
-        function pollStudentControlState(room) {
-            fetch(`https://ntfy.sh/mq-ntfy-${room}-control/json?poll=1`)
-                .then(r => r.text())
-                .then(text => {
-                    const lines = text.trim().split('\n');
-                    for (let i = lines.length - 1; i >= 0; i--) {
-                        try {
-                            const data = JSON.parse(lines[i]);
-                            if (data.message) {
-                                const payload = JSON.parse(data.message);
-                                if (payload) {
-                                    updateStudentRound(payload.round || 1, payload.jokersUsed || []);
-                                    break;
-                                }
-                            }
-                        } catch(e) {}
-                    }
-                }).catch(e => console.error(e));
-        }
+        /* Runden-/Timer-Kanal für Schüler (über Firebase). onValue liefert sofort den
+           aktuellen Stand beim Verbinden UND hält sich danach automatisch aktuell -
+           inklusive automatischer Wiederverbindung, falls die Verbindung kurz aussetzt. */
+        let fbUnsubscribeControl = null;
 
         function connectStudentControlChannel(room) {
-            if (studentSse) {
-                studentSse.close();
-            }
-            if (studentControlWatchdogInterval) {
-                clearInterval(studentControlWatchdogInterval);
+            if (fbUnsubscribeControl) {
+                fbUnsubscribeControl();
+                fbUnsubscribeControl = null;
             }
 
-            pollStudentControlState(room);
-            studentLastControlUpdateAt = Date.now();
-
-            studentSse = new EventSource(`https://ntfy.sh/mq-ntfy-${room}-control/sse`);
-            studentSse.onmessage = function(event) {
-                studentLastControlUpdateAt = Date.now();
-                try {
-                    const rawData = JSON.parse(event.data);
-                    if (rawData && rawData.message) {
-                        const payload = JSON.parse(rawData.message);
-                        if (payload) {
-                            if (payload.round !== undefined) {
-                                updateStudentRound(payload.round, payload.jokersUsed || []);
-                            }
-                            if (payload.timer !== undefined) {
-                                updateStudentTimer(payload.timer);
-                            }
-                        }
+            const controlRef = window.fbRef(window.fbDb, `rooms/${room}/control`);
+            fbUnsubscribeControl = window.fbOnValue(controlRef, (snapshot) => {
+                const payload = snapshot.val();
+                if (payload) {
+                    if (payload.round !== undefined) {
+                        updateStudentRound(payload.round, payload.jokersUsed || []);
                     }
-                } catch(e) {}
-            };
-
-            // Wachhund statt Dauer-Polling: prüft nur lokal (kostenlos), ob seit 25s nichts mehr
-            // ankam - erst DANN wird tatsächlich einmal nachgefragt. Läuft der Unterricht normal,
-            // kommen laufend Nachrichten rein und es wird nie eine zusätzliche Anfrage ausgelöst.
-            studentControlWatchdogInterval = setInterval(() => {
-                if (Date.now() - studentLastControlUpdateAt > 25000) {
-                    pollStudentControlState(room);
-                    studentLastControlUpdateAt = Date.now();
+                    if (payload.timer !== undefined) {
+                        updateStudentTimer(payload.timer);
+                    }
                 }
-            }, 10000);
+            });
         }
 
         /* Rundenzustand & JOKER-SYNC auf dem Schülergerät anwenden */
@@ -1407,18 +1390,13 @@
             connectStudentControlChannel(room);
             loadStudentPrepSongs(room);
             
-            // NEU: Sende ein "Join"-Signal über den ntfy-Kanal, damit die Lehrkraft das Team sofort mit 0 Punkten sieht
+            // Sende ein "Join"-Signal, damit die Lehrkraft das Team sofort mit 0 Punkten sieht
             try {
-                const topic = `mq-ntfy-${room}`;
-                const payload = {
+                window.fbPush(window.fbRef(window.fbDb, `rooms/${room}/messages`), {
                     action: "join",
                     team: name,
                     emoji: emoji,
                     timestamp: Date.now()
-                };
-                fetch(`https://ntfy.sh/${topic}`, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
                 });
             } catch(e) {
                 console.error("Fehler beim Senden des Beitritts-Signals:", e);
@@ -1432,9 +1410,9 @@
             localStorage.removeItem('student_team_name');
             localStorage.removeItem('student_room_code');
             localStorage.removeItem('student_team_emoji');
-            if (studentSse) {
-                studentSse.close();
-                studentSse = null;
+            if (fbUnsubscribeControl) {
+                fbUnsubscribeControl();
+                fbUnsubscribeControl = null;
             }
             const studentJoinCard = getEl('student-join-card');
             const studentBuzzerCard = getEl('student-buzzer-card');
@@ -1474,7 +1452,6 @@
             }
 
             try {
-                const topic = `mq-ntfy-${room}`;
                 const payload = {
                     team: name,
                     emoji: emoji,
@@ -1484,37 +1461,26 @@
                     timestamp: Date.now()
                 };
 
-                const res = await fetch(`https://ntfy.sh/${topic}`, {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                    headers: {
-                        'Title': 'greenboys Scoreboard Antwort',
-                        'Tags': 'musical_note'
-                    }
-                });
+                await window.fbPush(window.fbRef(window.fbDb, `rooms/${room}/messages`), payload);
 
-                if (res.ok) {
-                    localStorage.setItem(`last_sub_round_${room}`, studentCurrentRound);
-                    
-                    if (studentJokerActive) {
-                        localStorage.setItem(`joker_used_${room}`, 'true');
-                        studentJokerActive = false;
-                    }
+                localStorage.setItem(`last_sub_round_${room}`, studentCurrentRound);
 
-                    updateStudentRound(studentCurrentRound, []); 
-                    
-                    const statusBox = getEl('student-feedback');
-                    if (statusBox) {
-                        statusBox.className = "p-3 rounded-xl border text-center text-xs font-semibold animate-scaleIn bg-emerald-950/40 border-emerald-800 text-emerald-200";
-                        statusBox.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i> Antwort für Runde ${studentCurrentRound} gesendet!`;
-                        statusBox.classList.remove('hidden');
-                    }
-                    if (answerEl) answerEl.value = '';
-                    showToast("Erfolgreich abgesendet! 📡", "success");
-                    playSound('up');
-                } else {
-                    throw new Error("Sende-Fehler");
+                if (studentJokerActive) {
+                    localStorage.setItem(`joker_used_${room}`, 'true');
+                    studentJokerActive = false;
                 }
+
+                updateStudentRound(studentCurrentRound, []);
+
+                const statusBox = getEl('student-feedback');
+                if (statusBox) {
+                    statusBox.className = "p-3 rounded-xl border text-center text-xs font-semibold animate-scaleIn bg-emerald-950/40 border-emerald-800 text-emerald-200";
+                    statusBox.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i> Antwort für Runde ${studentCurrentRound} gesendet!`;
+                    statusBox.classList.remove('hidden');
+                }
+                if (answerEl) answerEl.value = '';
+                showToast("Erfolgreich abgesendet! 📡", "success");
+                playSound('up');
             } catch (err) {
                 console.error(err);
                 showToast("Fehler bei der Verbindung. Bitte erneut versuchen!", "danger");
@@ -1557,6 +1523,12 @@
             renderScoreboard();
         }
 
+        // Sorgt dafür, dass bei jedem (Wieder-)Verbinden nur Nachrichten ab dem letzten bekannten
+        // Zeitpunkt verarbeitet werden - alte Historie von früheren Tagen mit demselben Raum-Code
+        // wird so nicht erneut abgespielt, aber bei einem echten Reconnect geht nichts verloren.
+        let fbLastMessageTimestamp = Date.now();
+        let fbUnsubscribeMessages = null;
+
         function connectLiveRoom() {
             const codeInput = getEl('room-code-input');
             const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "";
@@ -1572,56 +1544,35 @@
 
             activateClassForRoom(roomCode);
 
-            if (sseSource) {
-                sseSource.close();
-            }
-            if (liveRoomPollInterval) {
-                clearInterval(liveRoomPollInterval);
+            if (fbUnsubscribeMessages) {
+                fbUnsubscribeMessages();
+                fbUnsubscribeMessages = null;
             }
 
-            const topic = `mq-ntfy-${roomCode}`;
             const statusDiv = getEl('connection-status');
-
             if (statusDiv) statusDiv.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-amber-500"></i> Verbinde Live-Empfang...`;
 
-            sseSource = new EventSource(`https://ntfy.sh/${topic}/sse`);
+            const messagesRef = window.fbRef(window.fbDb, `rooms/${roomCode}/messages`);
+            const messagesQuery = window.fbQuery(messagesRef, window.fbOrderByChild('timestamp'), window.fbStartAfter(fbLastMessageTimestamp));
 
-            sseSource.onopen = function() {
-                if (statusDiv) statusDiv.innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping"></span> Live-Empfang aktiv (Raum: ${roomCode.toUpperCase()})`;
-                showToast(`Live-Kanal "${roomCode.toUpperCase()}" erfolgreich geöffnet!`, "success");
-                const livePanel = getEl('live-answers-panel');
-                if (livePanel) livePanel.classList.remove('hidden');
-                generateQRCode();
-                broadcastControlStateRedundant();
-            };
-
-            sseSource.onerror = function() {
-                if (statusDiv) statusDiv.innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span> Live-Empfang getrennt`;
-            };
-
-            sseSource.onmessage = function(event) {
-                try {
-                    const rawData = JSON.parse(event.data);
-                    if (rawData && rawData.message) {
-                        processQuizPayload(JSON.parse(rawData.message));
-                    }
-                } catch (e) {
-                    // System-Meldungen ignorieren
+            fbUnsubscribeMessages = window.fbOnChildAdded(messagesQuery, (snapshot) => {
+                const payload = snapshot.val();
+                if (payload && payload.timestamp) {
+                    fbLastMessageTimestamp = Math.max(fbLastMessageTimestamp, payload.timestamp);
                 }
-            };
+                processQuizPayload(payload);
+            });
 
-            // Direkt beim Verbinden einmal die letzten 2 Stunden nachholen (z.B. Spickzettel, die vor dem Start eingegangen sind).
-            pollLiveRoomBacklog(roomCode, "2h");
-
-            // Sicherheitsnetz: Falls die Live-Verbindung kurz aussetzt (z.B. bei WLAN-Rucklern),
-            // holt dieser periodische Abgleich verpasste Nachrichten (Beitritte, Antworten, Spickzettel) nach.
-            // Bewusst selten (nur 1 Gerät = die Lehrkraft), um das Anfrage-Limit von ntfy.sh zu schonen.
-            liveRoomPollInterval = setInterval(() => pollLiveRoomBacklog(roomCode), 45000);
+            if (statusDiv) statusDiv.innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping"></span> Live-Empfang aktiv (Raum: ${roomCode.toUpperCase()})`;
+            showToast(`Live-Kanal "${roomCode.toUpperCase()}" erfolgreich geöffnet!`, "success");
+            const livePanel = getEl('live-answers-panel');
+            if (livePanel) livePanel.classList.remove('hidden');
+            generateQRCode();
+            broadcastControlState();
         }
 
-        /* Verarbeitet ein einzelnes Quiz-Ereignis (Beitritt / Antwort / Spickzettel) - wird sowohl
-           von der Live-SSE-Verbindung als auch vom Backup-Polling genutzt */
-        function processQuizPayload(quizPayload, fromPoll = false) {
+        /* Verarbeitet ein einzelnes Quiz-Ereignis (Beitritt / Antwort / Spickzettel / Reaktion) */
+        function processQuizPayload(quizPayload) {
             try {
                 if (quizPayload && quizPayload.team) {
                     if (quizPayload.action === "join") {
@@ -1635,8 +1586,7 @@
                         renderTeamSongsList();
                         showToast(`🤫 Spickzettel von Team "${quizPayload.team}" erhalten!`, "success");
                     } else if (quizPayload.action === "reaction") {
-                        // Reaktionen sind rein visuell/flüchtig - beim Nachhol-Abgleich nicht erneut abspielen
-                        if (!fromPoll) spawnFloatingReaction(quizPayload.emoji || "❓");
+                        spawnFloatingReaction(quizPayload.emoji || "❓");
                     } else if (quizPayload.answer) {
                         addIncomingAnswer(quizPayload);
                     }
@@ -1644,26 +1594,6 @@
             } catch (e) {
                 // System-Meldungen ignorieren
             }
-        }
-
-        /* Backup-Abgleich für den Live-Kanal: holt die letzten Nachrichten nach, falls die SSE-Verbindung kurz ausgesetzt hat */
-        function pollLiveRoomBacklog(roomCode, since = "20s") {
-            fetch(`https://ntfy.sh/mq-ntfy-${roomCode}/json?poll=1&since=${since}`)
-                .then(r => r.text())
-                .then(text => {
-                    text.trim().split('\n').forEach(line => {
-                        if (!line) return;
-                        try {
-                            const data = JSON.parse(line);
-                            if (data.message) {
-                                processQuizPayload(JSON.parse(data.message), true);
-                            }
-                        } catch (e) {
-                            // Ungültige Zeilen ignorieren
-                        }
-                    });
-                })
-                .catch(e => console.error("Fehler beim Backup-Abgleich:", e));
         }
 
         function addIncomingAnswer(answerObj) {
@@ -1768,7 +1698,6 @@
             }
 
             try {
-                const topic = `mq-ntfy-${room}`;
                 const payload = {
                     action: "secret_songs",
                     team: name,
@@ -1776,22 +1705,15 @@
                     timestamp: Date.now()
                 };
 
-                const res = await fetch(`https://ntfy.sh/${topic}`, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
+                await window.fbPush(window.fbRef(window.fbDb, `rooms/${room}/messages`), payload);
 
-                if (res.ok) {
-                    showToast("Dein Spickzettel wurde heimlich gesendet! 🤫", "success");
-                    btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Gesendet! 🤫`;
-                    btn.className = "w-full bg-emerald-600 text-white font-bold py-2 rounded-xl text-xs cursor-not-allowed mt-1";
+                showToast("Dein Spickzettel wurde heimlich gesendet! 🤫", "success");
+                btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Gesendet! 🤫`;
+                btn.className = "w-full bg-emerald-600 text-white font-bold py-2 rounded-xl text-xs cursor-not-allowed mt-1";
 
-                    localStorage.setItem(`prep_songs_sent_${room}`, "true");
-                    localStorage.setItem(`prep_songs_data_${room}`, JSON.stringify([s1, s2, s3, s4]));
-                    loadStudentPrepSongs(room);
-                } else {
-                    throw new Error("Fehler beim Senden");
-                }
+                localStorage.setItem(`prep_songs_sent_${room}`, "true");
+                localStorage.setItem(`prep_songs_data_${room}`, JSON.stringify([s1, s2, s3, s4]));
+                loadStudentPrepSongs(room);
             } catch(e) {
                 showToast("Verbindungsfehler beim Senden des Spickzettels.", "danger");
                 if (btn) {
@@ -1813,14 +1735,11 @@
             if (!room) return;
 
             try {
-                fetch(`https://ntfy.sh/mq-ntfy-${room}`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: "reaction",
-                        team: name,
-                        emoji: emoji,
-                        timestamp: Date.now()
-                    })
+                window.fbPush(window.fbRef(window.fbDb, `rooms/${room}/messages`), {
+                    action: "reaction",
+                    team: name,
+                    emoji: emoji,
+                    timestamp: Date.now()
                 });
             } catch (e) {
                 // Reaktionen sind unkritisch - Fehler einfach ignorieren
@@ -2243,7 +2162,7 @@
                 display.classList.remove('hidden', 'timer-critical');
             }
 
-            broadcastControlStateRedundant(secondsLeft);
+            broadcastControlState(secondsLeft);
 
             timerInterval = setInterval(() => {
                 secondsLeft--;
@@ -2283,7 +2202,7 @@
 
             hideCountdownOverlay();
 
-            broadcastControlStateRedundant(-1); // Löscht Timer auf den iPads
+            broadcastControlState(-1); // Löscht Timer auf den iPads
         }
 
         /* Großer 3-2-1 Countdown auf dem Beamer-Bildschirm einblenden */
@@ -2415,7 +2334,7 @@
             renderScoreboard();
             renderHistoryArchive(); // Archiv-Anzeige aktualisieren!
             renderTeamSongsList();
-            broadcastControlStateRedundant();
+            broadcastControlState();
             showToast(`Klasse "${activeClass}" geladen.`, 'success');
             saveState();
         }
@@ -2681,7 +2600,7 @@
                 
                 saveState();
                 renderScoreboard();
-                broadcastControlStateRedundant();
+                broadcastControlState();
                 renderHistoryArchive();
                 showToast(`Zurück auf Runde ${currentRound}!`, "info");
             } else {
@@ -2752,7 +2671,7 @@
             playSound('next');
             saveState();
             renderScoreboard();
-            broadcastControlStateRedundant();
+            broadcastControlState();
             renderHistoryArchive();
 
             // Comeback-Achievement: von der letzten Position direkt auf Platz 1
@@ -3492,23 +3411,9 @@
             }
         };
 
-        // iPads setzen die Verbindung im Hintergrund/Standby oft aus. Sobald die Seite wieder
-        // sichtbar wird, frisch verbinden statt dass Schüler die App manuell wegwischen müssen.
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState !== 'visible') return;
-
-            const studentBuzzerCard = getEl('student-buzzer-card');
-            if (studentBuzzerCard && !studentBuzzerCard.classList.contains('hidden')) {
-                const room = localStorage.getItem('student_room_code');
-                if (room) connectStudentControlChannel(room);
-            }
-
-            if (sseSource) {
-                const codeInput = getEl('room-code-input');
-                const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "";
-                if (roomCode) pollLiveRoomBacklog(roomCode);
-            }
-        });
+        // Firebase hält die Verbindung selbst aufrecht und synchronisiert automatisch
+        // wieder, sobald ein iPad aus dem Hintergrund/Standby zurückkommt - ein manuelles
+        // Neuverbinden beim Sichtbarwerden ist damit nicht mehr nötig.
     </script>
 </body>
 </html>
