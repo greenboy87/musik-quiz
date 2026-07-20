@@ -12,8 +12,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- PDF.js für lokales Extrahieren von PDF-Texten -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 
     <style>
         body {
@@ -32,12 +30,6 @@
         }
         .leader-card {
             animation: pulse-gold 2.5s infinite ease-in-out;
-        }
-
-        /* Drag over style für die KI-Dropzone */
-        .drag-active {
-            border-color: #8b5cf6 !important;
-            background-color: rgba(139, 92, 246, 0.1) !important;
         }
 
         /* Sanfte Einblendung */
@@ -377,15 +369,8 @@
 
             <!-- 1. LIVE-BUZZER & IPAD VERBINDUNG (LINKS) -->
             <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-2">
-                <h3 class="text-sm font-bold text-violet-400 flex items-center justify-between gap-2">
-                    <span class="flex items-center gap-2"><i class="fa-solid fa-wifi text-violet-400"></i> iPad Live-Empfänger 📡</span>
-                    <button 
-                        onclick="openImportModal()" 
-                        class="bg-slate-700 hover:bg-slate-600 border border-slate-600/40 text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded transition-all"
-                        title="Alternativ Teamnamen aus Excel/Word kopieren oder per Bild einlesen"
-                    >
-                        Massen-Import 📋
-                    </button>
+                <h3 class="text-sm font-bold text-violet-400 flex items-center gap-2">
+                    <i class="fa-solid fa-wifi text-violet-400"></i> Raum-Manager
                 </h3>
                 
                 <div class="flex items-center gap-2">
@@ -635,7 +620,7 @@
             <i class="fa-solid fa-people-group text-4xl text-slate-600 mb-2 block"></i>
             <h4 class="text-base font-bold text-slate-400">Keine Teams in dieser Sitzung</h4>
             <p class="text-slate-500 text-xs mt-1 max-w-sm mx-auto">
-                Trage über das <strong>Massen-Import Tool</strong> oben deine Schülergruppen ein oder lass sie über ihre iPads mitspielen!
+                Trage oben ein Team manuell ein oder lass die Schüler über ihre iPads beitreten!
             </p>
         </div>
 
@@ -695,101 +680,6 @@
             <div class="flex gap-3 justify-end">
                 <button onclick="closeModal()" class="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs hover:bg-slate-700 transition-all font-bold">Abbrechen</button>
                 <button id="confirm-action-btn" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs transition-all font-bold">Ja, ausführen</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MASSEN-IMPORT / KI MODAL -->
-    <div id="import-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50 font-sans">
-        <div class="bg-slate-900 border border-slate-700/80 p-5 rounded-2xl max-w-2xl w-full shadow-2xl flex flex-col gap-4 animate-scaleIn font-sans">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-                <h3 class="text-lg font-bold text-violet-400 flex items-center gap-2">
-                    <i class="fa-solid fa-file-import"></i> Teamnamen-Importer & KI-Erkennung
-                </h3>
-                <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-200 p-1">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-
-            <!-- Optionaler API-Key Config -->
-            <div class="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs">
-                <span class="text-slate-400 font-medium leading-tight">
-                    <i class="fa-solid fa-key text-amber-500"></i> Gemini API-Schlüssel (für lokale KI-Bilderkennung):
-                </span>
-                <input 
-                    type="password" 
-                    id="api-key-input" 
-                    placeholder="API-Key hier eintragen (optional)..." 
-                    class="bg-slate-900 border border-slate-700/60 rounded px-2.5 py-1 text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-violet-500 text-[11px]"
-                >
-            </div>
-
-            <!-- Tabs Navigation -->
-            <div class="flex border-b border-slate-800 text-xs">
-                <button id="tab-btn-text" onclick="switchImportTab('text')" class="py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400">
-                    <i class="fa-solid fa-align-left mr-1"></i> Text kopieren & einfügen
-                </button>
-                <button id="tab-btn-file" onclick="switchImportTab('file')" class="py-2 px-4 font-medium text-slate-400 hover:text-slate-200 font-bold">
-                    <i class="fa-solid fa-magic mr-1"></i> KI Dokumenten-/Bild-Scanner 🤖✨
-                </button>
-            </div>
-
-            <!-- Tab 1: Manual Text Input -->
-            <div id="tab-content-text" class="space-y-3">
-                <p class="text-xs text-slate-400">Gib hier deine Teamnamen ein (jeder Name in einer neuen Zeile oder getrennt durch Kommas):</p>
-                <textarea 
-                    id="bulk-text-input" 
-                    rows="6" 
-                    placeholder="Team Alpha&#10;Team Beta&#10;BLJ, Didi, Nugget"
-                    class="w-full bg-slate-950/60 border border-slate-700/60 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500 font-mono"
-                ></textarea>
-                <div class="flex justify-between items-center">
-                    <span class="text-[10px] text-amber-400/80"><i class="fa-solid fa-info-circle"></i> Doppelte Namen werden automatisch ignoriert.</span>
-                    <button onclick="processTextImport()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold py-2 px-5 rounded-xl text-xs active:scale-95 transition-all">
-                        Teams hinzufügen
-                    </button>
-                </div>
-            </div>
-
-            <!-- Tab 2: Drag and Drop & AI File Parsing -->
-            <div id="tab-content-file" class="hidden space-y-3 font-sans">
-                <p class="text-xs text-slate-400">Ziehe ein Foto deiner Tafel, deines Rosters, eine Textdatei (.txt) oder eine PDF-Datei hierhin. Die KI liest die Namen für dich aus!</p>
-                
-                <div 
-                    id="dropzone"
-                    class="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center hover:border-slate-500 transition-all cursor-pointer bg-slate-950/20 flex flex-col items-center justify-center gap-3"
-                    onclick="document.getElementById('file-input').click()"
-                >
-                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-violet-500"></i>
-                    <div>
-                        <p class="text-xs font-bold text-slate-300">Datei hierher ziehen oder klicken zum Auswählen</p>
-                        <p class="text-[10px] text-slate-500 mt-1">Unterstützt Fotos (PNG, JPG), TXT & PDF</p>
-                    </div>
-                    <input type="file" id="file-input" accept="image/*,text/plain,.pdf" class="hidden" onchange="handleFileSelect(event)">
-                </div>
-
-                <!-- AI Loading Spinner -->
-                <div id="ai-loading" class="hidden flex-col items-center justify-center p-4 bg-slate-950/55 rounded-xl border border-slate-800">
-                    <svg class="animate-spin h-7 w-7 text-violet-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p class="text-xs text-violet-300 font-bold">Künstliche Intelligenz liest Teamnamen aus... ✨</p>
-                    <p class="text-[9px] text-slate-500 mt-0.5">Gemini analysiert das Dokument auf Textmuster</p>
-                </div>
-
-                <!-- Preview of Extracted Teams -->
-                <div id="preview-container" class="hidden space-y-2 bg-slate-950/40 p-3 rounded-xl border border-slate-800">
-                    <h4 class="text-xs font-bold text-emerald-400"><i class="fa-solid fa-square-check"></i> Erkannte Teams (uncheck zum Ausschließen):</h4>
-                    <div id="extracted-teams-list" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-1 font-bold">
-                        <!-- Wird befüllt -->
-                    </div>
-                    <div class="flex justify-end pt-2 border-t border-slate-800/40 font-bold">
-                        <button onclick="commitExtractedImport()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs active:scale-95 transition-all">
-                            Ausgewählte Teams importieren
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -856,8 +746,6 @@
 
         let confettiInterval = null;
         let isConfettiActive = false;
-        let activeImportTab = 'text';
-        let extractedTeams = [];
         let confirmActionCallback = null;
         
         // Schüler Runden Synchronisierung Variablen
@@ -897,7 +785,6 @@
                 
                 const autoSortEl = getEl('auto-sort-toggle');
                 const soundEl = getEl('sound-toggle');
-                const apiKeyEl = getEl('api-key-input');
 
                 const saveDataObj = {
                     activeClass: activeClass,
@@ -905,7 +792,6 @@
                     teacherPassword: teacherPassword,
                     autoSort: autoSortEl ? autoSortEl.checked : true,
                     soundEnabled: soundEl ? soundEl.checked : true,
-                    geminiKey: apiKeyEl ? apiKeyEl.value.trim() : "",
                     beamerProtectionActive: beamerProtectionActive,
                     answerHistory: answerHistory
                 };
@@ -980,8 +866,6 @@
                         if (autoSortEl) autoSortEl.checked = parsed.autoSort !== false;
                         const soundEl = getEl('sound-toggle');
                         if (soundEl) soundEl.checked = parsed.soundEnabled !== false;
-                        const apiKeyEl = getEl('api-key-input');
-                        if (apiKeyEl) apiKeyEl.value = parsed.geminiKey || "";
                         const changePwEl = getEl('change-password-input');
                         if (changePwEl) changePwEl.value = teacherPassword;
                     }
@@ -2879,362 +2763,6 @@
                     }
                 }
             });
-        }
-
-        /* Massen-Import / KI Parser */
-        function openImportModal() {
-            const modal = getEl('import-modal');
-            const input = getEl('bulk-text-input');
-            const preview = getEl('preview-container');
-
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-            if (input) input.value = '';
-            if (preview) preview.classList.add('hidden');
-            extractedTeams = [];
-            setupDragAndDrop();
-        }
-
-        function closeImportModal() {
-            const modal = getEl('import-modal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        }
-
-        function switchImportTab(tab) {
-            activeImportTab = tab;
-            const textBtn = getEl('tab-btn-text');
-            const fileBtn = getEl('tab-btn-file');
-            const textContent = getEl('tab-content-text');
-            const fileContent = getEl('tab-content-file');
-
-            if (!textBtn || !fileBtn || !textContent || !fileContent) return;
-
-            if (tab === 'text') {
-                textBtn.className = "py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400";
-                fileBtn.className = "py-2 px-4 font-medium text-slate-400 hover:text-slate-200";
-                textContent.classList.remove('hidden');
-                fileContent.classList.add('hidden');
-            } else {
-                fileBtn.className = "py-2 px-4 font-bold border-b-2 border-violet-500 text-violet-400";
-                textBtn.className = "py-2 px-4 font-medium text-slate-400 hover:text-slate-200";
-                fileContent.classList.remove('hidden');
-                textContent.classList.add('hidden');
-            }
-        }
-
-        function processTextImport() {
-            try {
-                const textEl = getEl('bulk-text-input');
-                const rawText = textEl ? textEl.value.trim() : "";
-                if (!rawText) {
-                    showToast("Bitte trage zuerst ein paar Namen ein!", "danger");
-                    return;
-                }
-
-                const rawList = rawText.split(/[\n,]+/);
-                let importedCount = 0;
-
-                rawList.forEach(rawName => {
-                    const name = rawName.trim();
-                    if (name && name.length > 0) {
-                        const formattedName = name.substring(0, 12);
-                        if (!teams.some(t => t.name.toLowerCase() === formattedName.toLowerCase())) {
-                            teams.push({
-                                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                                name: formattedName,
-                                score: 0,
-                                activeThisRound: false,
-                                pendingPoints: 0,
-                                streak: 0,
-                                jokerUsed: false,
-                                jokerActiveThisRound: false
-                            });
-                            importedCount++;
-                        }
-                    }
-                });
-
-                if (importedCount > 0) {
-                    showToast(`${importedCount} Teams erfolgreich importiert!`, 'success');
-                    playSound('up');
-                    saveState();
-                    renderScoreboard();
-                    closeImportModal();
-                } else {
-                    showToast("Keine neuen Teams hinzugefügt.", "info");
-                }
-            } catch (err) {
-                console.error("Fehler beim Verarbeiten des Imports:", err);
-                showToast("Fehler beim Importieren.", "danger");
-            }
-        }
-
-        function setupDragAndDrop() {
-            const dropzone = getEl('dropzone');
-            if (!dropzone) return;
-
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropzone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropzone.classList.add('drag-active');
-                }, false);
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropzone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dropzone.classList.remove('drag-active');
-                }, false);
-            });
-
-            dropzone.addEventListener('drop', (e) => {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                handleFiles(files);
-            }, false);
-        }
-
-        function handleFileSelect(event) {
-            const files = event.target.files;
-            handleFiles(files);
-        }
-
-        function handleFiles(files) {
-            if (files.length === 0) return;
-            const file = files[0];
-            
-            const aiLoading = getEl('ai-loading');
-            const previewContainer = getEl('preview-container');
-            if (aiLoading) aiLoading.classList.remove('hidden');
-            if (previewContainer) previewContainer.classList.add('hidden');
-
-            const reader = new FileReader();
-
-            if (file.type.startsWith('image/')) {
-                reader.onload = async function(event) {
-                    const base64Data = event.target.result.split(',')[1];
-                    const mimeType = file.type;
-                    await scanImageWithAI(base64Data, mimeType);
-                };
-                reader.readAsDataURL(file);
-            } else if (file.type === 'text/plain') {
-                reader.onload = function(event) {
-                    const text = event.target.result;
-                    processRawScannedText(text);
-                };
-                reader.readAsText(file);
-            } else if (file.name.endsWith('.pdf')) {
-                reader.onload = async function(event) {
-                    const typedarray = new Uint8Array(event.target.result);
-                    await parsePDFAndScan(typedarray);
-                };
-                reader.readAsArrayBuffer(file);
-            } else {
-                if (aiLoading) aiLoading.classList.add('hidden');
-                showToast("Format nicht unterstützt!", "danger");
-            }
-        }
-
-        async function parsePDFAndScan(typedarray) {
-            try {
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-                const pdf = await pdfjsLib.getDocument({data: typedarray}).promise;
-                let fullText = "";
-
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map(item => item.str).join(" ");
-                    fullText += pageText + "\n";
-                }
-
-                if (fullText.trim().length > 0) {
-                    await scanTextWithAI(fullText);
-                } else {
-                    throw new Error("Kein lesbarer Text.");
-                }
-            } catch (err) {
-                console.error("PDF Parser Fehler:", err);
-                const aiLoading = getEl('ai-loading');
-                if (aiLoading) aiLoading.classList.add('hidden');
-                showToast("PDF konnte nicht gelesen werden.", "danger");
-            }
-        }
-
-        async function scanImageWithAI(base64Data, mimeType) {
-            const apiKeyInput = getEl('api-key-input');
-            const apiKey = apiKeyInput ? apiKeyInput.value.trim() : "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [
-                    {
-                        role: "user",
-                        parts: [
-                            { text: "Analysiere dieses Bild oder Dokument und ziehe alle Gruppen-, Schüler- oder Teamnamen heraus. Ignoriere Überschriften oder Punktestände. Gib mir ausschließlich eine JSON-Liste mit den extrahierten, bereinigten Namen zurück. Kürze jeden Namen auf maximal 12 Zeichen, falls er länger ist. Beispiel: [\"BLJ\", \"Didi\", \"KA\"]" },
-                            {
-                                inlineData: {
-                                    mimeType: mimeType,
-                                    data: base64Data
-                                }
-                            }
-                        ]
-                    }
-                ],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "ARRAY",
-                        items: { "type": "STRING" }
-                    }
-                }
-            };
-
-            await callGeminiAPI(apiUrl, payload);
-        }
-
-        async function scanTextWithAI(rawText) {
-            const apiKeyInput = getEl('api-key-input');
-            const apiKey = apiKeyInput ? apiKeyInput.value.trim() : "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [
-                    {
-                        role: "user",
-                        parts: [
-                            { text: `Analysiere diesen Text und extrahiere alle Teamnamen oder Gruppenbezeichnungen. Bereinige sie und gib sie als saubere JSON-Array-Liste zurück (max. 12 Zeichen pro Name). Text: \n\n ${rawText}` }
-                        ]
-                    }
-                ],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "ARRAY",
-                        items: { "type": "STRING" }
-                    }
-                }
-            };
-
-            await callGeminiAPI(apiUrl, payload);
-        }
-
-        async function callGeminiAPI(apiUrl, payload) {
-            let retries = 3;
-            let delay = 1000;
-
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const result = await response.json();
-                    
-                    const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (jsonText) {
-                        const parsedNames = JSON.parse(jsonText);
-                        displayExtractedTeams(parsedNames);
-                        return;
-                    }
-                    throw new Error("Antwort unvollständig");
-                } catch (err) {
-                    if (i === retries - 1) {
-                        console.error("Gemini API Fehler:", err);
-                        const aiLoading = getEl('ai-loading');
-                        if (aiLoading) aiLoading.classList.add('hidden');
-                        showToast("KI Verbindung fehlgeschlagen. Nutze Copy & Paste.", "danger");
-                    } else {
-                        await new Promise(res => setTimeout(res, delay));
-                        delay *= 2;
-                    }
-                }
-            }
-        }
-
-        function processRawScannedText(text) {
-            const rawList = text.split(/[\n,]+/);
-            const cleaned = [];
-            rawList.forEach(name => {
-                const clean = name.trim().substring(0, 12);
-                if (clean) cleaned.push(clean);
-            });
-            displayExtractedTeams(cleaned);
-        }
-
-        function displayExtractedTeams(namesList) {
-            const aiLoading = getEl('ai-loading');
-            if (aiLoading) aiLoading.classList.add('hidden');
-            
-            if (!namesList || namesList.length === 0) {
-                showToast("Keine Namen im Dokument gefunden.", "info");
-                return;
-            }
-
-            extractedTeams = namesList.map((name, idx) => ({
-                id: idx,
-                name: name,
-                selected: true
-            }));
-
-            const listContainer = getEl('extracted-teams-list');
-            if (!listContainer) return;
-            listContainer.innerHTML = '';
-
-            extractedTeams.forEach(item => {
-                const label = document.createElement('label');
-                label.className = "flex items-center gap-2 bg-slate-900 border border-slate-800 hover:border-slate-700 p-2 rounded-xl text-xs cursor-pointer select-none text-slate-300 animate-scaleIn font-bold";
-                label.innerHTML = `
-                    <input type="checkbox" checked onchange="toggleExtractedItem(${item.id})" class="accent-violet-500 rounded">
-                    <span>${item.name}</span>
-                `;
-                listContainer.appendChild(label);
-            });
-
-            const preview = getEl('preview-container');
-            if (preview) preview.classList.remove('hidden');
-        }
-
-        function toggleExtractedItem(id) {
-            const item = extractedTeams.find(t => t.id === id);
-            if (item) item.selected = !item.selected;
-        }
-
-        function commitExtractedImport() {
-            const toImport = extractedTeams.filter(t => t.selected).map(t => t.name);
-            let addedCount = 0;
-
-            toImport.forEach(name => {
-                if (!teams.some(t => t.name.toLowerCase() === name.toLowerCase())) {
-                    teams.push({
-                        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                        name: name,
-                        score: 0,
-                        activeThisRound: false,
-                        pendingPoints: 0,
-                        streak: 0,
-                        jokerUsed: false,
-                        jokerActiveThisRound: false
-                    });
-                    addedCount++;
-                }
-            });
-
-            showToast(`${addedCount} neue Teams erfolgreich hinzugefügt!`, 'success');
-            playSound('up');
-            saveState();
-            renderScoreboard();
-            closeImportModal();
         }
 
         const canvas = getEl("confetti-canvas");
