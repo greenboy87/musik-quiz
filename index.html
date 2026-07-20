@@ -390,7 +390,6 @@
                 
                 <div class="flex items-center gap-2">
                     <div class="flex-grow">
-                        <label class="text-[10px] text-slate-400 block mb-0.5">Raum-Code (z.B. Klasse):</label>
                         <div class="flex gap-1.5">
                             <input 
                                 type="text" 
@@ -412,12 +411,11 @@
 
                 <!-- Team manuell hinzufügen mit Enter-Taste -->
                 <div class="border-t border-slate-700/30 pt-1.5 mt-0.5">
-                    <label class="text-[10px] text-slate-400 block mb-0.5">Team manuell hinzufügen (Enter drücken):</label>
                     <form onsubmit="handleManualTeamAdd(event)" class="flex gap-1.5">
-                        <input 
-                            type="text" 
-                            id="manual-team-input" 
-                            placeholder="z. B. Kiwi, Team Alpha..." 
+                        <input
+                            type="text"
+                            id="manual-team-input"
+                            placeholder="Team hinzufügen (z.B. Kiwi)..."
                             maxlength="12"
                             class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
                         >
