@@ -835,6 +835,8 @@
         let studentCurrentRound = 1;
         let studentSse = null;
         let studentJokerActive = false;
+        let studentLastControlUpdateAt = 0;
+        let studentControlWatchdogInterval = null;
         
         // Audio Synthesizer Context (Lazy Loading)
         let audioCtx = null;
@@ -886,6 +888,14 @@
             } catch (err) {
                 console.error("Fehler beim Speichern des Zustands:", err);
             }
+        }
+
+        /* Schickt wichtige Rundenwechsel/Timer-Änderungen doppelt raus (kurz versetzt),
+           damit ein einzelner Verbindungsaussetzer nicht dazu führt, dass iPads
+           dauerhaft in einem alten Zustand (z.B. "Antwort gesperrt") hängen bleiben. */
+        function broadcastControlStateRedundant(timerSeconds = -1) {
+            broadcastControlState(timerSeconds);
+            setTimeout(() => broadcastControlState(timerSeconds), 800);
         }
 
         /* Serverless Broadcast für Runden-Synchronisierung auf Schülergeräten */
@@ -1210,11 +1220,16 @@
             if (studentSse) {
                 studentSse.close();
             }
+            if (studentControlWatchdogInterval) {
+                clearInterval(studentControlWatchdogInterval);
+            }
 
             pollStudentControlState(room);
+            studentLastControlUpdateAt = Date.now();
 
             studentSse = new EventSource(`https://ntfy.sh/mq-ntfy-${room}-control/sse`);
             studentSse.onmessage = function(event) {
+                studentLastControlUpdateAt = Date.now();
                 try {
                     const rawData = JSON.parse(event.data);
                     if (rawData && rawData.message) {
@@ -1231,9 +1246,15 @@
                 } catch(e) {}
             };
 
-            // Kein periodisches Hintergrund-Polling hier: bei vielen iPads im selben WLAN
-            // (= eine gemeinsame Adresse bei ntfy.sh) würde das schnell an Anfrage-Limits stoßen.
-            // Stattdessen gleicht sich die App beim Zurückkehren aus dem Hintergrund ab (siehe visibilitychange).
+            // Wachhund statt Dauer-Polling: prüft nur lokal (kostenlos), ob seit 25s nichts mehr
+            // ankam - erst DANN wird tatsächlich einmal nachgefragt. Läuft der Unterricht normal,
+            // kommen laufend Nachrichten rein und es wird nie eine zusätzliche Anfrage ausgelöst.
+            studentControlWatchdogInterval = setInterval(() => {
+                if (Date.now() - studentLastControlUpdateAt > 25000) {
+                    pollStudentControlState(room);
+                    studentLastControlUpdateAt = Date.now();
+                }
+            }, 10000);
         }
 
         /* Rundenzustand & JOKER-SYNC auf dem Schülergerät anwenden */
@@ -1571,7 +1592,7 @@
                 const livePanel = getEl('live-answers-panel');
                 if (livePanel) livePanel.classList.remove('hidden');
                 generateQRCode();
-                broadcastControlState();
+                broadcastControlStateRedundant();
             };
 
             sseSource.onerror = function() {
@@ -2222,7 +2243,7 @@
                 display.classList.remove('hidden', 'timer-critical');
             }
 
-            broadcastControlState(secondsLeft);
+            broadcastControlStateRedundant(secondsLeft);
 
             timerInterval = setInterval(() => {
                 secondsLeft--;
@@ -2262,7 +2283,7 @@
 
             hideCountdownOverlay();
 
-            broadcastControlState(-1); // Löscht Timer auf den iPads
+            broadcastControlStateRedundant(-1); // Löscht Timer auf den iPads
         }
 
         /* Großer 3-2-1 Countdown auf dem Beamer-Bildschirm einblenden */
@@ -2394,7 +2415,7 @@
             renderScoreboard();
             renderHistoryArchive(); // Archiv-Anzeige aktualisieren!
             renderTeamSongsList();
-            broadcastControlState();
+            broadcastControlStateRedundant();
             showToast(`Klasse "${activeClass}" geladen.`, 'success');
             saveState();
         }
@@ -2660,7 +2681,7 @@
                 
                 saveState();
                 renderScoreboard();
-                broadcastControlState();
+                broadcastControlStateRedundant();
                 renderHistoryArchive();
                 showToast(`Zurück auf Runde ${currentRound}!`, "info");
             } else {
@@ -2731,7 +2752,7 @@
             playSound('next');
             saveState();
             renderScoreboard();
-            broadcastControlState();
+            broadcastControlStateRedundant();
             renderHistoryArchive();
 
             // Comeback-Achievement: von der letzten Position direkt auf Platz 1
