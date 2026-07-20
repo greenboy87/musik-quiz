@@ -93,6 +93,17 @@
         <span id="timer-countdown-number" class="font-black text-amber-400" style="font-size: min(35vw, 320px); line-height: 1; text-shadow: 0 0 60px rgba(245, 158, 11, 0.6), 0 8px 24px rgba(0,0,0,0.6);"></span>
     </div>
 
+    <!-- Siegerpodest für das Finale -->
+    <div id="finale-podium-overlay" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/92 backdrop-blur-sm p-6" onclick="if (event.target === this) closeFinalePodium();">
+        <button onclick="closeFinalePodium()" class="absolute top-5 right-5 md:top-8 md:right-8 text-slate-400 hover:text-white text-2xl transition-colors">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="w-full max-w-3xl text-center space-y-10">
+            <h2 class="text-3xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-pink-300 to-violet-300">🏆 Endstand 🏆</h2>
+            <div id="finale-podium-container" class="flex items-end justify-center gap-3 md:gap-6"></div>
+        </div>
+    </div>
+
     <!-- ========================================== -->
     <!-- DETEKTIERUNG FÜR UNGESTYLTE ANZEIGE (TEAMS/ONEDRIVE) -->
     <!-- ========================================== -->
@@ -2841,18 +2852,22 @@
         }
 
         function triggerWinConfetti() {
+            if (teams.length === 0) {
+                showToast("Noch keine Teams im Spiel!", "danger");
+                return;
+            }
+
             let winnerName = "Niemand";
-            if (teams.length > 0) {
-                const highestScore = Math.max(...teams.map(t => t.score));
-                const winners = teams.filter(t => t.score === highestScore);
-                if (highestScore > 0) {
-                    winnerName = winners.map(w => w.name).join(" & ");
-                }
+            const highestScore = Math.max(...teams.map(t => t.score));
+            const winners = teams.filter(t => t.score === highestScore);
+            if (highestScore > 0) {
+                winnerName = winners.map(w => w.name).join(" & ");
             }
 
             showToast(`🏆 Glückwunsch an das Siegerteam: ${winnerName}! 🎉`, 'success');
             playSound('fanfare');
-            
+            showFinalePodium();
+
             resizeCanvas();
             initConfetti();
             isConfettiActive = true;
@@ -2863,6 +2878,55 @@
                 isConfettiActive = false;
                 if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
             }, 8000);
+        }
+
+        /* Siegerpodest mit den Top 3 Teams befüllen und anzeigen */
+        function showFinalePodium() {
+            const overlay = getEl('finale-podium-overlay');
+            const container = getEl('finale-podium-container');
+            if (!overlay || !container) return;
+
+            const sorted = [...teams].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+            const top3 = sorted.slice(0, 3);
+
+            const placeStyles = {
+                1: { height: 'h-52 md:h-72', medal: '🥇', barColor: 'from-amber-300 to-amber-500', scoreColor: 'text-amber-300', textSize: 'text-lg md:text-2xl', emojiSize: 'text-4xl md:text-6xl' },
+                2: { height: 'h-36 md:h-52', medal: '🥈', barColor: 'from-slate-300 to-slate-400', scoreColor: 'text-slate-200', textSize: 'text-sm md:text-lg', emojiSize: 'text-3xl md:text-5xl' },
+                3: { height: 'h-28 md:h-40', medal: '🥉', barColor: 'from-orange-300 to-orange-500', scoreColor: 'text-orange-300', textSize: 'text-sm md:text-lg', emojiSize: 'text-3xl md:text-5xl' }
+            };
+
+            // Anzeigereihenfolge auf dem Podest: 2. Platz - 1. Platz - 3. Platz
+            const displayOrder = [];
+            if (top3[1]) displayOrder.push({ team: top3[1], place: 2 });
+            if (top3[0]) displayOrder.push({ team: top3[0], place: 1 });
+            if (top3[2]) displayOrder.push({ team: top3[2], place: 3 });
+
+            container.innerHTML = '';
+            displayOrder.forEach(({ team, place }) => {
+                const style = placeStyles[place];
+                const col = document.createElement('div');
+                col.className = "flex flex-col items-center gap-1.5 flex-1 max-w-[180px] animate-scaleIn";
+                col.innerHTML = `
+                    <div class="${style.emojiSize}">${team.emoji || '🎵'}</div>
+                    <div class="font-black ${style.textSize} text-white truncate max-w-full px-1">${team.name}</div>
+                    <div class="font-black ${style.textSize} ${style.scoreColor}">${team.score} Pkt.</div>
+                    <div class="w-full ${style.height} bg-gradient-to-b ${style.barColor} rounded-t-2xl flex items-start justify-center pt-2 md:pt-4 shadow-2xl">
+                        <span class="text-2xl md:text-4xl">${style.medal}</span>
+                    </div>
+                `;
+                container.appendChild(col);
+            });
+
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+
+        function closeFinalePodium() {
+            const overlay = getEl('finale-podium-overlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+            }
         }
 
         function confirmReset() {
