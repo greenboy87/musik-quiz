@@ -598,6 +598,13 @@
                 </h3>
                 <div class="flex gap-1.5">
                     <button
+                        onclick="undoLastScoring()"
+                        class="text-[9px] bg-slate-700 hover:bg-violet-900 hover:text-violet-200 border border-slate-600/40 text-slate-300 px-2 py-1 rounded transition-all font-bold font-sans"
+                        title="Letzte Bewertung (+3/+2/+1/0) rückgängig machen"
+                    >
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Rückgängig
+                    </button>
+                    <button
                         onclick="clearIncomingAnswers()"
                         class="text-[9px] bg-slate-700 hover:bg-rose-950 hover:text-rose-300 border border-slate-600/40 text-slate-300 px-2 py-1 rounded transition-all font-bold font-sans"
                     >
@@ -752,6 +759,7 @@
         let confettiInterval = null;
         let isConfettiActive = false;
         let confirmActionCallback = null;
+        let scoringUndoStack = []; // Erlaubt beliebig viele +3/+2/+1/0-Wertungen rückgängig zu machen
         
         // Schüler Runden Synchronisierung Variablen
         let studentCurrentRound = 1;
@@ -1906,6 +1914,7 @@
             let team = teams.find(t => t.id === teamName || t.name.toLowerCase() === teamName.toLowerCase());
             const incomingAns = incomingAnswers[index];
             const emoji = incomingAns ? (incomingAns.emoji || "🎵") : "🎵";
+            const prevState = team ? { activeThisRound: team.activeThisRound, pendingPoints: team.pendingPoints, jokerActiveThisRound: team.jokerActiveThisRound } : null;
 
             if (!team) {
                 const newTeam = {
@@ -1931,7 +1940,7 @@
             }
 
             // Neues Backup-Archiv befüllen
-            answerHistory.push({
+            const historyEntry = {
                 round: currentRound,
                 teamName: team.name,
                 answer: incomingAns ? incomingAns.answer : "Manuelle Wertung",
@@ -1939,7 +1948,10 @@
                 hasJoker: hasJoker,
                 emoji: team.emoji,
                 timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-            });
+            };
+            answerHistory.push(historyEntry);
+
+            scoringUndoStack.push({ teamId: team.id, teamName: team.name, prevState, historyEntry, answerObj: incomingAns, answerIndex: index });
 
             showToast(`Punkte für "${team.name}" wurden vorgemerkt (+${pointsToAdd})!`, "success");
             if (index === 0) {
@@ -1959,6 +1971,7 @@
             let team = teams.find(t => t.id === teamName || t.name.toLowerCase() === teamName.toLowerCase());
             const incomingAns = incomingAnswers[index];
             const emoji = incomingAns ? (incomingAns.emoji || "🎵") : "🎵";
+            const prevState = team ? { activeThisRound: team.activeThisRound, pendingPoints: team.pendingPoints, jokerActiveThisRound: team.jokerActiveThisRound } : null;
 
             if (!team) {
                 const newTeam = {
@@ -1983,7 +1996,7 @@
                 }
             }
 
-            answerHistory.push({
+            const historyEntry = {
                 round: currentRound,
                 teamName: team.name,
                 answer: incomingAns ? incomingAns.answer : "Manuelle Wertung",
@@ -1991,13 +2004,54 @@
                 hasJoker: hasJoker,
                 emoji: team.emoji,
                 timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-            });
+            };
+            answerHistory.push(historyEntry);
+
+            scoringUndoStack.push({ teamId: team.id, teamName: team.name, prevState, historyEntry, answerObj: incomingAns, answerIndex: index });
 
             showToast(`"${team.name}" als falsch vermerkt (0 Punkte)${hasJoker ? ' – Joker-Risiko!' : ''}`, "danger");
             playSound('down');
             removeLiveAnswerByIndex(index);
             saveState();
             renderScoreboard();
+            renderHistoryArchive();
+        }
+
+        /* Macht die zuletzt vergebene Bewertung (+3/+2/+1/0) rückgängig - beliebig oft hintereinander */
+        function undoLastScoring() {
+            if (scoringUndoStack.length === 0) {
+                showToast("Nichts zum Rückgängigmachen vorhanden.", "info");
+                return;
+            }
+
+            const last = scoringUndoStack.pop();
+            const team = teams.find(t => t.id === last.teamId);
+
+            if (team) {
+                if (last.prevState) {
+                    team.activeThisRound = last.prevState.activeThisRound;
+                    team.pendingPoints = last.prevState.pendingPoints;
+                    team.jokerActiveThisRound = last.prevState.jokerActiveThisRound;
+                } else {
+                    team.activeThisRound = false;
+                    team.pendingPoints = 0;
+                    team.jokerActiveThisRound = false;
+                }
+            }
+
+            const histIdx = answerHistory.indexOf(last.historyEntry);
+            if (histIdx !== -1) answerHistory.splice(histIdx, 1);
+
+            if (last.answerObj) {
+                const insertAt = Math.min(last.answerIndex, incomingAnswers.length);
+                incomingAnswers.splice(insertAt, 0, last.answerObj);
+            }
+
+            showToast(`Bewertung für "${last.teamName}" rückgängig gemacht.`, "info");
+            playSound('down');
+            saveState();
+            renderScoreboard();
+            renderIncomingAnswersList();
             renderHistoryArchive();
         }
 
@@ -2554,6 +2608,9 @@
             const sortedBefore = [...teams].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
             sortedBefore.forEach((t, idx) => { t.rankBeforeRound = idx; });
 
+            // Nach dem Rundenwechsel sind Punkte final vergeben - Rückgängig-Verlauf leeren
+            scoringUndoStack = [];
+
             const activeTeams = teams.filter(t => t.activeThisRound);
             const roundGains = [];
             activeTeams.forEach(t => {
@@ -3005,6 +3062,7 @@
             teamSongs = {};
             answerHistory = []; // Verlauf bei Reset komplett löschen!
             incomingAnswers = [];
+            scoringUndoStack = [];
             beamerProtectionActive = true; // Neue Sitzung startet immer verdeckt
 
             saveState();
