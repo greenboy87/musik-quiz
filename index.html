@@ -1880,11 +1880,11 @@
                                 +1
                             </button>
                             <button
-                                onclick="removeLiveAnswerByIndex(${index})"
-                                class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-xs px-2 py-1.5 rounded transition-all font-sans"
-                                title="Verwerfen"
+                                onclick="markLiveAnswerWrong('${teamNameEscaped}', ${index}, ${hasJoker})"
+                                class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-3 py-1.5 rounded transition-all active:scale-95 font-sans"
+                                title="Falsch werten (0 Punkte${hasJoker ? ', Joker-Risiko greift' : ''})"
                             >
-                                <i class="fa-solid fa-trash-can"></i>
+                                0
                             </button>
                         </div>
                     `;
@@ -1952,6 +1952,55 @@
             renderHistoryArchive();
         }
 
+        /* Antwort als falsch werten: 0 Punkte, Team bleibt "nicht aktiv" für die Runde -
+           dadurch greift beim Rundenwechsel automatisch das Joker-Risiko (-1 Punkt), falls
+           der Joker aktiv war, genau wie bei einer nicht abgegebenen Antwort. */
+        function markLiveAnswerWrong(teamName, index, hasJoker = false) {
+            let team = teams.find(t => t.id === teamName || t.name.toLowerCase() === teamName.toLowerCase());
+            const incomingAns = incomingAnswers[index];
+            const emoji = incomingAns ? (incomingAns.emoji || "🎵") : "🎵";
+
+            if (!team) {
+                const newTeam = {
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                    name: teamName.substring(0, 12),
+                    score: 0,
+                    activeThisRound: false,
+                    pendingPoints: 0,
+                    streak: 0,
+                    jokerUsed: false,
+                    jokerActiveThisRound: hasJoker,
+                    emoji: emoji
+                };
+                teams.push(newTeam);
+                team = newTeam;
+            } else {
+                team.activeThisRound = false;
+                team.pendingPoints = 0;
+                team.jokerActiveThisRound = hasJoker;
+                if (!team.emoji || team.emoji === "🎵") {
+                    team.emoji = emoji;
+                }
+            }
+
+            answerHistory.push({
+                round: currentRound,
+                teamName: team.name,
+                answer: incomingAns ? incomingAns.answer : "Manuelle Wertung",
+                points: 0,
+                hasJoker: hasJoker,
+                emoji: team.emoji,
+                timestamp: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+            });
+
+            showToast(`"${team.name}" als falsch vermerkt (0 Punkte)${hasJoker ? ' – Joker-Risiko!' : ''}`, "danger");
+            playSound('down');
+            removeLiveAnswerByIndex(index);
+            saveState();
+            renderScoreboard();
+            renderHistoryArchive();
+        }
+
         /* Verlauf-Archiv rendern */
         function renderHistoryArchive() {
             const list = getEl('history-archive-list');
@@ -1974,14 +2023,16 @@
                 card.className = "bg-slate-950/50 border border-slate-800/80 p-2 rounded-xl flex flex-col gap-1 text-[11px] text-slate-400 animate-fadeIn";
                 
                 let jokerLabel = item.hasJoker ? ' <span class="text-amber-400 font-bold">[🃏 Joker]</span>' : '';
-                
+                const pointsColor = item.points > 0 ? 'text-emerald-400' : 'text-rose-400';
+                const pointsPrefix = item.points > 0 ? '+' : '';
+
                 card.innerHTML = `
                     <div class="flex justify-between items-center font-bold border-b border-slate-850 pb-1">
                         <span class="text-slate-200 flex items-center gap-1.5">
                             <span>${item.emoji || '🎵'}</span>
                             <span class="truncate max-w-[90px]">${item.teamName}</span>
                         </span>
-                        <span class="text-emerald-400 font-sans font-bold">+${item.points} Pkt${jokerLabel}</span>
+                        <span class="${pointsColor} font-sans font-bold">${pointsPrefix}${item.points} Pkt${jokerLabel}</span>
                     </div>
                     <div class="italic text-[10px] text-slate-500 truncate mt-0.5" title="${item.answer}">"${item.answer}"</div>
                     <div class="flex justify-between items-center text-[8px] text-slate-600 mt-0.5 font-sans">
