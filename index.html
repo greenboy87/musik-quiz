@@ -354,7 +354,38 @@
             </div>
         </div>
 
-        <!-- 2. SCHÜLER BUZZER EINGABE (Nach Join sichtbar) -->
+        <!-- 1.5 SCHÜLER SONG-VORBEREITUNG (Nach Join, vor Buzzer sichtbar) -->
+        <div id="student-prep-card" class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 hidden font-sans">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="student-prep-badge-info" class="text-xs font-bold text-slate-300">Verbunden: </span>
+                </div>
+                <button
+                    onclick="leaveQuizRoom()"
+                    class="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                    Wechseln <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <div class="text-center">
+                    <div class="text-2xl mb-1">🎯🤫</div>
+                    <h3 class="text-sm font-bold text-slate-200">Bereitet eure 4 Lieder vor!</h3>
+                    <p class="text-[11px] text-slate-400 leading-tight mt-1">Tragt hier eure 4 vorbereiteten Lieder ein. Nur die Lehrkraft kann sie sehen! Danach geht's weiter zum Buzzer.</p>
+                </div>
+                <input type="text" id="prep-song-1" placeholder="Song 1..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
+                <input type="text" id="prep-song-2" placeholder="Song 2..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
+                <input type="text" id="prep-song-3" placeholder="Song 3..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
+                <input type="text" id="prep-song-4" placeholder="Song 4..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
+                <button onclick="sendPrepSongs()" id="student-send-songs-btn" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-3 rounded-xl text-xs active:scale-95 transition-all mt-1">
+                    Weiter zum Buzzer 🚀
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. SCHÜLER BUZZER EINGABE (Nach Song-Vorbereitung sichtbar) -->
         <div id="student-buzzer-card" class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 hidden font-sans">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2">
                 <div class="flex items-center gap-2 flex-wrap">
@@ -404,26 +435,6 @@
                     <i class="fa-solid fa-paper-plane"></i>
                     <span>Antwort abschicken! 🚀</span>
                 </button>
-
-                <!-- 🎯 EXPANDABLE SONG PREPARATION (Pre-entering songs secretly) -->
-                <div class="border-t border-slate-800/60 pt-3 mt-1">
-                    <details class="group bg-slate-950/60 border border-slate-800/80 rounded-2xl overflow-hidden">
-                        <summary class="flex justify-between items-center p-3 text-xs font-bold text-violet-400 cursor-pointer select-none">
-                            <span>🎯 Eure 4 Lieder vorbereiten 🤫</span>
-                            <i class="fa-solid fa-chevron-down transition-transform group-open:rotate-180"></i>
-                        </summary>
-                        <div class="p-3 space-y-2 border-t border-slate-900">
-                            <p class="text-[10px] text-slate-400 leading-tight mb-2">Tragt hier eure 4 vorbereiteten Lieder ein. Nur die Lehrkraft kann sie auf ihrem Bildschirm sehen!</p>
-                            <input type="text" id="prep-song-1" placeholder="Song 1..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
-                            <input type="text" id="prep-song-2" placeholder="Song 2..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
-                            <input type="text" id="prep-song-3" placeholder="Song 3..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
-                            <input type="text" id="prep-song-4" placeholder="Song 4..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500">
-                            <button onclick="sendPrepSongs()" id="student-send-songs-btn" class="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-2 rounded-xl text-xs active:scale-95 transition-all mt-1">
-                                An Lehrkraft senden 🤫
-                            </button>
-                        </div>
-                    </details>
-                </div>
 
                 <!-- Feedback-Status-Box (auch für Runden-Limiter und Timer genutzt) -->
                 <div id="student-feedback" class="hidden p-3 rounded-xl border text-center text-xs font-semibold"></div>
@@ -755,6 +766,15 @@
                     <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">Stop 🛑</button>
                     <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-1.5 py-0.5 rounded">30s</div>
                 </div>
+
+                <!-- Auto-Sperre: sperrt Eingaben automatisch, sobald der Timer abläuft -->
+                <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px]" title="Sperrt die Schüler-Eingaben automatisch, sobald der Timer abläuft">
+                    <span class="text-slate-300 font-bold flex items-center gap-1"><i class="fa-solid fa-lock text-amber-500"></i> Auto-Sperre:</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="auto-lock-toggle" class="sr-only peer" onchange="saveState()">
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                    </label>
+                </div>
             </div>
             <div class="flex items-center gap-2 w-full xl:w-auto justify-end">
                 <button
@@ -1006,6 +1026,7 @@
                 
                 const autoSortEl = getEl('auto-sort-toggle');
                 const soundEl = getEl('sound-toggle');
+                const autoLockEl = getEl('auto-lock-toggle');
 
                 const saveDataObj = {
                     activeClass: activeClass,
@@ -1013,6 +1034,7 @@
                     teacherPassword: teacherPassword,
                     autoSort: autoSortEl ? autoSortEl.checked : true,
                     soundEnabled: soundEl ? soundEl.checked : true,
+                    autoLockEnabled: autoLockEl ? autoLockEl.checked : false,
                     beamerProtectionActive: beamerProtectionActive,
                     answerHistory: answerHistory
                 };
@@ -1114,6 +1136,8 @@
                         if (autoSortEl) autoSortEl.checked = parsed.autoSort !== false;
                         const soundEl = getEl('sound-toggle');
                         if (soundEl) soundEl.checked = parsed.soundEnabled !== false;
+                        const autoLockEl = getEl('auto-lock-toggle');
+                        if (autoLockEl) autoLockEl.checked = parsed.autoLockEnabled === true;
                         const changePwEl = getEl('change-password-input');
                         if (changePwEl) changePwEl.value = teacherPassword;
                     }
@@ -1539,12 +1563,22 @@
 
             const studentJoinCard = getEl('student-join-card');
             const studentBuzzerCard = getEl('student-buzzer-card');
+            const studentPrepCard = getEl('student-prep-card');
             if (studentJoinCard) studentJoinCard.classList.add('hidden');
-            
+
+            const badgeText = `Verbunden: ${emoji} ${name}`;
             const badge = getEl('student-badge-info');
-            if (badge) badge.innerText = `Verbunden: ${emoji} ${name}`;
-            if (studentBuzzerCard) studentBuzzerCard.classList.remove('hidden');
-            
+            if (badge) badge.innerText = badgeText;
+            const prepBadge = getEl('student-prep-badge-info');
+            if (prepBadge) prepBadge.innerText = badgeText;
+
+            const prepAlreadySent = localStorage.getItem(`prep_songs_sent_${room}`);
+            if (prepAlreadySent) {
+                if (studentBuzzerCard) studentBuzzerCard.classList.remove('hidden');
+            } else {
+                if (studentPrepCard) studentPrepCard.classList.remove('hidden');
+            }
+
             connectStudentControlChannel(room);
             loadStudentPrepSongs(room);
             
@@ -1574,8 +1608,10 @@
             }
             const studentJoinCard = getEl('student-join-card');
             const studentBuzzerCard = getEl('student-buzzer-card');
+            const studentPrepCard = getEl('student-prep-card');
             if (studentJoinCard) studentJoinCard.classList.remove('hidden');
             if (studentBuzzerCard) studentBuzzerCard.classList.add('hidden');
+            if (studentPrepCard) studentPrepCard.classList.add('hidden');
             showToast("Raum verlassen.", "info");
         }
 
@@ -1877,6 +1913,13 @@
                 localStorage.setItem(`prep_songs_sent_${room}`, "true");
                 localStorage.setItem(`prep_songs_data_${room}`, JSON.stringify([s1, s2, s3, s4]));
                 loadStudentPrepSongs(room);
+
+                setTimeout(() => {
+                    const prepCard = getEl('student-prep-card');
+                    const buzzerCard = getEl('student-buzzer-card');
+                    if (prepCard) prepCard.classList.add('hidden');
+                    if (buzzerCard) buzzerCard.classList.remove('hidden');
+                }, 700);
             } catch(e) {
                 showToast("Verbindungsfehler beim Senden des Spickzettels.", "danger");
                 if (btn) {
@@ -2439,6 +2482,11 @@
                     stopTimer();
                     if (display) display.innerText = "Zeit um! ⏰";
                     playSound('down');
+
+                    const autoLockEl = getEl('auto-lock-toggle');
+                    if (autoLockEl && autoLockEl.checked && !roundLocked) {
+                        toggleRoundLock();
+                    }
                 }
             }, 1000);
         }
