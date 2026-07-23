@@ -757,8 +757,17 @@
                 </div>
             </div>
             <div class="flex items-center gap-2 w-full xl:w-auto justify-end">
-                <button 
-                    onclick="prevRound()" 
+                <button
+                    id="round-lock-btn"
+                    onclick="toggleRoundLock()"
+                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
+                    title="Schüler-Eingaben für diese Runde sperren, damit nach dem Aufdecken niemand mehr nachträglich senden kann"
+                >
+                    <i class="fa-solid fa-lock-open"></i>
+                    <span>Sperren</span>
+                </button>
+                <button
+                    onclick="prevRound()"
                     class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1 font-sans"
                     title="Gehe eine Spielrunde zurück"
                 >
@@ -956,10 +965,12 @@
         let isConfettiActive = false;
         let confirmActionCallback = null;
         let scoringUndoStack = []; // Erlaubt beliebig viele +3/+2/+1/0-Wertungen rückgängig zu machen
+        let roundLocked = false; // Sperrt Schüler-Eingaben für die aktuelle Runde (z.B. beim Aufdecken)
         
         // Schüler Runden Synchronisierung Variablen
         let studentCurrentRound = 1;
         let studentJokerActive = false;
+        let studentRoundLocked = false;
         
         // Audio Synthesizer Context (Lazy Loading)
         let audioCtx = null;
@@ -982,13 +993,14 @@
         /* LocalStorage Speicher-Funktionen */
         function saveState() {
             try {
-                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {} };
-                
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
+
                 if (activeClass !== "Standard-Sitzung") {
                     classes[activeClass] = {
                         teams: teams,
                         currentRound: currentRound,
-                        teamSongs: teamSongs
+                        teamSongs: teamSongs,
+                        answerHistory: answerHistory
                     };
                 }
                 
@@ -1023,10 +1035,37 @@
                 await window.fbSet(window.fbRef(window.fbDb, `rooms/${roomCode}/control`), {
                     round: currentRound,
                     timer: timerSeconds,
-                    jokersUsed: jokersUsed
+                    jokersUsed: jokersUsed,
+                    locked: roundLocked
                 });
             } catch(e) {
                 console.error("Fehler beim Senden des Updates:", e);
+            }
+        }
+
+        /* Sperrt/entsperrt Schüler-Eingaben für die aktuelle Runde (z.B. bevor man Antworten aufdeckt) */
+        function toggleRoundLock() {
+            roundLocked = !roundLocked;
+            updateLockButtonUI();
+            broadcastControlState();
+            showToast(
+                roundLocked
+                    ? `🔒 Eingaben für Runde ${currentRound} gesperrt - niemand kann mehr senden.`
+                    : `🔓 Eingaben wieder freigegeben.`,
+                roundLocked ? "danger" : "success"
+            );
+            playSound(roundLocked ? 'down' : 'up');
+        }
+
+        function updateLockButtonUI() {
+            const btn = getEl('round-lock-btn');
+            if (!btn) return;
+            if (roundLocked) {
+                btn.innerHTML = `<i class="fa-solid fa-lock"></i> <span>Entsperren</span>`;
+                btn.className = "bg-rose-600 hover:bg-rose-500 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans";
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-lock-open"></i> <span>Sperren</span>`;
+                btn.className = "bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans";
             }
         }
 
@@ -1086,16 +1125,17 @@
                     answerHistory = [];
                 }
 
-                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {} };
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
 
                 if (!classes[activeClass]) {
-                    classes[activeClass] = { teams: [], currentRound: 1, teamSongs: {} };
+                    classes[activeClass] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
                 }
 
                 const currentData = classes[activeClass];
                 teams = currentData.teams || [];
                 currentRound = currentData.currentRound || 1;
                 teamSongs = currentData.teamSongs || {};
+                answerHistory = currentData.answerHistory || [];
 
                 teams.forEach(t => {
                     t.activeThisRound = false;
@@ -1324,8 +1364,38 @@
                     if (payload.timer !== undefined) {
                         updateStudentTimer(payload.timer);
                     }
+                    // Zuletzt prüfen: eine aktive Sperre hat immer das letzte Wort,
+                    // auch wenn Runde/Timer den Button gerade erst wieder freigegeben hätten.
+                    updateStudentLockState(payload.locked === true);
                 }
             });
+        }
+
+        /* Erzwingt eine gesperrte Eingabe auf dem Schülergerät (z.B. während die Lehrkraft aufdeckt) */
+        function updateStudentLockState(locked) {
+            studentRoundLocked = locked;
+            if (!locked) return; // Freigabe übernehmen updateStudentRound/updateStudentTimer bereits selbst
+
+            const room = localStorage.getItem('student_room_code');
+            const lastSubmitted = localStorage.getItem(`last_sub_round_${room}`);
+            const alreadySubmitted = lastSubmitted && parseInt(lastSubmitted) === studentCurrentRound;
+            if (alreadySubmitted) return;
+
+            const btn = getEl('student-submit-btn');
+            const textarea = getEl('student-answer-input');
+            const feedback = getEl('student-feedback');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-lock"></i> Eingabe gesperrt`;
+                btn.className = "w-full bg-slate-800 border border-slate-700 text-slate-400 font-bold py-4 rounded-2xl cursor-not-allowed text-sm flex items-center justify-center gap-2";
+            }
+            if (textarea) textarea.disabled = true;
+            if (feedback) {
+                feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-slate-800/60 border-slate-700 text-slate-300";
+                feedback.innerHTML = `<i class="fa-solid fa-lock text-slate-400"></i> Die Lehrkraft hat die Eingabe für diese Runde gesperrt.`;
+                feedback.classList.remove('hidden');
+            }
         }
 
         /* Rundenzustand & JOKER-SYNC auf dem Schülergerät anwenden */
@@ -1531,6 +1601,11 @@
 
             if (!answer) {
                 showToast("Deine Antwort ist leer!", "danger");
+                return;
+            }
+
+            if (studentRoundLocked) {
+                showToast("Die Eingabe ist für diese Runde gesperrt.", "danger");
                 return;
             }
 
@@ -2521,20 +2596,24 @@
             activeClass = event.target.value;
             
             if (activeClass === "Standard-Sitzung") {
-                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {} };
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
                 answerHistory = []; // Verlauf für Standard-Sitzung leeren!
             }
 
-            const targetData = classes[activeClass] || { teams: [], currentRound: 1, teamSongs: {} };
+            const targetData = classes[activeClass] || { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
             teams = targetData.teams || [];
             currentRound = targetData.currentRound || 1;
             teamSongs = targetData.teamSongs || {};
-            
+            answerHistory = targetData.answerHistory || [];
+
             teams.forEach(t => {
                 t.activeThisRound = false;
                 t.pendingPoints = 0;
             });
-            
+
+            roundLocked = false;
+            updateLockButtonUI();
+
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
             const managerRoundDisplay = getEl('manager-round-display');
@@ -2567,7 +2646,8 @@
                 classes[className] = {
                     teams: activeClass === 'Standard-Sitzung' ? [...teams] : [],
                     currentRound: activeClass === 'Standard-Sitzung' ? currentRound : 1,
-                    teamSongs: activeClass === 'Standard-Sitzung' ? { ...teamSongs } : {}
+                    teamSongs: activeClass === 'Standard-Sitzung' ? { ...teamSongs } : {},
+                    answerHistory: activeClass === 'Standard-Sitzung' ? [...answerHistory] : []
                 };
             }
 
@@ -2576,11 +2656,15 @@
             teams = targetData.teams || [];
             currentRound = targetData.currentRound || 1;
             teamSongs = targetData.teamSongs || {};
+            answerHistory = targetData.answerHistory || [];
 
             teams.forEach(t => {
                 t.activeThisRound = false;
                 t.pendingPoints = 0;
             });
+
+            roundLocked = false;
+            updateLockButtonUI();
 
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
@@ -2608,18 +2692,20 @@
                 function() {
                     delete classes[activeClass];
                     activeClass = 'Standard-Sitzung';
-                    classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {} };
-                    
+                    classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
+
                     const targetData = classes[activeClass];
                     teams = targetData.teams;
                     currentRound = targetData.currentRound;
                     teamSongs = targetData.teamSongs || {};
-                    
+                    answerHistory = targetData.answerHistory || [];
+
                     saveState();
                     updateClassDropdown();
                     updateActiveBadge();
                     renderScoreboard();
                     renderTeamSongsList();
+                    renderHistoryArchive();
                     showToast("Klasse wurde gelöscht. Zurück zur Standard-Sitzung.", "info");
                 }
             );
@@ -2834,6 +2920,10 @@
 
             // Nach dem Rundenwechsel sind Punkte final vergeben - Rückgängig-Verlauf leeren
             scoringUndoStack = [];
+
+            // Neue Runde startet immer wieder entsperrt
+            roundLocked = false;
+            updateLockButtonUI();
 
             const activeTeams = teams.filter(t => t.activeThisRound);
             const roundGains = [];
@@ -3280,13 +3370,16 @@
             classes[activeClass] = {
                 teams: [],
                 currentRound: 1,
-                teamSongs: {}
+                teamSongs: {},
+                answerHistory: []
             };
-            
+
             teamSongs = {};
             answerHistory = []; // Verlauf bei Reset komplett löschen!
             incomingAnswers = [];
             scoringUndoStack = [];
+            roundLocked = false;
+            updateLockButtonUI();
             beamerProtectionActive = true; // Neue Sitzung startet immer verdeckt
 
             saveState();
