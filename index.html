@@ -160,6 +160,11 @@
             color: #94a3b8 !important;
             opacity: 1;
         }
+        /* Eingegebener Text in Eingabefeldern (ursprünglich weiß auf dunklem Grund) muss auf dem jetzt hellen Feld lesbar bleiben */
+        html[data-theme="light"] input.text-white,
+        html[data-theme="light"] textarea.text-white {
+            color: #0f172a !important;
+        }
 
         /* Pastellige Akzenttextfarben auf Weiß abdunkeln, damit sie lesbar bleiben */
         html[data-theme="light"] .text-violet-200,
