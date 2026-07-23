@@ -684,6 +684,19 @@
                     </div>
                 </div>
 
+                <!-- Backup: Spielstände geräteübergreifend als Datei sichern/laden -->
+                <div class="border-t border-slate-700/40 pt-1.5 space-y-1">
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button onclick="exportBackupFile()" class="bg-slate-900/60 hover:bg-slate-900 border border-slate-700/50 text-slate-300 font-bold py-1 rounded-lg text-[10px] transition-all font-sans" title="Alle Klassen als Datei herunterladen, um sie auf einem anderen Gerät/Browser zu laden">
+                            <i class="fa-solid fa-download"></i> Sichern als Datei
+                        </button>
+                        <button onclick="triggerImportBackupFile()" class="bg-slate-900/60 hover:bg-slate-900 border border-slate-700/50 text-slate-300 font-bold py-1 rounded-lg text-[10px] transition-all font-sans" title="Zuvor gesicherte Datei laden">
+                            <i class="fa-solid fa-upload"></i> Datei laden
+                        </button>
+                        <input type="file" id="backup-file-input" accept="application/json" class="hidden" onchange="handleImportBackupFile(event)">
+                    </div>
+                </div>
+
                 <!-- Passwort ändern Bereich -->
                 <div class="border-t border-slate-700/40 pt-1.5 space-y-1">
                     <div class="flex gap-1.5 items-center justify-between font-medium">
@@ -1048,6 +1061,69 @@
             } catch (err) {
                 console.error("Fehler beim Speichern des Zustands:", err);
             }
+        }
+
+        /* Spielstand als Datei sichern (localStorage ist pro Browser/Gerät getrennt - so lässt sich der Stand übertragen) */
+        function exportBackupFile() {
+            saveState();
+            const raw = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys');
+            if (!raw) {
+                showToast("Kein Spielstand zum Sichern gefunden.", "danger");
+                return;
+            }
+            const blob = new Blob([raw], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const dateStr = new Date().toISOString().slice(0, 10);
+            a.href = url;
+            a.download = `musik-quiz-backup-${dateStr}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            showToast("Spielstand als Datei gesichert! 💾", "success");
+        }
+
+        function triggerImportBackupFile() {
+            const input = getEl('backup-file-input');
+            if (input) input.click();
+        }
+
+        function handleImportBackupFile(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                let parsed;
+                try {
+                    parsed = JSON.parse(e.target.result);
+                } catch (err) {
+                    showToast("Datei konnte nicht gelesen werden - ist es eine gültige Sicherungsdatei?", "danger");
+                    event.target.value = '';
+                    return;
+                }
+
+                if (!parsed || typeof parsed.classes !== 'object') {
+                    showToast("Diese Datei enthält keinen gültigen Spielstand.", "danger");
+                    event.target.value = '';
+                    return;
+                }
+
+                const importedClassNames = Object.keys(parsed.classes).filter(name => name !== "Standard-Sitzung");
+                showCustomConfirm(
+                    "Spielstand importieren?",
+                    `${importedClassNames.length} Klasse(n) aus der Datei gefunden${importedClassNames.length ? ' (' + importedClassNames.join(', ') + ')' : ''}. Sie werden zu deinen bestehenden Klassen hier hinzugefügt bzw. überschreiben gleichnamige Klassen. Fortfahren?`,
+                    function() {
+                        classes = Object.assign({}, classes, parsed.classes);
+                        saveState();
+                        showToast("Spielstand erfolgreich importiert!", "success");
+                        location.reload();
+                    }
+                );
+                event.target.value = '';
+            };
+            reader.readAsText(file);
         }
 
         /* Rundenwechsel/Timer-Synchronisierung auf die Schüler-iPads (über Firebase) */
