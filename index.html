@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>greenboys Scoreboard 🏆</title>
-    <!-- Tailwind CSS für modernes UI -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS (statisch vorgeneriert - schneller Start, kein CDN nötig).
+         WICHTIG: Nach Änderungen mit NEUEN Tailwind-Klassen muss tailwind.css
+         neu erzeugt werden - siehe build-css.sh -->
+    <link rel="stylesheet" href="tailwind.css">
     <!-- FontAwesome für Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Lokale QR-Code-Bibliothek (kein externer Dienst nötig - funktioniert auch bei striktem Schul-WLAN) -->
+    <script src="qrcode.min.js"></script>
     <!-- Google Fonts: Comfortaa & DM Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,6 +27,14 @@
             font-family: 'Comfortaa', sans-serif;
         }
         
+        /* Lokal erzeugter QR-Code: in doppelter Auflösung gerendert (scharf auf dem
+           Beamer), hier auf die Anzeigegröße der weißen Box herunterskaliert */
+        #qr-code-container img,
+        #qr-code-container canvas {
+            width: 160px;
+            height: 160px;
+        }
+
         /* Sanfter Puls-Effekt für das aktuell führende Team */
         @keyframes pulse-gold {
             0%, 100% { border-color: rgba(250, 204, 21, 0.4); box-shadow: 0 0 12px rgba(250, 204, 21, 0.2); }
@@ -363,7 +375,7 @@
         <div id="student-prep-card" class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 hidden font-sans">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2">
                 <div class="flex items-center gap-2 flex-wrap">
-                    <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="student-prep-conn-dot" class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span id="student-prep-badge-info" class="text-xs font-bold text-slate-300">Verbunden: </span>
                 </div>
                 <button
@@ -394,7 +406,7 @@
         <div id="student-buzzer-card" class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 hidden font-sans">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2">
                 <div class="flex items-center gap-2 flex-wrap">
-                    <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="student-conn-dot" class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span id="student-badge-info" class="text-xs font-bold text-slate-300">Verbunden: </span>
                     <span id="student-round-badge" class="hidden text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30 px-2.5 py-0.5 rounded-full">Runde -</span>
                 </div>
@@ -746,7 +758,7 @@
         <!-- ========================================== -->
         <div id="qr-code-panel" class="hidden bg-slate-900/90 border-2 border-violet-500/50 rounded-2xl p-4 mb-4 backdrop-blur-md transition-all grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
             <div class="md:col-span-3 flex justify-center bg-white p-3 rounded-xl shadow-lg border border-slate-700">
-                <img id="qr-code-img" src="" alt="iPad Connection QR Code" class="w-40 h-40 object-contain">
+                <div id="qr-code-container" class="w-40 h-40 flex items-center justify-center" title="QR-Code zum Beitreten"></div>
             </div>
             <div class="md:col-span-9 space-y-2">
                 <h4 class="text-base font-black text-violet-400 flex items-center gap-2">
@@ -792,6 +804,12 @@
                         <input type="checkbox" id="auto-lock-toggle" class="sr-only peer" onchange="saveState()">
                         <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
                     </label>
+                </div>
+
+                <!-- Antwort-Zähler: Wie viele Teams haben diese Runde schon geantwortet? -->
+                <div id="answer-counter" class="hidden items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px]" title="Wie viele Teams haben in dieser Runde schon geantwortet? Präsentierende Teams (🎤) zählen nicht mit.">
+                    <span class="text-slate-300 font-bold flex items-center gap-1"><i class="fa-solid fa-comment-dots text-emerald-500"></i> Antworten:</span>
+                    <span id="answer-counter-value" class="font-black text-xs text-slate-100">0/0</span>
                 </div>
             </div>
             <div class="flex items-center gap-2 w-full xl:w-auto justify-end">
@@ -951,7 +969,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
         import {
             getDatabase, ref, push, set, onValue, onChildAdded,
-            query, orderByChild, startAfter
+            query, orderByChild, startAfter, serverTimestamp, remove
         } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -978,6 +996,13 @@
         window.fbQuery = query;
         window.fbOrderByChild = orderByChild;
         window.fbStartAfter = startAfter;
+        window.fbServerTimestamp = serverTimestamp;
+        window.fbRemove = remove;
+
+        // Signal an das Hauptskript: Firebase ist bereit (Module laden nach dem Hauptskript)
+        if (typeof window.initFirebaseWatchers === 'function') {
+            window.initFirebaseWatchers();
+        }
     </script>
 
     <!-- ========================================== -->
@@ -1669,7 +1694,7 @@
                     action: "join",
                     team: name,
                     emoji: emoji,
-                    timestamp: Date.now()
+                    timestamp: window.fbServerTimestamp()
                 });
             } catch(e) {
                 console.error("Fehler beim Senden des Beitritts-Signals:", e);
@@ -1738,10 +1763,10 @@
                     answer: answer,
                     joker: studentJokerActive,
                     time: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-                    timestamp: Date.now()
+                    timestamp: window.fbServerTimestamp()
                 };
 
-                await window.fbPush(window.fbRef(window.fbDb, `rooms/${room}/messages`), payload);
+                await fbPushWithTimeout(`rooms/${room}/messages`, payload);
 
                 localStorage.setItem(`last_sub_round_${room}`, studentCurrentRound);
 
@@ -1763,7 +1788,11 @@
                 playSound('up');
             } catch (err) {
                 console.error(err);
-                showToast("Fehler bei der Verbindung. Bitte erneut versuchen!", "danger");
+                if (err && err.message === 'timeout') {
+                    showToast("⚠️ Keine Verbindung zum Quiz-Server – bitte WLAN prüfen und erneut senden!", "danger");
+                } else {
+                    showToast("Fehler bei der Verbindung. Bitte erneut versuchen!", "danger");
+                }
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Antwort abschicken! 🚀</span>`;
@@ -1806,7 +1835,76 @@
         // Sorgt dafür, dass bei jedem (Wieder-)Verbinden nur Nachrichten ab dem letzten bekannten
         // Zeitpunkt verarbeitet werden - alte Historie von früheren Tagen mit demselben Raum-Code
         // wird so nicht erneut abgespielt, aber bei einem echten Reconnect geht nichts verloren.
-        let fbLastMessageTimestamp = Date.now();
+        let fbLastMessageTimestamp = 0;
+        let fbBoundaryInitialized = false; // Empfangsgrenze wird beim ersten Verbinden auf Server-Zeit gesetzt
+        let fbServerTimeOffset = 0;        // Differenz Gerätezeit <-> Firebase-Serverzeit (gegen falsch gehende Uhren)
+        let fbConnected = null;            // null = noch unbekannt (Seitenstart)
+        let liveRoomCode = null;           // Aktiver Live-Raum der Lehrkraft
+
+        /* Wird vom Firebase-Modul aufgerufen, sobald die SDK-Helfer bereitstehen */
+        window.initFirebaseWatchers = function() {
+            try {
+                // Serverzeit-Differenz beobachten: Nachrichten-Zeitstempel kommen vom Server,
+                // also muss auch unsere Empfangsgrenze auf Server-Zeit basieren.
+                window.fbOnValue(window.fbRef(window.fbDb, '.info/serverTimeOffset'), (snap) => {
+                    fbServerTimeOffset = snap.val() || 0;
+                });
+
+                // Live-Verbindungsstatus beobachten (Ampel für Lehrkraft & Schüler)
+                window.fbOnValue(window.fbRef(window.fbDb, '.info/connected'), (snap) => {
+                    const connected = snap.val() === true;
+                    const previous = fbConnected;
+                    fbConnected = connected;
+                    updateConnectionIndicators(connected, previous);
+                });
+            } catch (e) {
+                console.error("Firebase-Watcher konnten nicht gestartet werden:", e);
+            }
+        };
+
+        /* Zeigt Verbindungsverlust/-wiederkehr auf Lehrer- und Schülerseite an */
+        function updateConnectionIndicators(connected, previous) {
+            // Lehrerseite: Statuszeile im Raum-Manager
+            const statusDiv = getEl('connection-status');
+            if (statusDiv && liveRoomCode) {
+                if (!connected) {
+                    statusDiv.innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse"></span> <span class="text-rose-300 font-bold">Verbindung unterbrochen – verbinde neu...</span>`;
+                } else {
+                    statusDiv.innerHTML = `<span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping"></span> Live-Empfang aktiv (Raum: ${liveRoomCode.toUpperCase()})`;
+                }
+            }
+
+            // Schülerseite: grüner/roter Punkt in der Kopfzeile von Buzzer- und Vorbereitungs-Karte
+            const studentDots = [getEl('student-conn-dot'), getEl('student-prep-conn-dot')];
+            studentDots.forEach(dot => {
+                if (!dot) return;
+                dot.className = connected
+                    ? "h-2 w-2 rounded-full bg-emerald-500 animate-pulse"
+                    : "h-2 w-2 rounded-full bg-rose-500 animate-pulse";
+                dot.title = connected ? "Verbunden" : "Keine Verbindung!";
+            });
+
+            // Toast nur bei echten Übergängen zeigen (nicht beim Seitenstart)
+            if (previous !== null && previous !== connected) {
+                const inRoom = liveRoomCode || localStorage.getItem('student_room_code');
+                if (inRoom) {
+                    if (!connected) {
+                        showToast("⚠️ Verbindung zum Quiz-Server verloren!", "danger");
+                    } else {
+                        showToast("✅ Verbindung wiederhergestellt!", "success");
+                    }
+                }
+            }
+        }
+
+        /* fbPush mit Zeitlimit: verhindert endloses Warten, wenn das WLAN gerade weg ist */
+        function fbPushWithTimeout(path, payload, timeoutMs = 8000) {
+            const pushPromise = window.fbPush(window.fbRef(window.fbDb, path), payload);
+            return Promise.race([
+                pushPromise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs))
+            ]);
+        }
         let fbUnsubscribeMessages = null;
 
         function connectLiveRoom() {
@@ -1823,10 +1921,18 @@
             }
 
             activateClassForRoom(roomCode);
+            liveRoomCode = roomCode;
 
             if (fbUnsubscribeMessages) {
                 fbUnsubscribeMessages();
                 fbUnsubscribeMessages = null;
+            }
+
+            // Empfangsgrenze einmalig auf die SERVER-Zeit setzen: So gehen keine Antworten
+            // verloren, wenn die Uhr des Lehrergeräts oder eines iPads falsch geht.
+            if (!fbBoundaryInitialized) {
+                fbLastMessageTimestamp = Date.now() + fbServerTimeOffset;
+                fbBoundaryInitialized = true;
             }
 
             const statusDiv = getEl('connection-status');
@@ -1982,10 +2088,10 @@
                     action: "secret_songs",
                     team: name,
                     songs: [s1, s2, s3, s4],
-                    timestamp: Date.now()
+                    timestamp: window.fbServerTimestamp()
                 };
 
-                await window.fbPush(window.fbRef(window.fbDb, `rooms/${room}/messages`), payload);
+                await fbPushWithTimeout(`rooms/${room}/messages`, payload);
 
                 showToast("Dein Spickzettel wurde heimlich gesendet! 🤫", "success");
                 btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Gesendet! 🤫`;
@@ -2002,7 +2108,11 @@
                     if (buzzerCard) buzzerCard.classList.remove('hidden');
                 }, 700);
             } catch(e) {
-                showToast("Verbindungsfehler beim Senden des Spickzettels.", "danger");
+                if (e && e.message === 'timeout') {
+                    showToast("⚠️ Keine Verbindung zum Quiz-Server – bitte WLAN prüfen und erneut senden!", "danger");
+                } else {
+                    showToast("Verbindungsfehler beim Senden des Spickzettels.", "danger");
+                }
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = "An Lehrkraft senden 🤫";
@@ -2026,7 +2136,7 @@
                     action: "reaction",
                     team: name,
                     emoji: emoji,
-                    timestamp: Date.now()
+                    timestamp: window.fbServerTimestamp()
                 });
             } catch (e) {
                 // Reaktionen sind unkritisch - Fehler einfach ignorieren
@@ -2148,7 +2258,39 @@
             showToast(beamerProtectionActive ? "Sichtschutz aktiv (Teams & Antworten verdeckt)" : "Sichtschutz deaktiviert (Alles aufgedeckt)", "info");
         }
 
+        /* Zählt, wie viele Teams in der aktuellen Runde schon geantwortet haben
+           (live wartende + bereits bewertete Antworten; 🎤-Präsentator zählt nicht mit) */
+        function updateAnswerCounter() {
+            const box = getEl('answer-counter');
+            const valueEl = getEl('answer-counter-value');
+            if (!box || !valueEl) return;
+
+            if (teams.length === 0) {
+                box.classList.add('hidden');
+                box.classList.remove('flex');
+                return;
+            }
+            box.classList.remove('hidden');
+            box.classList.add('flex');
+
+            const presenterNames = new Set(teams.filter(t => t.presenting).map(t => t.name.toLowerCase()));
+            const expected = teams.length - presenterNames.size;
+
+            const answered = new Set();
+            incomingAnswers.forEach(a => { if (a.team) answered.add(a.team.toLowerCase()); });
+            answerHistory.forEach(h => { if (h.round === currentRound && h.teamName) answered.add(h.teamName.toLowerCase()); });
+            presenterNames.forEach(n => answered.delete(n));
+
+            const count = answered.size;
+            valueEl.innerText = `${count}/${expected}`;
+            valueEl.className = (expected > 0 && count >= expected)
+                ? "font-black text-xs text-emerald-400"
+                : "font-black text-xs text-slate-100";
+        }
+
         function renderIncomingAnswersList() {
+            updateAnswerCounter();
+
             const list = getEl('live-answers-list');
             const emptyDiv = getEl('live-answers-empty');
 
@@ -2614,11 +2756,11 @@
 
         /* QR-Code Generator */
         function generateQRCode() {
-            const qrImg = getEl('qr-code-img');
+            const qrContainer = getEl('qr-code-container');
             const customUrlInput = getEl('custom-url-input');
             const roomCodeInput = getEl('room-code-input');
             const roomCode = roomCodeInput ? roomCodeInput.value.trim().toLowerCase() : "7c";
-            
+
             const qrRoomDisplay = getEl('qr-room-code-display');
             if (qrRoomDisplay) qrRoomDisplay.innerText = roomCode.toUpperCase();
 
@@ -2628,7 +2770,17 @@
             }
 
             const finalUrl = `${targetUrl}?role=student&room=${roomCode}`;
-            if (qrImg) qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(finalUrl)}`;
+            // Wird lokal im Browser erzeugt (statt über einen externen Web-Dienst) -
+            // funktioniert damit auch, wenn das Schul-WLAN externe Seiten blockiert.
+            if (qrContainer && typeof QRCode !== 'undefined') {
+                qrContainer.innerHTML = '';
+                new QRCode(qrContainer, {
+                    text: finalUrl,
+                    width: 320,
+                    height: 320,
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            }
         }
 
         function toggleQRCodePanel() {
@@ -2961,9 +3113,38 @@
         }
 
         /* TEAM INTERAKTIONEN UND PUNKT-REGELUNG */
+        /* 🎤 Präsentier-Modus: Das Team stellt gerade seine Songs vor - es wird ausgegraut,
+           kann keine Punkte bekommen und zählt nicht beim Antwort-Zähler mit.
+           Bleibt über Rundenwechsel hinweg aktiv (Teams präsentieren mehrere Songs),
+           bis die Lehrkraft es manuell umschaltet oder eine neue Sitzung startet. */
+        function toggleTeamPresenter(id) {
+            const team = teams.find(t => t.id === id);
+            if (!team) return;
+
+            if (team.presenting) {
+                team.presenting = false;
+                showToast(`🎤 "${team.name}" präsentiert nicht mehr - rät wieder mit!`, "info");
+            } else {
+                // Exklusiv: Es kann immer nur ein Team gleichzeitig präsentieren
+                teams.forEach(t => { t.presenting = false; });
+                team.presenting = true;
+                // Ein präsentierendes Team kann in dieser Runde keine Punkte vorgemerkt haben
+                team.activeThisRound = false;
+                team.pendingPoints = 0;
+                showToast(`🎤 "${team.name}" präsentiert jetzt und zählt nicht bei den Antworten mit.`, "info");
+            }
+            playSound('up');
+            saveState();
+            renderScoreboard();
+        }
+
         function toggleTeamActive(id) {
             const team = teams.find(t => t.id === id);
             if (team) {
+                if (team.presenting) {
+                    showToast(`🎤 "${team.name}" präsentiert gerade und kann keine Punkte bekommen.`, "info");
+                    return;
+                }
                 team.activeThisRound = !team.activeThisRound;
                 if (team.activeThisRound) {
                     team.pendingPoints = 1; // Standardmäßig +1 bei Namensklick
@@ -2980,6 +3161,10 @@
         function setPendingRoundPoints(id, points) {
             const team = teams.find(t => t.id === id);
             if (team) {
+                if (team.presenting) {
+                    showToast(`🎤 "${team.name}" präsentiert gerade und kann keine Punkte bekommen.`, "info");
+                    return;
+                }
                 if (team.activeThisRound && team.pendingPoints === points) {
                     team.activeThisRound = false;
                     team.pendingPoints = 0;
@@ -3008,6 +3193,7 @@
             if (teams.length === 0) return;
             const anyActive = teams.some(t => t.activeThisRound);
             teams.forEach(t => {
+                if (t.presenting) return; // Präsentierendes Team wird übersprungen
                 t.activeThisRound = !anyActive;
                 t.pendingPoints = !anyActive ? 1 : 0;
             });
@@ -3072,10 +3258,11 @@
             });
 
             // Joker Misserfolg & Streak Zurücksetzen
+            // (Das präsentierende Team wird verschont: Es KONNTE ja nicht mitraten.)
             teams.forEach(t => {
-                if (!t.activeThisRound) {
+                if (!t.activeThisRound && !t.presenting) {
                     t.streak = 0; // Streak gerissen!
-                    
+
                     // JOKER-LOGIC: Bei Fehler oder Ausbleiben verliert das Team 1 Punkt
                     if (t.jokerActiveThisRound) {
                         t.score = Math.max(0, t.score - 1);
@@ -3143,8 +3330,10 @@
         function renderScoreboard() {
             const container = getEl('scoreboard-container');
             const emptyState = getEl('empty-state');
-            
+
             if (!container) return;
+
+            updateAnswerCounter();
 
             // FLIP Animation: Vorherige Positionen sichern
             const cards = container.querySelectorAll('[data-team-id]');
@@ -3184,7 +3373,14 @@
                 let borderStyle = 'border-slate-800/80 bg-slate-900/40 hover:bg-slate-800/40 hover:border-slate-700/60';
                 let cardOverlay = '';
 
-                if (isSelected) {
+                if (team.presenting) {
+                    borderStyle = 'border-violet-500/60 bg-slate-900/20 opacity-60';
+                    cardOverlay = `
+                        <div class="absolute top-2 left-2 bg-violet-600 text-white rounded-full px-1.5 h-5 flex items-center justify-center text-[10px] font-black shadow">
+                            🎤
+                        </div>
+                    `;
+                } else if (isSelected) {
                     borderStyle = 'border-emerald-500 bg-emerald-950/60 shadow-lg shadow-emerald-900/30 ring-2 ring-emerald-500/20';
                     cardOverlay = `
                         <div class="absolute top-2 left-2 bg-emerald-500 text-slate-950 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black shadow animate-bounce">
@@ -3214,7 +3410,12 @@
 
                 // Joker Statusanzeige auf dem Lehrerboard
                 let jokerCardBadge = '';
-                if (team.jokerActiveThisRound) {
+                if (team.presenting) {
+                    jokerCardBadge = `
+                        <div class="bg-violet-500/20 text-violet-300 border border-violet-500/40 text-[9px] font-black px-1.5 py-0.5 rounded text-center mt-1">
+                            <i class="fa-solid fa-microphone"></i> PRÄSENTIERT GERADE
+                        </div>`;
+                } else if (team.jokerActiveThisRound) {
                     jokerCardBadge = `
                         <div class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black px-1.5 py-0.5 rounded animate-pulse text-center mt-1">
                             <i class="fa-solid fa-masks-theater"></i> JOKER AKTIV (Doppelt / Risiko!)
@@ -3235,13 +3436,22 @@
                     <div class="flex items-start justify-between gap-1 font-sans">
                         <span class="text-[10px] text-slate-500 font-bold tracking-wider flex items-center gap-1">PLATZ ${index + 1} ${rankChangeBadge}</span>
                         ${streakBadge}
-                        <button 
-                            onclick="event.stopPropagation(); deleteTeam('${team.id}')" 
-                            class="text-slate-500 hover:text-rose-400 p-1 rounded transition-all font-sans"
-                            title="Team entfernen"
-                        >
-                            <i class="fa-solid fa-trash-can text-[11px]"></i>
-                        </button>
+                        <div class="flex items-center gap-0.5">
+                            <button
+                                onclick="event.stopPropagation(); toggleTeamPresenter('${team.id}')"
+                                class="${team.presenting ? 'bg-violet-600 text-white shadow' : 'text-slate-500 hover:text-violet-400'} p-1 rounded transition-all font-sans"
+                                title="${team.presenting ? 'Präsentier-Modus beenden - Team rät wieder mit' : 'Team präsentiert gerade seine Songs (wird ausgegraut und zählt nicht bei den Antworten mit)'}"
+                            >
+                                <i class="fa-solid fa-microphone text-[11px]"></i>
+                            </button>
+                            <button
+                                onclick="event.stopPropagation(); deleteTeam('${team.id}')"
+                                class="text-slate-500 hover:text-rose-400 p-1 rounded transition-all font-sans"
+                                title="Team entfernen"
+                            >
+                                <i class="fa-solid fa-trash-can text-[11px]"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="text-center flex-grow flex flex-col justify-center">
@@ -3510,6 +3720,18 @@
             roundLocked = false;
             updateLockButtonUI();
             beamerProtectionActive = true; // Neue Sitzung startet immer verdeckt
+
+            // Alte Nachrichten des Raums in Firebase mitlöschen, damit dort nichts
+            // unbegrenzt anwächst (Antworten/Beitritte/Spickzettel vergangener Sitzungen).
+            const resetRoomInput = getEl('room-code-input');
+            const resetRoomCode = resetRoomInput ? resetRoomInput.value.trim().toLowerCase() : "";
+            if (resetRoomCode && window.fbRemove) {
+                try {
+                    window.fbRemove(window.fbRef(window.fbDb, `rooms/${resetRoomCode}/messages`));
+                } catch (e) {
+                    console.error("Firebase-Raum konnte nicht aufgeräumt werden:", e);
+                }
+            }
 
             saveState();
             closeModal();
