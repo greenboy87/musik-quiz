@@ -1302,7 +1302,12 @@
                 renderTeamSongsList();
                 
                 const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get('role') === 'teacher') {
+                if (urlParams.get('k')) {
+                    // Geheimer Direktlink: Prüfung passiert asynchron, daher erst
+                    // die Schüleransicht zeigen und bei Erfolg umschalten.
+                    switchView('student');
+                    checkSecretTeacherLink(urlParams.get('k'));
+                } else if (urlParams.get('role') === 'teacher') {
                     promptTeacherLogin();
                 } else {
                     switchView('student');
@@ -1398,6 +1403,35 @@
             if (modal) modal.classList.add('hidden');
             if (modal) modal.classList.remove('flex');
             if (input) input.value = '';
+        }
+
+        /* Geheimer Direktlink für die Lehrkraft (?k=...).
+           Im Code steht bewusst NUR der SHA-256-Prüfwert des Schlüssels - aus ihm
+           lässt sich der Link nicht zurückrechnen. Wer den Quelltext der Seite liest
+           (z.B. neugierige Schüler), findet also kein verwertbares Geheimnis. */
+        const TEACHER_LINK_HASH = "ed72a341207f14218d8f127327fb83b94238fda3030e0e07bce3d5e2c2b7d327";
+
+        async function checkSecretTeacherLink(token) {
+            try {
+                if (!window.crypto || !window.crypto.subtle) return; // Nur über HTTPS verfügbar
+                const bytes = new TextEncoder().encode(token);
+                const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+                const hash = Array.from(new Uint8Array(digest))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+
+                if (hash !== TEACHER_LINK_HASH) return; // Falscher Schlüssel: stillschweigend ignorieren
+
+                // Schlüssel sofort aus der Adresszeile entfernen, damit er nicht
+                // am Beamer sichtbar bleibt oder versehentlich abgeschrieben wird.
+                const cleanUrl = window.location.pathname + window.location.hash;
+                window.history.replaceState({}, document.title, cleanUrl);
+
+                switchView('teacher');
+                showToast("Über geheimen Link eingeloggt! 🔑", "success");
+            } catch (e) {
+                console.error("Geheimer Link konnte nicht geprüft werden:", e);
+            }
         }
 
         function checkTeacherPassword() {
