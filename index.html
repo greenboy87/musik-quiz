@@ -2078,6 +2078,18 @@
             incomingAnswers.push(answerObj);
             incomingAnswers.sort((a, b) => a.timestamp - b.timestamp);
 
+            // Wer mit Joker abgibt, hat das Risiko genommen - auch wenn die Antwort
+            // am Ende verworfen statt mit "0" gewertet wird (z.B. im verdeckten Modus,
+            // wo nur der Papierkorb zur Verfügung steht).
+            if (answerObj.joker) {
+                const jokerTeam = teams.find(t => t.name.toLowerCase() === String(answerObj.team).toLowerCase());
+                if (jokerTeam && !jokerTeam.jokerActiveThisRound) {
+                    jokerTeam.jokerActiveThisRound = true;
+                    saveState();
+                    renderScoreboard();
+                }
+            }
+
             renderIncomingAnswersList();
             playSound('up');
         }
@@ -2744,7 +2756,7 @@
                 card.innerHTML = `
                     <div class="flex justify-between items-center font-bold border-b border-slate-800 pb-1">
                         <span class="text-slate-200 flex items-center gap-1.5">
-                            <span>${item.emoji || '🎵'}</span>
+                            <span>${escapeHtml(item.emoji || '🎵')}</span>
                             <span class="truncate max-w-[90px]">${escapeHtml(item.teamName)}</span>
                         </span>
                         <span class="${pointsColor} font-sans font-bold">${pointsPrefix}${item.points} Pkt${jokerLabel}</span>
@@ -3804,7 +3816,7 @@
                 const col = document.createElement('div');
                 col.className = "flex flex-col items-center gap-1.5 flex-1 max-w-[180px] animate-scaleIn";
                 col.innerHTML = `
-                    <div class="${style.emojiSize}">${team.emoji || '🎵'}</div>
+                    <div class="${style.emojiSize}">${escapeHtml(team.emoji || '🎵')}</div>
                     <div class="font-black ${style.textSize} text-white truncate max-w-full px-1">${escapeHtml(team.name)}</div>
                     <div class="font-black ${style.textSize} ${style.scoreColor}">${team.score} Pkt.</div>
                     <div class="w-full ${style.height} bg-gradient-to-b ${style.barColor} rounded-t-2xl flex items-start justify-center pt-2 md:pt-4 shadow-2xl">
