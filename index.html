@@ -53,6 +53,15 @@
             animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
+        /* Kurzes Aufploppen für neue Kärtchen und Modals */
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.94); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-scaleIn {
+            animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
         /* Schwebende Emoji-Reaktionen der Schüler auf dem Beamer */
         @keyframes floatUpReaction {
             0% { opacity: 0; transform: translateY(0) scale(0.5); }
@@ -153,7 +162,7 @@
         html[data-theme="light"] .border-slate-800\/40,
         html[data-theme="light"] .border-slate-800\/60,
         html[data-theme="light"] .border-slate-800\/80,
-        html[data-theme="light"] .border-slate-850 {
+        html[data-theme="light"] .border-slate-800 {
             border-color: #e2e8f0 !important;
         }
         html[data-theme="light"] .border-slate-700,
@@ -717,8 +726,7 @@
                             <div class="relative flex items-center">
                                 <input 
                                     type="password" 
-                                    id="change-password-input" 
-                                    value="musik" 
+                                    id="change-password-input"
                                     placeholder="Neu..." 
                                     class="w-24 bg-slate-900/60 border border-slate-700/50 text-slate-200 text-[10px] rounded pl-1.5 pr-6 py-0.5 focus:outline-none"
                                 >
@@ -1053,6 +1061,18 @@
             return document.getElementById(id) || null;
         }
 
+        /* Entschärft Text, der von den Schülergeräten kommt (Teamnamen, Antworten, Spickzettel).
+           Ohne das könnten Schüler HTML oder Skripte auf den Lehrer-Bildschirm schleusen. */
+        function escapeHtml(value) {
+            if (value === null || value === undefined) return '';
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         /* LocalStorage Speicher-Funktionen */
         function saveState() {
             try {
@@ -1152,7 +1172,7 @@
         }
 
         /* Rundenwechsel/Timer-Synchronisierung auf die Schüler-iPads (über Firebase) */
-        async function broadcastControlState(timerSeconds = -1) {
+        async function broadcastControlState(timerSeconds = -1, resetToken = null) {
             const codeInput = getEl('room-code-input');
             const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "7c";
             if (!roomCode) return;
@@ -1163,6 +1183,7 @@
                 await window.fbSet(window.fbRef(window.fbDb, `rooms/${roomCode}/control`), {
                     round: currentRound,
                     timer: timerSeconds,
+                    reset: resetToken,
                     jokersUsed: jokersUsed,
                     locked: roundLocked
                 });
@@ -1382,7 +1403,7 @@
             } else if (view === 'teacher') {
                 studentSection.classList.add('hidden');
                 teacherSection.classList.remove('hidden');
-                connectLiveRoom();
+                connectLiveRoom(true);
             }
         }
 
@@ -1522,6 +1543,9 @@
             fbUnsubscribeControl = window.fbOnValue(controlRef, (snapshot) => {
                 const payload = snapshot.val();
                 if (payload) {
+                    if (payload.reset) {
+                        handleSessionReset(payload.reset);
+                    }
                     if (payload.round !== undefined) {
                         updateStudentRound(payload.round, payload.jokersUsed || []);
                     }
@@ -1533,6 +1557,34 @@
                     updateStudentLockState(payload.locked === true);
                 }
             });
+        }
+
+        /* Die Lehrkraft hat eine neue Sitzung gestartet: Joker, Antwortsperre und
+           Spickzettel auf diesem Gerät wieder freigeben. Das Token verhindert, dass
+           derselbe Reset beim erneuten Verbinden nochmal ausgeführt wird. */
+        function handleSessionReset(resetToken) {
+            const room = localStorage.getItem('student_room_code');
+            if (!room) return;
+
+            const alreadyHandled = localStorage.getItem(`session_reset_${room}`);
+            if (alreadyHandled === String(resetToken)) return;
+            localStorage.setItem(`session_reset_${room}`, String(resetToken));
+
+            localStorage.removeItem(`joker_used_${room}`);
+            localStorage.removeItem(`last_sub_round_${room}`);
+            localStorage.removeItem(`prep_songs_sent_${room}`);
+            localStorage.removeItem(`prep_songs_data_${room}`);
+
+            studentJokerActive = false;
+            studentCurrentRound = 1;
+
+            const answerEl = getEl('student-answer-input');
+            if (answerEl) answerEl.value = '';
+            const feedback = getEl('student-feedback');
+            if (feedback) feedback.classList.add('hidden');
+
+            loadStudentPrepSongs(room);
+            showToast("Neue Sitzung gestartet! Joker und Antwortfeld sind wieder frei. 🔄", "success");
         }
 
         /* Erzwingt eine gesperrte Eingabe auf dem Schülergerät (z.B. während die Lehrkraft aufdeckt) */
@@ -1623,7 +1675,7 @@
                 }
                 if (textarea) textarea.disabled = true;
                 if (feedback) {
-                    feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-850 text-amber-200 animate-scaleIn";
+                    feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-900 text-amber-200 animate-scaleIn";
                     feedback.innerHTML = `<i class="fa-solid fa-circle-info text-amber-400"></i> Du hast für Runde ${newRound} bereits geantwortet. Warte auf die nächste Runde!`;
                     feedback.classList.remove('hidden');
                 }
@@ -1656,7 +1708,7 @@
                         const isCritical = seconds <= 5;
                         feedback.className = isCritical
                             ? "p-3 rounded-xl border text-center text-sm font-black bg-rose-950/50 border-rose-700 text-rose-200 timer-critical"
-                            : "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-850 text-amber-200 animate-pulse";
+                            : "p-3 rounded-xl border text-center text-xs font-semibold bg-amber-950/40 border-amber-900 text-amber-200 animate-pulse";
                         feedback.innerHTML = `<i class="fa-solid fa-hourglass-half text-amber-400"></i> Noch ${seconds} Sekunden zum Raten! Schnell abgeben! ⏱️`;
                         feedback.classList.remove('hidden');
                     }
@@ -1668,7 +1720,7 @@
                 }
             } else if (seconds === 0) {
                 if (feedback) {
-                    feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-rose-950/40 border-rose-850 text-rose-200";
+                    feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-rose-950/40 border-rose-800 text-rose-200";
                     feedback.innerHTML = `<i class="fa-solid fa-clock text-rose-400 animate-bounce"></i> Zeit abgelaufen! Keine Antwort mehr möglich! ⏰`;
                     feedback.classList.remove('hidden');
                 }
@@ -1941,12 +1993,14 @@
         }
         let fbUnsubscribeMessages = null;
 
-        function connectLiveRoom() {
+        /* silent = true beim automatischen Aufruf nach dem Login: dort ist ein noch
+           leerer Raum-Code normal und soll keine rote Fehlermeldung auslösen. */
+        function connectLiveRoom(silent = false) {
             const codeInput = getEl('room-code-input');
             const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "";
 
             if (!roomCode) {
-                showToast("Bitte gib einen Raum-Code ein!", "danger");
+                if (!silent) showToast("Bitte gib einen Raum-Code ein!", "danger");
                 const statusDiv = getEl('connection-status');
                 if (statusDiv) {
                     statusDiv.innerHTML = `<span class="h-2 w-2 rounded-full bg-rose-500"></span> Bitte Code eingeben und Starten klicken`;
@@ -2202,38 +2256,48 @@
                 return;
             }
 
-            teams.forEach(t => {
+            teams.forEach((t, teamIndex) => {
                 const teamKey = t.name.toLowerCase();
                 const record = teamSongs[teamKey];
                 const card = document.createElement('div');
                 card.className = "bg-slate-950/60 border border-slate-800 p-3 rounded-2xl space-y-2 animate-fadeIn";
 
-                if (record && record.songs && record.songs.some(s => s.trim() !== "")) {
+                // Laufende Nummer statt Teamname als Element-ID: Namen kommen von den
+                // Schülergeräten und würden mit Sonderzeichen das Markup zerlegen.
+                const slot = `song-slot-${teamIndex}`;
+
+                if (record && record.songs && record.songs.some(s => String(s).trim() !== "")) {
+                    const songLine = idx => record.songs[idx]
+                        ? escapeHtml(record.songs[idx])
+                        : '<em>Kein Song</em>';
+
                     card.innerHTML = `
-                        <div class="flex justify-between items-center border-b border-slate-850 pb-1.5 font-sans">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-1.5 font-sans">
                             <span class="font-bold text-slate-200 text-xs flex items-center gap-1.5">
-                                <span class="text-sm">${t.emoji || '🎵'}</span> ${t.name}
+                                <span class="text-sm">${escapeHtml(t.emoji || '🎵')}</span> ${escapeHtml(t.name)}
                             </span>
-                            <button 
-                                onclick="toggleSongBlur('${teamKey}')" 
-                                id="reveal-btn-${teamKey}"
+                            <button
+                                type="button"
+                                id="reveal-btn-${slot}"
                                 class="text-slate-400 hover:text-slate-200 p-1 rounded transition-colors text-[10px] flex items-center gap-1 font-bold"
                             >
-                                <i class="fa-solid fa-eye" id="reveal-icon-${teamKey}"></i> <span id="reveal-text-${teamKey}">Anzeigen</span>
+                                <i class="fa-solid fa-eye" id="reveal-icon-${slot}"></i> <span id="reveal-text-${slot}">Anzeigen</span>
                             </button>
                         </div>
-                        <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-300 transition-all filter blur-[4px] select-none font-bold" id="songs-list-${teamKey}">
-                            <li>${record.songs[0] || '<em>Kein Song</em>'}</li>
-                            <li>${record.songs[1] || '<em>Kein Song</em>'}</li>
-                            <li>${record.songs[2] || '<em>Kein Song</em>'}</li>
-                            <li>${record.songs[3] || '<em>Kein Song</em>'}</li>
+                        <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-300 transition-all filter blur-[4px] select-none font-bold" id="songs-list-${slot}">
+                            <li>${songLine(0)}</li>
+                            <li>${songLine(1)}</li>
+                            <li>${songLine(2)}</li>
+                            <li>${songLine(3)}</li>
                         </ol>
                     `;
+                    const revealBtn = card.querySelector(`#reveal-btn-${slot}`);
+                    if (revealBtn) revealBtn.addEventListener('click', () => toggleSongBlur(slot));
                 } else {
                     card.innerHTML = `
                         <div class="flex justify-between items-center font-sans">
                             <span class="font-bold text-slate-500 text-xs flex items-center gap-1.5">
-                                <span class="text-sm opacity-50">${t.emoji || '🎵'}</span> ${t.name}
+                                <span class="text-sm opacity-50">${escapeHtml(t.emoji || '🎵')}</span> ${escapeHtml(t.name)}
                             </span>
                             <span class="text-[10px] text-slate-500 italic"><i class="fa-solid fa-hourglass-half mr-1"></i> Wartet auf Eingabe...</span>
                         </div>
@@ -2393,7 +2457,6 @@
                 let answerTextContent = '';
                 let teamHeader = '';
                 let actionButtons = '';
-                const teamNameEscaped = ans.team.replace(/'/g, "\\'");
                 const hasJoker = ans.joker ? true : false;
 
                 if (beamerProtectionActive) {
@@ -2414,8 +2477,9 @@
                     actionButtons = `
                         <div class="flex justify-between items-center gap-1.5 pt-1 border-t border-slate-800/30 font-bold font-sans">
                             <span class="text-[10px] text-slate-600 font-black"><i class="fa-solid fa-eye-slash mr-1"></i> Erst aufdecken ${jokerBadge}</span>
-                            <button 
-                                onclick="removeLiveAnswerByIndex(${index})"
+                            <button
+                                type="button"
+                                data-action="discard"
                                 class="bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-900/40 text-[9px] px-1.5 py-0.5 rounded transition-all"
                                 title="Verwerfen"
                             >
@@ -2426,7 +2490,7 @@
                 } else {
                     teamHeader = `
                         <div class="flex justify-between items-center gap-1.5 font-sans">
-                            <span class="font-black text-violet-400 text-base truncate max-w-[160px]" title="${ans.team}">${ans.team}</span>
+                            <span class="font-black text-violet-400 text-base truncate max-w-[160px]" title="${escapeHtml(ans.team)}">${escapeHtml(ans.team)}</span>
                             <div class="flex items-center gap-1">
                                 ${jokerBadge}
                                 ${placementBadge}
@@ -2434,32 +2498,36 @@
                         </div>
                     `;
                     answerTextContent = `
-                        <div class="text-xl sm:text-2xl text-slate-100 bg-slate-950/60 p-3 rounded-lg border border-slate-850 font-bold break-words text-center font-sans" title="${ans.answer}">
-                            ${ans.answer}
+                        <div class="text-xl sm:text-2xl text-slate-100 bg-slate-950/60 p-3 rounded-lg border border-slate-800 font-bold break-words text-center font-sans" title="${escapeHtml(ans.answer)}">
+                            ${escapeHtml(ans.answer)}
                         </div>
                     `;
                     actionButtons = `
                         <div class="flex gap-1.5 justify-end font-bold pt-1 border-t border-slate-800/30 font-sans">
                             <button
-                                onclick="applyLiveAnswer('${teamNameEscaped}', 3, ${index}, ${hasJoker})"
+                                type="button"
+                                data-action="award" data-points="3"
                                 class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-2.5 py-1.5 rounded transition-all active:scale-95 flex items-center gap-0.5 font-sans"
                             >
                                 +3
                             </button>
                             <button
-                                onclick="applyLiveAnswer('${teamNameEscaped}', 2, ${index}, ${hasJoker})"
+                                type="button"
+                                data-action="award" data-points="2"
                                 class="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold px-2.5 py-1.5 rounded transition-all active:scale-95 font-sans"
                             >
                                 +2
                             </button>
                             <button
-                                onclick="applyLiveAnswer('${teamNameEscaped}', 1, ${index}, ${hasJoker})"
+                                type="button"
+                                data-action="award" data-points="1"
                                 class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold px-3 py-1.5 rounded transition-all active:scale-95 font-sans"
                             >
                                 +1
                             </button>
                             <button
-                                onclick="markLiveAnswerWrong('${teamNameEscaped}', ${index}, ${hasJoker})"
+                                type="button"
+                                data-action="wrong"
                                 class="bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 border border-rose-900/40 text-xs font-bold px-3 py-1.5 rounded transition-all active:scale-95 font-sans"
                                 title="Falsch werten (0 Punkte${hasJoker ? ', Joker-Risiko greift' : ''})"
                             >
@@ -2476,6 +2544,28 @@
                     </div>
                     ${actionButtons}
                 `;
+
+                // Klick-Handler direkt an der Karte statt als onclick-Text: Teamnamen aus
+                // dem Netz müssen so nicht in Anführungszeichen eingebettet werden, und der
+                // Index wird erst beim Klick bestimmt - nicht beim Zeichnen.
+                item.querySelectorAll('[data-action="award"]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        applyLiveAnswer(ans.team, parseInt(btn.dataset.points, 10), incomingAnswers.indexOf(ans), hasJoker);
+                    });
+                });
+                const wrongBtn = item.querySelector('[data-action="wrong"]');
+                if (wrongBtn) {
+                    wrongBtn.addEventListener('click', () => {
+                        markLiveAnswerWrong(ans.team, incomingAnswers.indexOf(ans), hasJoker);
+                    });
+                }
+                const discardBtn = item.querySelector('[data-action="discard"]');
+                if (discardBtn) {
+                    discardBtn.addEventListener('click', () => {
+                        removeLiveAnswerByIndex(incomingAnswers.indexOf(ans));
+                    });
+                }
+
                 list.appendChild(item);
             });
         }
@@ -2652,14 +2742,14 @@
                 const pointsPrefix = item.points > 0 ? '+' : '';
 
                 card.innerHTML = `
-                    <div class="flex justify-between items-center font-bold border-b border-slate-850 pb-1">
+                    <div class="flex justify-between items-center font-bold border-b border-slate-800 pb-1">
                         <span class="text-slate-200 flex items-center gap-1.5">
                             <span>${item.emoji || '🎵'}</span>
-                            <span class="truncate max-w-[90px]">${item.teamName}</span>
+                            <span class="truncate max-w-[90px]">${escapeHtml(item.teamName)}</span>
                         </span>
                         <span class="${pointsColor} font-sans font-bold">${pointsPrefix}${item.points} Pkt${jokerLabel}</span>
                     </div>
-                    <div class="italic text-[10px] text-slate-500 truncate mt-0.5" title="${item.answer}">"${item.answer}"</div>
+                    <div class="italic text-[10px] text-slate-500 truncate mt-0.5" title="${escapeHtml(item.answer)}">"${escapeHtml(item.answer)}"</div>
                     <div class="flex justify-between items-center text-[8px] text-slate-600 mt-0.5 font-sans">
                         <span>Runde ${item.round}</span>
                         <span>${item.timestamp} Uhr</span>
@@ -2670,6 +2760,9 @@
         }
 
         function removeLiveAnswerByIndex(idx) {
+            // Schutz vor -1: sonst würde splice die letzte Antwort löschen, wenn die
+            // angeklickte Karte in der Zwischenzeit schon verschwunden ist.
+            if (idx < 0 || idx >= incomingAnswers.length) return;
             incomingAnswers.splice(idx, 1);
             renderIncomingAnswersList();
         }
@@ -2737,7 +2830,13 @@
 
                 if (secondsLeft <= 0) {
                     stopTimer();
-                    if (display) display.innerText = "Zeit um! ⏰";
+                    // stopTimer blendet die Anzeige aus - das Ergebnis soll aber kurz
+                    // stehen bleiben, damit die Klasse das Ende auch sieht.
+                    if (display) {
+                        display.innerText = "Zeit um! ⏰";
+                        display.classList.remove('hidden', 'timer-critical');
+                        setTimeout(() => display.classList.add('hidden'), 6000);
+                    }
                     playSound('down');
 
                     const autoLockEl = getEl('auto-lock-toggle');
@@ -3029,7 +3128,7 @@
         function updateActiveBadge() {
             const badge = getEl('active-class-badge');
             if (badge) {
-                badge.innerHTML = `<i class="fa-solid fa-graduation-cap text-violet-400 mr-1"></i> Aktiv: ${activeClass}`;
+                badge.innerHTML = `<i class="fa-solid fa-graduation-cap text-violet-400 mr-1"></i> Aktiv: ${escapeHtml(activeClass)}`;
             }
         }
 
@@ -3130,7 +3229,10 @@
             }
 
             toast.className = `p-3 rounded-xl border flex items-center gap-2.5 shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 select-none ${bgClass}`;
-            toast.innerHTML = `${icon} <span class="text-xs font-semibold">${message}</span>`;
+            // Meldungen enthalten oft Teamnamen von den iPads - deshalb als reinen Text setzen.
+            toast.innerHTML = icon + ' <span class="text-xs font-semibold"></span>';
+            const messageSpan = toast.querySelector('span');
+            if (messageSpan) messageSpan.textContent = message;
             
             container.appendChild(toast);
             
@@ -3489,8 +3591,8 @@
                     </div>
 
                     <div class="text-center flex-grow flex flex-col justify-center">
-                        <h3 class="text-sm font-black ${isSelected ? 'text-emerald-400 font-black' : 'text-slate-200'} tracking-wide truncate px-1" title="${team.name}">
-                            <span class="text-lg">${team.emoji || '🎵'}</span> ${team.name}
+                        <h3 class="text-sm font-black ${isSelected ? 'text-emerald-400 font-black' : 'text-slate-200'} tracking-wide truncate px-1" title="${escapeHtml(team.name)}">
+                            <span class="text-lg">${escapeHtml(team.emoji || "🎵")}</span> ${escapeHtml(team.name)}
                         </h3>
                         <span class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-b ${isLeader ? 'from-amber-200 to-amber-500' : 'from-slate-100 to-slate-400'}">
                             ${team.score}
@@ -3703,7 +3805,7 @@
                 col.className = "flex flex-col items-center gap-1.5 flex-1 max-w-[180px] animate-scaleIn";
                 col.innerHTML = `
                     <div class="${style.emojiSize}">${team.emoji || '🎵'}</div>
-                    <div class="font-black ${style.textSize} text-white truncate max-w-full px-1">${team.name}</div>
+                    <div class="font-black ${style.textSize} text-white truncate max-w-full px-1">${escapeHtml(team.name)}</div>
                     <div class="font-black ${style.textSize} ${style.scoreColor}">${team.score} Pkt.</div>
                     <div class="w-full ${style.height} bg-gradient-to-b ${style.barColor} rounded-t-2xl flex items-start justify-center pt-2 md:pt-4 shadow-2xl">
                         <span class="text-2xl md:text-4xl">${style.medal}</span>
@@ -3773,6 +3875,10 @@
             renderHistoryArchive(); // Archiv-Anzeige leeren!
             renderTeamSongsList();
             renderIncomingAnswersList();
+
+            // Den iPads Bescheid geben: Runde zurück auf 1, Joker und Antwortfeld wieder frei.
+            broadcastControlState(-1, Date.now());
+
             showToast("Neue Sitzung gestartet!", "success");
         }
 
