@@ -4323,6 +4323,13 @@
                             <i class="fa-solid fa-masks-theater"></i> + ${team.presentGrants || 0} Joker
                         </button>
                         <button
+                            onclick="revokeJoker('${team.id}')"
+                            class="bg-slate-800 hover:bg-rose-900/60 border border-slate-700/60 text-slate-300 text-[10px] font-black px-2 py-1 rounded transition-all active:scale-95"
+                            title="Einen Joker zurücknehmen - für den Fall, dass du dich verklickt hast"
+                        >
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                        <button
                             onclick="toggleTeamPresenter('${team.id}')"
                             class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold px-2 py-1 rounded transition-all active:scale-95"
                             title="Präsentier-Modus beenden - Team rät wieder mit"
@@ -4336,6 +4343,24 @@
 
         /* Schenkt einem Team seinen Joker (zurück). Die Lehrkraft ist dabei die Instanz,
            die entscheidet - das iPad übernimmt den Stand beim nächsten Rundensignal. */
+        /* Gegenstück zu grantJoker für den Verklicker. Nimmt auch den Zähler auf dem
+           Knopf zurück, damit die Anzeige zur tatsächlichen Vergabe passt. */
+        function revokeJoker(id) {
+            const team = teams.find(t => t.id === id);
+            if (!team) return;
+            if ((team.jokerCount || 0) <= 0) {
+                showToast(`"${team.name}" hat keine Joker, die sich zurücknehmen ließen.`, "info");
+                return;
+            }
+            team.jokerCount -= 1;
+            if (team.presenting && team.presentGrants > 0) team.presentGrants -= 1;
+            saveState();
+            renderScoreboard();
+            broadcastControlState();
+            showToast(`🃏 Joker zurückgenommen – "${team.name}" hat jetzt ${team.jokerCount}.`, "info");
+            playSound('down');
+        }
+
         function grantJoker(id) {
             const team = teams.find(t => t.id === id);
             if (!team) return;
