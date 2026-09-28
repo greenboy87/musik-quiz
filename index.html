@@ -111,15 +111,6 @@
         html[data-theme="light"] #timer-big-display.kritisch .zahl { color: #be123c; }
         html[data-theme="light"] #timer-big-display.kritisch .einheit { color: #9f1239; }
 
-        /* Höhe des Antwort-Panels. Als eigene Regel, weil tailwind.css vorgeneriert
-           ist: Ein neuer Wert wie h-[320px] käme dort nicht vor und bliebe wirkungslos.
-           Der ID-Selektor sticht die Klasse ohnehin aus. Wer mehr sehen will, zieht das
-           Panel an der Unterkante größer (resize-y) - das setzt einen Inline-Stil und
-           gewinnt gegen diese Regel. */
-        #live-answers-panel {
-            height: 320px;
-        }
-
         /* Kein Zeilenumbruch in kurzen Kopfzeilen-Knöpfen. Als eigene Regel und nicht
            als Tailwind-Klasse, weil tailwind.css vorgeneriert ist und "whitespace-nowrap"
            dort nicht vorkommt - siehe CLAUDE.md. */
@@ -1060,7 +1051,7 @@
         <!-- ========================================== -->
         <!-- CHRONOLOGISCHE LIVE ANTWORTEN VOM IPAD       -->
         <!-- ========================================== -->
-        <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-3 mb-4 hidden animate-fadeIn resize-y overflow-auto min-h-[200px]">
+        <div id="live-answers-panel" class="bg-slate-800/20 border border-slate-700/30 rounded-2xl p-3 mb-4 hidden animate-fadeIn resize-y overflow-auto min-h-[200px] h-[380px]">
             <div class="flex justify-between items-center mb-2.5 border-b border-slate-800 pb-2">
                 <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5 font-sans">
                     <i class="fa-solid fa-clock-rotate-left"></i> Eingehende iPad-Antworten (Echtzeit-Anzeige)
@@ -1083,7 +1074,7 @@
             </div>
 
             <!-- Dashboard-Grid für ultra-schmale, kompakte Kärtchen -->
-            <div id="live-answers-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 p-1">
+            <div id="live-answers-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-1">
                 <!-- Wird dynamisch chronologisch befüllt -->
             </div>
             <div id="live-answers-empty" class="text-center py-4 text-[11px] text-slate-500 font-sans">
@@ -3080,7 +3071,7 @@
             // Chronologische Kärtchen rendern (Kompakte Kärtchen im mehrspaltigen Grid)
             incomingAnswers.forEach((ans, index) => {
                 const item = document.createElement('div');
-                item.className = "flex flex-col justify-between gap-2 bg-slate-900 border border-slate-800 p-2 rounded-xl animate-scaleIn h-full relative font-sans";
+                item.className = "flex flex-col justify-between gap-2 bg-slate-900 border border-slate-800 p-3 rounded-xl animate-scaleIn h-full relative font-sans";
 
                 let placementBadge = `
                     <span class="bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded text-[11px] font-bold">
@@ -3114,7 +3105,7 @@
                         </div>
                     `;
                     answerTextContent = `
-                        <div class="text-sm text-slate-500 bg-slate-950/80 p-2 rounded-lg border border-slate-900 font-mono text-center py-3 select-none flex items-center justify-center gap-1.5">
+                        <div class="text-sm text-slate-500 bg-slate-950/80 p-3 rounded-lg border border-slate-900 font-mono text-center py-4 select-none flex items-center justify-center gap-1.5">
                             <i class="fa-solid fa-lock text-violet-500 text-sm"></i>
                             <span class="text-slate-400 font-medium text-xs">Inhalt verdeckt</span>
                         </div>
@@ -3143,7 +3134,7 @@
                         </div>
                     `;
                     answerTextContent = `
-                        <div class="text-xl sm:text-2xl text-slate-100 bg-slate-950/60 p-2 rounded-lg border border-slate-800 font-bold break-words text-center font-sans" title="${escapeHtml(ans.answer)}">
+                        <div class="text-xl sm:text-2xl text-slate-100 bg-slate-950/60 p-3 rounded-lg border border-slate-800 font-bold break-words text-center font-sans" title="${escapeHtml(ans.answer)}">
                             ${escapeHtml(ans.answer)}
                         </div>
                     `;
@@ -4636,41 +4627,9 @@
             if (roomInput) roomInput.value = queryRoom;
         }
 
-        /* Die Lehrkraft zieht das Antwort-Panel an der Unterkante auf die Höhe, die zur
-           Gruppenzahl passt - bei sechs Gruppen reichen zwei Zeilen. Dieses Maß war nach
-           jedem Neuladen wieder weg. Es wird deshalb pro Browser gemerkt und beim Start
-           wiederhergestellt. Gemerkt wird nur, was wirklich von Hand gezogen wurde:
-           Ohne Inline-Höhe gilt weiter die Vorgabe aus dem Stylesheet. */
-        const ANSWER_PANEL_HEIGHT_KEY = 'answer-panel-height';
-
-        function restoreAnswerPanelHeight() {
-            const panel = getEl('live-answers-panel');
-            if (!panel) return;
-            const gemerkt = parseInt(localStorage.getItem(ANSWER_PANEL_HEIGHT_KEY) || '', 10);
-            // Grenzen prüfen, damit ein kaputter Wert das Panel nicht unbedienbar macht.
-            if (gemerkt >= 200 && gemerkt <= 2000) panel.style.height = gemerkt + 'px';
-        }
-
-        function watchAnswerPanelHeight() {
-            const panel = getEl('live-answers-panel');
-            if (!panel || typeof ResizeObserver === 'undefined') return;
-            let merkTimer = null;
-            const beobachter = new ResizeObserver(() => {
-                clearTimeout(merkTimer);
-                merkTimer = setTimeout(() => {
-                    if (!panel.style.height) return;   // nicht gezogen, nichts zu merken
-                    const hoehe = Math.round(panel.getBoundingClientRect().height);
-                    if (hoehe >= 200) localStorage.setItem(ANSWER_PANEL_HEIGHT_KEY, String(hoehe));
-                }, 400);
-            });
-            beobachter.observe(panel);
-        }
-
         // Starten
         window.onload = function() {
             resizeCanvas();
-            restoreAnswerPanelHeight();
-            watchAnswerPanelHeight();
             // Muss VOR loadState() laufen: loadState() schaltet selbst schon in die
             // Schüleransicht und würde die alte Anmeldung wiederherstellen.
             applyRoomFromUrl();
