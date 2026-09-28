@@ -75,5 +75,14 @@ als beliebigen Datenspeicher zweckentfremden.
 ## Was passiert, wenn das Passwort weg ist
 
 Dann sind die Daten in der Cloud verloren. Es gibt bewusst keine Hintertür — das
-ist der Sinn echter Verschlüsselung. Die Sicherung über „Sichern als Datei"
-bleibt deshalb weiter sinnvoll als zweites Standbein.
+ist der Sinn echter Verschlüsselung.
+
+Ein zweites Standbein gibt es nicht mehr: Die Knöpfe „Sichern als Datei" und
+„Datei laden" wurden auf Wunsch entfernt, weil die Spielstände nicht schützenswert
+genug sind, um dafür Bedienelemente vorzuhalten. Damit bleiben genau zwei Kopien —
+der Arbeitsstand im Browser und die verschlüsselte Kopie in der Cloud. Beides
+zusammen verliert man nur, wenn Browserdaten gelöscht werden **und** das Passwort
+weg ist.
+
+Und was die Cloud-Sicherung nicht leistet: Sie ist ein Spiegel, kein Zeitpunkt.
+Eine versehentlich gelöschte Klasse ist Sekunden später auch dort gelöscht.
