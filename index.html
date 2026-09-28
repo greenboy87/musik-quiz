@@ -943,7 +943,7 @@
                 <div class="border-t border-slate-700/40 pt-1.5 mt-0.5 space-y-1">
                     <div class="flex items-center justify-between gap-1">
                         <select id="class-select" onchange="handleClassChange(event)" class="bg-slate-900 border border-slate-700 text-slate-200 text-[11px] rounded-lg p-1 flex-grow focus:outline-none">
-                            <option value="Standard-Sitzung">-- Standard-Sitzung --</option>
+                            <option value="Standard-Sitzung">🔄 Neue Sitzung</option>
                         </select>
                         <button onclick="deleteCurrentClass()" class="bg-rose-950/40 hover:bg-rose-900/60 border border-rose-900/40 text-rose-300 p-1 rounded-lg text-xs transition-all active:scale-95" title="Klasse löschen">
                             <i class="fa-solid fa-trash-can"></i>
@@ -991,10 +991,9 @@
 
                 <!-- Reset, Finale & Export -->
                 <div class="flex flex-col gap-1 mt-1 pt-1 border-t border-slate-700/40 font-bold">
-                    <div class="grid grid-cols-2 gap-1.5">
-                        <button onclick="confirmReset()" class="bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 border border-rose-900/40 font-bold py-1 rounded-lg text-[10px] transition-all font-sans">
-                            <i class="fa-solid fa-arrows-rotate"></i> Neue Sitzung
-                        </button>
+                    <!-- "Neue Sitzung" steckt jetzt im Klassen-Dropdown - zwei Knöpfe für
+                         dieselbe Sache waren nur verwirrend. -->
+                    <div class="grid grid-cols-1 gap-1.5">
                         <button onclick="triggerWinConfetti()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-1 rounded-lg text-[10px] transition-all shadow-md">
                             <i class="fa-solid fa-crown"></i> Finale 🏆
                         </button>
@@ -1288,6 +1287,7 @@
         
         // Schüler Runden Synchronisierung Variablen
         let studentCurrentRound = 1;
+        let studentJokerVorrat = 1;   // Vom Lehrergerät gemeldeter Vorrat
         let studentJokerActive = false;
         let studentRoundLocked = false;
         
@@ -1735,14 +1735,17 @@
             const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "7c";
             if (!roomCode) return;
 
-            const jokersUsed = teams.filter(t => t.jokerUsed).map(t => t.name.toLowerCase());
+            // Der Vorrat jedes Teams geht an die iPads. Das Lehrergerät ist die Instanz;
+            // das iPad merkt sich nur noch, ob es DIESE Runde schon einen gesetzt hat.
+            const jokerStand = {};
+            teams.forEach(t => { jokerStand[t.name.toLowerCase()] = t.jokerCount || 0; });
 
             try {
                 await window.fbSet(window.fbRef(window.fbDb, `rooms/${roomCode}/control`), {
                     round: currentRound,
                     timer: timerSeconds,
                     reset: resetToken,
-                    jokersUsed: jokersUsed,
+                    jokerStand: jokerStand,
                     locked: roundLocked
                 });
             } catch(e) {
@@ -1776,6 +1779,17 @@
             }
         }
 
+        /* Joker sind seit dem Umbau eine Anzahl, nicht mehr ein Ja/Nein. Ältere Stände
+           kennen nur `jokerUsed` - daraus wird einmalig ein Vorrat: verbraucht = 0, sonst 1.
+           Gespielt werden darf weiterhin höchstens einer pro Runde. */
+        function normalisiereJoker(t) {
+            if (typeof t.jokerCount !== 'number' || !isFinite(t.jokerCount) || t.jokerCount < 0) {
+                t.jokerCount = t.jokerUsed ? 0 : 1;
+            }
+            delete t.jokerUsed;
+            return t;
+        }
+
         function loadState() {
             try {
                 initEmojiPicker();
@@ -1789,7 +1803,7 @@
                         t.activeThisRound = false;
                         t.pendingPoints = 0;
                         t.streak = t.streak || 0;
-                        t.jokerUsed = t.jokerUsed || false;
+                        normalisiereJoker(t);
                         t.jokerActiveThisRound = t.jokerActiveThisRound || false;
                     });
                     const roundDisplay = getEl('header-round-display');
@@ -1850,7 +1864,7 @@
                     t.activeThisRound = false;
                     t.pendingPoints = 0;
                     t.streak = t.streak || 0;
-                    t.jokerUsed = t.jokerUsed || false;
+                    normalisiereJoker(t);
                     t.jokerActiveThisRound = false;
                 });
 
@@ -2121,7 +2135,7 @@
                         handleSessionReset(payload.reset);
                     }
                     if (payload.round !== undefined) {
-                        updateStudentRound(payload.round, payload.jokersUsed || []);
+                        updateStudentRound(payload.round, payload.jokerStand || null);
                     }
                     if (payload.timer !== undefined) {
                         updateStudentTimer(payload.timer);
@@ -2192,7 +2206,7 @@
             if (alreadyHandled === String(resetToken)) return;
             localStorage.setItem(`session_reset_${room}`, String(resetToken));
 
-            localStorage.removeItem(`joker_used_${room}`);
+            localStorage.removeItem(`joker_runde_${room}`);
             localStorage.removeItem(`last_sub_round_${room}`);
             localStorage.removeItem(`prep_songs_sent_${room}`);
             localStorage.removeItem(`prep_songs_data_${room}`);
@@ -2237,7 +2251,7 @@
         }
 
         /* Rundenzustand & JOKER-SYNC auf dem Schülergerät anwenden */
-        function updateStudentRound(newRound, jokersUsedArray) {
+        function updateStudentRound(newRound, jokerStandObj) {
             studentCurrentRound = newRound;
             const roundBadge = getEl('student-round-badge');
             if (roundBadge) {
@@ -2253,38 +2267,38 @@
             const textarea = getEl('student-answer-input');
             const jokerBtn = getEl('student-joker-btn');
 
-            let serverSaysJokerUsed = false;
-            if (jokersUsedArray && Array.isArray(jokersUsedArray)) {
-                serverSaysJokerUsed = jokersUsedArray.includes(myName.toLowerCase());
+            /* Wie viele Joker das Team noch hat, sagt allein das Lehrergerät. Das iPad
+               merkt sich nur, ob es in DIESER Runde schon einen gesetzt hat - früher war
+               das ein dauerhafter Merker, weshalb ein geschenkter Joker hier nie ankam. */
+            if (jokerStandObj && typeof jokerStandObj === 'object') {
+                const gemeldet = jokerStandObj[myName.toLowerCase()];
+                if (typeof gemeldet === 'number') studentJokerVorrat = gemeldet;
             }
+            const jokerRundeBenutzt = parseInt(localStorage.getItem(`joker_runde_${room}`) || '0', 10) === newRound;
 
-            if (serverSaysJokerUsed) {
-                localStorage.setItem(`joker_used_${room}`, 'true'); 
+            if (jokerRundeBenutzt) {
                 studentJokerActive = false;
                 if (jokerBtn) {
                     jokerBtn.disabled = true;
                     jokerBtn.className = "w-full bg-slate-950/40 border border-slate-900 text-slate-600 py-2.5 rounded-xl text-xs cursor-not-allowed text-center";
-                    jokerBtn.innerHTML = `<span>🃏 Joker verbraucht (Lehrer-Sperre)</span>`;
+                    jokerBtn.innerHTML = `<span>🃏 Joker in dieser Runde gesetzt</span>`;
+                }
+            } else if (studentJokerVorrat <= 0) {
+                studentJokerActive = false;
+                if (jokerBtn) {
+                    jokerBtn.disabled = true;
+                    jokerBtn.className = "w-full bg-slate-950/40 border border-slate-900 text-slate-600 py-2.5 rounded-xl text-xs cursor-not-allowed text-center";
+                    jokerBtn.innerHTML = `<span>🃏 Keine Joker übrig</span>`;
                 }
             } else {
-                const localJokerUsed = localStorage.getItem(`joker_used_${room}`);
-                if (localJokerUsed) {
-                    studentJokerActive = false;
-                    if (jokerBtn) {
-                        jokerBtn.disabled = true;
-                        jokerBtn.className = "w-full bg-slate-950/40 border border-slate-900 text-slate-600 py-2.5 rounded-xl text-xs cursor-not-allowed text-center";
-                        jokerBtn.innerHTML = `<span>🃏 Joker bereits verbraucht</span>`;
-                    }
-                } else {
-                    if (jokerBtn) {
-                        jokerBtn.disabled = false;
-                        if (studentJokerActive) {
-                            jokerBtn.className = "w-full bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-500 text-amber-300 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-95 animate-pulse";
-                            jokerBtn.innerHTML = `<span>🃏 Doppel-Joker AKTIV! (Risikorunde)</span>`;
-                        } else {
-                            jokerBtn.className = "w-full bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95";
-                            jokerBtn.innerHTML = `<span>🃏 Doppel-Joker aktivieren</span>`;
-                        }
+                if (jokerBtn) {
+                    jokerBtn.disabled = false;
+                    if (studentJokerActive) {
+                        jokerBtn.className = "w-full bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-500 text-amber-300 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-95 animate-pulse";
+                        jokerBtn.innerHTML = `<span>🃏 Doppel-Joker AKTIV! (Risikorunde)</span>`;
+                    } else {
+                        jokerBtn.className = "w-full bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 active:scale-95";
+                        jokerBtn.innerHTML = `<span>🃏 Doppel-Joker setzen (noch ${studentJokerVorrat})</span>`;
                     }
                 }
             }
@@ -2435,14 +2449,17 @@
 
         function toggleStudentJoker() {
             const room = localStorage.getItem('student_room_code');
-            const jokerUsedKey = `joker_used_${room}`;
-            if (localStorage.getItem(jokerUsedKey)) {
-                showToast("Du hast deinen Doppel-Joker in diesem Spiel bereits verbraucht!", "danger");
+            if (parseInt(localStorage.getItem(`joker_runde_${room}`) || '0', 10) === studentCurrentRound) {
+                showToast("In dieser Runde hast du deinen Joker schon gesetzt!", "danger");
+                return;
+            }
+            if (studentJokerVorrat <= 0) {
+                showToast("Du hast keine Joker mehr. Verdient euch welche beim Präsentieren!", "danger");
                 return;
             }
 
             studentJokerActive = !studentJokerActive;
-            updateStudentRound(studentCurrentRound, []); 
+            updateStudentRound(studentCurrentRound, null);
         }
 
         async function sendStudentAnswer() {
@@ -2483,11 +2500,13 @@
                 localStorage.setItem(`last_sub_round_${room}`, studentCurrentRound);
 
                 if (studentJokerActive) {
-                    localStorage.setItem(`joker_used_${room}`, 'true');
+                    // Nur diese Runde sperren - den Vorrat führt das Lehrergerät.
+                    localStorage.setItem(`joker_runde_${room}`, String(studentCurrentRound));
+                    studentJokerVorrat = Math.max(0, studentJokerVorrat - 1);
                     studentJokerActive = false;
                 }
 
-                updateStudentRound(studentCurrentRound, []);
+                updateStudentRound(studentCurrentRound, null);
 
                 const statusBox = getEl('student-feedback');
                 if (statusBox) {
@@ -2532,7 +2551,7 @@
                 activeThisRound: false,
                 pendingPoints: 0,
                 streak: 0,
-                jokerUsed: false,
+                jokerCount: 1,
                 jokerActiveThisRound: false
             };
 
@@ -2735,7 +2754,7 @@
                     activeThisRound: false,
                     pendingPoints: 0,
                     streak: 0,
-                    jokerUsed: false,
+                    jokerCount: 1,
                     jokerActiveThisRound: false,
                     emoji: emoji || "🎵"
                 };
@@ -3236,7 +3255,7 @@
                     activeThisRound: true,
                     pendingPoints: pointsToAdd,
                     streak: 0,
-                    jokerUsed: false,
+                    jokerCount: 1,
                     jokerActiveThisRound: hasJoker,
                     emoji: emoji
                 };
@@ -3299,7 +3318,7 @@
                     activeThisRound: false,
                     pendingPoints: 0,
                     streak: 0,
-                    jokerUsed: false,
+                    jokerCount: 1,
                     jokerActiveThisRound: hasJoker,
                     emoji: emoji
                 };
@@ -3694,7 +3713,7 @@
             Object.keys(classes).forEach(cls => {
                 const option = document.createElement('option');
                 option.value = cls;
-                option.textContent = cls === 'Standard-Sitzung' ? '-- Standard-Sitzung --' : cls;
+                option.textContent = cls === 'Standard-Sitzung' ? '🔄 Neue Sitzung' : cls;
                 if (cls === activeClass) option.selected = true;
                 select.appendChild(option);
             });
@@ -3705,8 +3724,14 @@
             activeClass = event.target.value;
             
             if (activeClass === "Standard-Sitzung") {
+                // Das ist im Dropdown der Eintrag "Neue Sitzung". Voller Reset, damit auch
+                // die iPads Bescheid bekommen (Joker und Antwortfeld wieder frei) und alte
+                // Nachrichten des Raums verschwinden.
                 classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
-                answerHistory = []; // Verlauf für Standard-Sitzung leeren!
+                executeReset();
+                updateClassDropdown();
+                updateActiveBadge();
+                return;
             }
 
             const targetData = classes[activeClass] || { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
@@ -3995,6 +4020,7 @@
                 // Exklusiv: Es kann immer nur ein Team gleichzeitig präsentieren
                 teams.forEach(t => { t.presenting = false; });
                 team.presenting = true;
+                team.presentGrants = 0;   // Zähler gilt je Präsentation
                 // Ein präsentierendes Team kann in dieser Runde keine Punkte vorgemerkt haben
                 team.activeThisRound = false;
                 team.pendingPoints = 0;
@@ -4118,7 +4144,7 @@
                 // JOKER-LOGIC: Bei Erfolg werden die Punkte verdoppelt!
                 if (t.jokerActiveThisRound) {
                     pts = pts * 2;
-                    t.jokerUsed = true; // Jetzt fest auf dem Scoreboard für immer verbraucht!
+                    t.jokerCount = Math.max(0, (t.jokerCount || 0) - 1);
                     showToast(`🃏 Joker-Erfolg für "${t.name}"! Punkte verdoppelt: +${pts}!`, "success");
                 }
 
@@ -4136,7 +4162,7 @@
                     // JOKER-LOGIC: Bei Fehler oder Ausbleiben verliert das Team 1 Punkt
                     if (t.jokerActiveThisRound) {
                         t.score = Math.max(0, t.score - 1);
-                        t.jokerUsed = true; // Jetzt fest auf dem Scoreboard für immer verbraucht!
+                        t.jokerCount = Math.max(0, (t.jokerCount || 0) - 1);
                         showToast(`💀 Joker-Risiko fehlgeschlagen! "${t.name}" verliert 1 Punkt!`, "danger");
                         playSound('down');
                     }
@@ -4220,17 +4246,17 @@
                         <span class="text-slate-100 text-sm font-bold truncate">${team.emoji || '🎵'} ${escapeHtml(team.name)}</span>
                         <span class="text-slate-400 text-[11px] font-bold">Platz ${platzierung[team.id]}</span>
                         <span class="text-slate-100 text-sm font-black">${team.score} Pkt</span>
-                        ${team.jokerUsed
-                            ? '<span class="text-slate-500 text-[10px] font-bold"><i class="fa-solid fa-ban"></i> Joker weg</span>'
-                            : '<span class="text-emerald-400 text-[10px] font-bold"><i class="fa-solid fa-masks-theater"></i> Joker bereit</span>'}
+                        ${(team.jokerCount || 0) > 0
+                            ? `<span class="text-emerald-400 text-[10px] font-bold"><i class="fa-solid fa-masks-theater"></i> noch ${team.jokerCount} Joker</span>`
+                            : '<span class="text-slate-500 text-[10px] font-bold"><i class="fa-solid fa-ban"></i> keine Joker</span>'}
                     </div>
                     <div class="flex items-center gap-1 presenter-rechts">
                         <button
                             onclick="grantJoker('${team.id}')"
                             class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-1 rounded transition-all active:scale-95"
-                            title="Diesem Team einen Joker schenken - z.B. als Ausgleich fürs Präsentieren"
+                            title="Pro richtig erratenem Song einen Joker vergeben"
                         >
-                            <i class="fa-solid fa-masks-theater"></i> + Joker
+                            <i class="fa-solid fa-masks-theater"></i> + ${team.presentGrants || 0} Joker
                         </button>
                         <button
                             onclick="toggleTeamPresenter('${team.id}')"
@@ -4249,15 +4275,13 @@
         function grantJoker(id) {
             const team = teams.find(t => t.id === id);
             if (!team) return;
-            if (!team.jokerUsed) {
-                showToast(`"${team.name}" hat seinen Joker noch.`, "info");
-                return;
-            }
-            team.jokerUsed = false;
+            team.jokerCount = (team.jokerCount || 0) + 1;
+            // Mitzählen, wie viele es in DIESER Präsentation waren - das steht auf dem Knopf.
+            if (team.presenting) team.presentGrants = (team.presentGrants || 0) + 1;
             saveState();
             renderScoreboard();
             broadcastControlState();
-            showToast(`🃏 Joker für "${team.name}" freigeschaltet!`, "success");
+            showToast(`🃏 "${team.name}" bekommt einen Joker – Vorrat: ${team.jokerCount}.`, "success");
             playSound('up');
         }
 
@@ -4384,9 +4408,10 @@
                         </div>`;
                 } else {
                     // Zeigt an, ob das Team seinen Joker in diesem Spiel noch hat oder verbraucht hat
-                    jokerCardBadge = team.jokerUsed ? 
-                        `<span class="text-[9px] text-slate-500 font-bold block mt-1"><i class="fa-solid fa-ban"></i> Joker verbraucht</span>` : 
-                        `<span class="text-[9px] text-emerald-500/85 font-bold block mt-1"><i class="fa-solid fa-masks-theater"></i> Joker bereit</span>`;
+                    const vorrat = team.jokerCount || 0;
+                    jokerCardBadge = vorrat > 0
+                        ? `<span class="text-[9px] text-emerald-500/85 font-bold block mt-1"><i class="fa-solid fa-masks-theater"></i> noch ${vorrat} Joker</span>`
+                        : `<span class="text-[9px] text-slate-500 font-bold block mt-1"><i class="fa-solid fa-ban"></i> keine Joker</span>`;
                 }
 
                 card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-48 select-none ${borderStyle}${jokerSchimmer}`;
@@ -4650,14 +4675,6 @@
                 overlay.classList.add('hidden');
                 overlay.classList.remove('flex');
             }
-        }
-
-        function confirmReset() {
-            showCustomConfirm(
-                "Neue Sitzung starten?",
-                "Alle Teams und Punkte der aktuellen Klasse werden gelöscht. Die Runde startet wieder bei 1. Der Raum-Code bleibt erhalten.",
-                executeReset
-            );
         }
 
         function executeReset() {
