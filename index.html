@@ -4345,6 +4345,17 @@
            die entscheidet - das iPad übernimmt den Stand beim nächsten Rundensignal. */
         /* Gegenstück zu grantJoker für den Verklicker. Nimmt auch den Zähler auf dem
            Knopf zurück, damit die Anzeige zur tatsächlichen Vergabe passt. */
+        /* Nimmt den Auftritts-Vermerk zurück. Gedacht für den Fall, dass ein Team doch
+           nicht wirklich dran war - danach schlägt es der Auftritts-Vorschlag wieder vor. */
+        function clearPresentedMark(id) {
+            const team = teams.find(t => t.id === id);
+            if (!team) return;
+            team.hatPraesentiert = false;
+            saveState();
+            renderScoreboard();
+            showToast(`"${team.name}" ist wieder für einen Auftritt vorgemerkt.`, "info");
+        }
+
         function revokeJoker(id) {
             const team = teams.find(t => t.id === id);
             if (!team) return;
@@ -4504,13 +4515,21 @@
                 } else {
                     // Zeigt an, ob das Team seinen Joker in diesem Spiel noch hat oder verbraucht hat
                     const vorrat = team.jokerCount || 0;
-                    // Damit die Lehrkraft nicht mitzählen muss, wer noch auftreten muss.
+                    /* "war dran" und der Joker-Stand teilen sich EINE Zeile. Als eigene
+                       Zeile sprengte der Vermerk die feste Kartenhöhe (h-48) und schob die
+                       Punkteknöpfe über den unteren Rand. Der Vermerk ist zugleich sein
+                       eigener Schalter: ein Klick nimmt ihn zurück, falls ein Auftritt
+                       doch nicht zählen soll - das Team taucht dann wieder im Vorschlag auf. */
                     const auftrittVermerk = team.hatPraesentiert
-                        ? '<span class="text-[9px] text-violet-400/80 font-bold block"><i class="fa-solid fa-microphone"></i> war dran</span>'
+                        ? `<button type="button" onclick="event.stopPropagation(); clearPresentedMark('${team.id}')"
+                                   class="text-violet-400/90 hover:text-violet-200 font-bold transition-colors"
+                                   title="War schon dran. Klicken, um die Markierung zu entfernen - das Team erscheint dann wieder im Auftritts-Vorschlag.">
+                               <i class="fa-solid fa-microphone"></i> war dran
+                           </button> <span class="text-slate-700">·</span> `
                         : '';
-                    jokerCardBadge = auftrittVermerk + (vorrat > 0
-                        ? `<span class="text-[9px] text-emerald-500/85 font-bold block mt-1"><i class="fa-solid fa-masks-theater"></i> noch ${vorrat} Joker</span>`
-                        : `<span class="text-[9px] text-slate-500 font-bold block mt-1"><i class="fa-solid fa-ban"></i> keine Joker</span>`);
+                    jokerCardBadge = vorrat > 0
+                        ? `<span class="text-[9px] font-bold block mt-1">${auftrittVermerk}<span class="text-emerald-500/85"><i class="fa-solid fa-masks-theater"></i> noch ${vorrat} Joker</span></span>`
+                        : `<span class="text-[9px] font-bold block mt-1">${auftrittVermerk}<span class="text-slate-500"><i class="fa-solid fa-ban"></i> keine Joker</span></span>`;
                 }
 
                 card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-48 select-none ${borderStyle}${jokerSchimmer}`;
