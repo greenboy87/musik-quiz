@@ -442,6 +442,7 @@
         <div class="w-full max-w-3xl text-center space-y-10">
             <h2 class="text-3xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-pink-300 to-violet-300">🏆 Endstand 🏆</h2>
             <div id="finale-podium-container" class="flex items-end justify-center gap-3 md:gap-6"></div>
+            <p id="finale-joker-hinweis" class="hidden text-amber-300 text-xs md:text-sm font-bold font-sans"></p>
         </div>
     </div>
 
@@ -4599,11 +4600,39 @@
             requestAnimationFrame(animateConfetti);
         }
 
+        /* Beim Finale werden übrige Joker zu Punkten, einer je Joker.
+           Hintergrund: Irgendein Team präsentiert immer zuletzt und käme sonst nie mehr
+           dazu, seine verdienten Joker zu setzen. Der Kurs von 1:1 ist bewusst knapp -
+           ein gesetzter Joker bringt bei einer 3-Punkte-Antwort +3 extra, also lohnt sich
+           Spielen weiter mehr als Horten. */
+        function loeseRestjokerEin() {
+            const umgewandelt = [];
+            teams.forEach(t => {
+                const vorrat = t.jokerCount || 0;
+                if (vorrat > 0) {
+                    t.score += vorrat;
+                    t.jokerCount = 0;
+                    umgewandelt.push({ name: t.name, anzahl: vorrat });
+                }
+            });
+            if (!umgewandelt.length) return [];
+
+            saveState();
+            broadcastControlState();   // Die iPads zeigen danach "Keine Joker übrig"
+            umgewandelt.forEach(u => {
+                showToast(`🃏➡️🏅 "${u.name}": ${u.anzahl} übrige${u.anzahl === 1 ? 'r' : ''} Joker = +${u.anzahl} ${u.anzahl === 1 ? 'Punkt' : 'Punkte'}!`, "success");
+            });
+            return umgewandelt;
+        }
+
         function triggerWinConfetti() {
             if (teams.length === 0) {
                 showToast("Noch keine Teams im Spiel!", "danger");
                 return;
             }
+
+            // Muss VOR der Siegerermittlung laufen - die Punkte entscheiden ja mit.
+            const restjoker = loeseRestjokerEin();
 
             let winnerName = "Niemand";
             const highestScore = Math.max(...teams.map(t => t.score));
@@ -4614,7 +4643,7 @@
 
             showToast(`🏆 Glückwunsch an das Siegerteam: ${winnerName}! 🎉`, 'success');
             playSound('fanfare');
-            showFinalePodium();
+            showFinalePodium(restjoker);
 
             resizeCanvas();
             initConfetti();
@@ -4629,7 +4658,7 @@
         }
 
         /* Siegerpodest mit den Top 3 Teams befüllen und anzeigen */
-        function showFinalePodium() {
+        function showFinalePodium(restjoker) {
             const overlay = getEl('finale-podium-overlay');
             const container = getEl('finale-podium-container');
             if (!overlay || !container) return;
@@ -4664,6 +4693,18 @@
                 `;
                 container.appendChild(col);
             });
+
+            // Damit die Klasse versteht, warum sich Punkte kurz vor Schluss noch ändern.
+            const hinweis = getEl('finale-joker-hinweis');
+            if (hinweis) {
+                if (restjoker && restjoker.length) {
+                    hinweis.innerHTML = '🃏➡️🏅 Übrige Joker zählen als Punkte: ' +
+                        restjoker.map(u => `${escapeHtml(u.name)} +${u.anzahl}`).join(' · ');
+                    hinweis.classList.remove('hidden');
+                } else {
+                    hinweis.classList.add('hidden');
+                }
+            }
 
             overlay.classList.remove('hidden');
             overlay.classList.add('flex');
