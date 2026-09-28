@@ -120,32 +120,46 @@
             0%, 100% { box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.5), 0 0 16px rgba(245, 158, 11, 0.22); }
             50%      { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.95), 0 0 34px rgba(245, 158, 11, 0.6); }
         }
-        @keyframes jokerSchimmerRot {
-            0%, 100% { box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.5), 0 0 16px rgba(244, 63, 94, 0.22); }
-            50%      { box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.95), 0 0 34px rgba(244, 63, 94, 0.6); }
+        /* Noch nichts entschieden: Die Karte blinkt zwischen Gold und Rot, damit auf einen
+           Blick klar ist, dass es für dieses Team in beide Richtungen geht - doppelte
+           Punkte oder minus eins. Die Rahmenfarbe kommt hier aus der Animation und darf
+           deshalb in der Klasse NICHT mit !important gesetzt werden: !important schlägt
+           Animationen, der Rahmen bliebe sonst starr. */
+        @keyframes jokerSchimmerOffen {
+            0%, 44%  { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.95), 0 0 30px rgba(245, 158, 11, 0.55);
+                       border-color: rgba(245, 158, 11, 0.9); }
+            56%, 100% { box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.95), 0 0 30px rgba(244, 63, 94, 0.55);
+                       border-color: rgba(244, 63, 94, 0.9); }
         }
         .joker-karte-gold {
             animation: jokerSchimmerGold 1.7s ease-in-out infinite;
             border-color: rgba(245, 158, 11, 0.85) !important;
             background-image: linear-gradient(160deg, rgba(245, 158, 11, 0.16), rgba(245, 158, 11, 0.03) 60%);
         }
-        .joker-karte-rot {
-            animation: jokerSchimmerRot 1.7s ease-in-out infinite;
-            border-color: rgba(244, 63, 94, 0.85) !important;
-            background-image: linear-gradient(160deg, rgba(244, 63, 94, 0.16), rgba(244, 63, 94, 0.03) 60%);
+        .joker-karte-offen {
+            animation: jokerSchimmerOffen 1.6s steps(1, end) infinite;
+            background-image: linear-gradient(160deg, rgba(245, 158, 11, 0.12), rgba(244, 63, 94, 0.12) 90%);
         }
         /* Im hellen Design trägt der Schein weniger - dort etwas kräftiger tönen. */
         html[data-theme="light"] .joker-karte-gold {
             background-image: linear-gradient(160deg, rgba(245, 158, 11, 0.3), rgba(245, 158, 11, 0.08) 60%);
         }
-        html[data-theme="light"] .joker-karte-rot {
-            background-image: linear-gradient(160deg, rgba(244, 63, 94, 0.3), rgba(244, 63, 94, 0.08) 60%);
+        html[data-theme="light"] .joker-karte-offen {
+            background-image: linear-gradient(160deg, rgba(245, 158, 11, 0.22), rgba(244, 63, 94, 0.22) 90%);
         }
         /* Wer Bewegung auf dem Bildschirm nicht verträgt, bekommt den Rahmen ohne Puls. */
         @media (prefers-reduced-motion: reduce) {
-            .joker-karte-gold, .joker-karte-rot { animation: none; }
-            .joker-karte-gold { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.9); }
-            .joker-karte-rot  { box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.9); }
+            .joker-karte-gold, .joker-karte-offen { animation: none; }
+            .joker-karte-gold  { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.9); }
+            /* Ohne Blinken beide Farben nebeneinander im Rahmen zeigen. */
+            .joker-karte-offen { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.9), 0 0 0 4px rgba(244, 63, 94, 0.9); }
+        }
+
+        /* Ohne erkannten Raum ist der Beitritt gesperrt. Eigene Regel, weil
+           disabled:opacity-40 in der vorgenerierten tailwind.css nicht vorkommt. */
+        #student-join-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
         }
 
         /* Kein Zeilenumbruch in kurzen Kopfzeilen-Knöpfen. Als eigene Regel und nicht
@@ -459,16 +473,23 @@
             <h3 class="text-base font-bold text-slate-200 border-b border-slate-800 pb-2"><i class="fa-solid fa-right-to-bracket text-violet-400 mr-1"></i> Spiel beitreten</h3>
             
             <div class="space-y-3">
-                <div>
-                    <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Raum-Code der Lehrkraft:</label>
-                    <input 
-                        type="text" 
-                        id="student-room-input" 
-                        placeholder="z. B. 7c" 
-                        maxlength="8"
-                        class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 font-mono font-bold"
-                    >
+                <!-- Kein Eingabefeld mehr: Der Raum kommt ausschliesslich aus dem QR-Code.
+                     Er wird nur noch gross angezeigt, damit die Klasse sieht, ob sie im
+                     richtigen Raum ist - der Raumname ist ja die Klasse. -->
+                <div id="student-room-known" class="hidden">
+                    <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Du trittst bei:</label>
+                    <div class="w-full bg-slate-950 border-2 border-violet-500/50 rounded-2xl px-4 py-3 text-center">
+                        <span id="student-room-display" class="text-3xl font-black text-violet-300 font-mono tracking-widest">–</span>
+                    </div>
                 </div>
+                <div id="student-room-missing" class="hidden">
+                    <div class="w-full bg-amber-950/40 border border-amber-800/60 rounded-2xl px-4 py-3 text-center space-y-1">
+                        <i class="fa-solid fa-qrcode text-2xl text-amber-400"></i>
+                        <p class="text-amber-200 text-xs font-bold">Bitte den QR-Code der Lehrkraft scannen.</p>
+                        <p class="text-amber-200/70 text-[11px]">Nur darüber kommst du in den richtigen Raum.</p>
+                    </div>
+                </div>
+                <input type="hidden" id="student-room-input" value="">
                 <div>
                     <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Dein Teamname (oder Vorname):</label>
                     <input 
@@ -488,6 +509,7 @@
                 </div>
                 
                 <button 
+                    id="student-join-btn"
                     onclick="joinQuizRoom()" 
                     class="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-violet-900/30 active:scale-95 transition-all text-xs flex items-center justify-center gap-2"
                 >
@@ -1926,6 +1948,15 @@
                     connectStudentControlChannel(registeredRoom);
                     loadStudentPrepSongs(registeredRoom);
                 } else {
+                    // Die Lehrkraft wechselt zum Ausprobieren in die Buzzer-Ansicht - ihr
+                    // eigener Raum-Code steht schon fest, den hier uebernehmen. Sonst
+                    // haette sie ohne QR-Code keinen Weg mehr hinein.
+                    const lehrerRaum = getEl('room-code-input');
+                    const studentRaum = getEl('student-room-input');
+                    if (studentRaum && !studentRaum.value && lehrerRaum && lehrerRaum.value.trim()) {
+                        studentRaum.value = lehrerRaum.value.trim().toLowerCase();
+                    }
+                    updateStudentRoomDisplay();
                     if (studentJoinCard) studentJoinCard.classList.remove('hidden');
                     if (studentBuzzerCard) studentBuzzerCard.classList.add('hidden');
                 }
@@ -2326,8 +2357,12 @@
             const name = nameEl ? nameEl.value.trim() : "";
             const emoji = emojiEl ? emojiEl.value : "🎵";
 
-            if (!room || !name) {
-                showToast("Raum-Code und Teamname sind erforderlich!", "danger");
+            if (!room) {
+                showToast("Kein Raum erkannt - bitte den QR-Code der Lehrkraft scannen.", "danger");
+                return;
+            }
+            if (!name) {
+                showToast("Bitte gib deinen Teamnamen ein!", "danger");
                 return;
             }
 
@@ -4230,7 +4265,7 @@
                 const jokerVorgemerkt = team.activeThisRound ? (team.pendingPoints || 0) : 0;
                 const jokerGewinn = jokerVorgemerkt * 2;
                 const jokerSchimmer = (team.jokerActiveThisRound && !team.presenting)
-                    ? (jokerGewinn > 0 ? ' joker-karte-gold' : ' joker-karte-rot')
+                    ? (jokerGewinn > 0 ? ' joker-karte-gold' : ' joker-karte-offen')
                     : '';
                 let jokerCardBadge = '';
                 if (team.presenting) {
@@ -4249,8 +4284,8 @@
                             <i class="fa-solid fa-masks-theater"></i> JOKER: ${jokerVorgemerkt} × 2 = +${jokerGewinn}
                         </div>`
                         : `
-                        <div class="bg-rose-500/25 text-rose-300 border border-rose-500/50 text-[9px] font-black px-1.5 py-0.5 rounded text-center mt-1">
-                            <i class="fa-solid fa-masks-theater"></i> JOKER: −1 ohne Punkte
+                        <div class="bg-slate-800/80 text-amber-300 border border-amber-500/40 text-[9px] font-black px-1.5 py-0.5 rounded text-center mt-1">
+                            <i class="fa-solid fa-masks-theater"></i> JOKER: ×2 oder −1
                         </div>`;
                 } else {
                     // Zeigt an, ob das Team seinen Joker in diesem Spiel noch hat oder verbraucht hat
@@ -4599,6 +4634,22 @@
            niemanden aus der laufenden Sitzung werfen. */
         let raumWechselPerQr = null;
 
+        /* Zeigt den Raum gross an - oder die Aufforderung, den QR-Code zu scannen.
+           Der Raum steckt nur noch im versteckten Feld, gefuellt aus dem QR-Code. */
+        function updateStudentRoomDisplay() {
+            const roomInput = getEl('student-room-input');
+            const raum = roomInput ? roomInput.value.trim() : "";
+            const bekannt = getEl('student-room-known');
+            const fehlt = getEl('student-room-missing');
+            const anzeige = getEl('student-room-display');
+            const beitrittsKnopf = getEl('student-join-btn');
+
+            if (anzeige) anzeige.innerText = raum ? raum.toUpperCase() : "–";
+            if (bekannt) bekannt.classList.toggle('hidden', !raum);
+            if (fehlt) fehlt.classList.toggle('hidden', !!raum);
+            if (beitrittsKnopf) beitrittsKnopf.disabled = !raum;
+        }
+
         function applyRoomFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
             const queryRoom = (urlParams.get('room') || '').trim().toLowerCase();
@@ -4614,6 +4665,7 @@
 
             const roomInput = getEl('student-room-input');
             if (roomInput) roomInput.value = queryRoom;
+            updateStudentRoomDisplay();
         }
 
         // Starten
