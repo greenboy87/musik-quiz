@@ -155,6 +155,12 @@
             .joker-karte-offen { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.9), 0 0 0 4px rgba(244, 63, 94, 0.9); }
         }
 
+        /* min-width:0 und flex-shrink:0 fehlen in der vorgenerierten tailwind.css.
+           Ohne das erste greift das Abschneiden langer Teamnamen nicht, ohne das zweite
+           quetschen sich die Knöpfe der Präsentier-Zeile zusammen. */
+        .presenter-links  { min-width: 0; flex-wrap: wrap; }
+        .presenter-rechts { flex-shrink: 0; }
+
         /* Ohne erkannten Raum ist der Beitritt gesperrt. Eigene Regel, weil
            disabled:opacity-40 in der vorgenerierten tailwind.css nicht vorkommt. */
         #student-join-btn:disabled {
@@ -1127,6 +1133,9 @@
                 <i class="fa-solid fa-spinner animate-spin text-slate-600 mr-1"></i> Warte auf Antworten von den Schüler-iPads... (Beamerbild ist standardmäßig verdeckt 🖥️🔒)
             </div>
         </div>
+
+        <!-- Präsentierendes Team: schmale Zeile statt voller Karte im Raster -->
+        <div id="presenter-row" class="space-y-1 mb-2 hidden"></div>
 
         <!-- SCOREBOARD GRID -->
         <div id="scoreboard-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 my-2">
@@ -3013,10 +3022,19 @@
             presenterNames.forEach(n => answered.delete(n));
 
             const count = answered.size;
+            const alleDa = expected > 0 && count >= expected;
             valueEl.innerText = `${count}/${expected}`;
-            valueEl.className = (expected > 0 && count >= expected)
+            valueEl.className = alleDa
                 ? "font-black text-xs text-emerald-400"
                 : "font-black text-xs text-slate-100";
+
+            // Haben alle abgegeben, muss niemand mehr auf den Timer warten. Einmal pro
+            // Runde stoppen - sonst liefe der Stopp bei jedem Neuzeichnen erneut.
+            if (alleDa && timerInterval && timerStoppRunde !== currentRound) {
+                timerStoppRunde = currentRound;
+                stopTimer();
+                showToast("Alle haben geantwortet – Timer gestoppt. ⏱️", "success");
+            }
         }
 
         function renderIncomingAnswersList() {
@@ -3417,6 +3435,7 @@
         /* Countdown Timer Logik (Lehrer) */
         let timerInterval = null;
         let bigTimerHideTimeout = null;   // Nachlauf der großen Restzeit-Anzeige
+        let timerStoppRunde = null;       // Runde, in der wegen Vollständigkeit gestoppt wurde
         let preTimerCountdownInterval = null;
 
         function startTimer() {
@@ -4178,6 +4197,70 @@
         }
 
         /* Scoreboard rendern mit FLIP-Methode für fließenden Platzwechsel (Smooth CSS Reordering) */
+        /* Präsentierende Teams stehen nicht im Raster, sondern in einer schmalen Zeile
+           darüber. Sie raten in dieser Runde nicht mit - eine volle Karte mit Punkteknöpfen
+           wäre also nutzlos und nähme am Beamer nur Platz weg. Die Zeile zeigt, was zählt:
+           Platz, Punkte, und der Knopf, um dem Team als Ausgleich einen Joker zu schenken. */
+        function renderPresenterRow(praesentierende, platzierung) {
+            const zeile = getEl('presenter-row');
+            if (!zeile) return;
+
+            if (!praesentierende.length) {
+                zeile.classList.add('hidden');
+                zeile.innerHTML = '';
+                return;
+            }
+
+            zeile.classList.remove('hidden');
+            zeile.innerHTML = praesentierende.map(team => `
+                <div class="flex items-center justify-between gap-2 bg-violet-950/40 border border-violet-700/50 rounded-xl px-3 py-1 font-sans">
+                    <div class="flex items-center gap-2 presenter-links">
+                        <i class="fa-solid fa-microphone text-violet-300"></i>
+                        <span class="text-violet-200 text-[11px] font-black uppercase tracking-wider">Präsentiert</span>
+                        <span class="text-slate-100 text-sm font-bold truncate">${team.emoji || '🎵'} ${escapeHtml(team.name)}</span>
+                        <span class="text-slate-400 text-[11px] font-bold">Platz ${platzierung[team.id]}</span>
+                        <span class="text-slate-100 text-sm font-black">${team.score} Pkt</span>
+                        ${team.jokerUsed
+                            ? '<span class="text-slate-500 text-[10px] font-bold"><i class="fa-solid fa-ban"></i> Joker weg</span>'
+                            : '<span class="text-emerald-400 text-[10px] font-bold"><i class="fa-solid fa-masks-theater"></i> Joker bereit</span>'}
+                    </div>
+                    <div class="flex items-center gap-1 presenter-rechts">
+                        <button
+                            onclick="grantJoker('${team.id}')"
+                            class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-1 rounded transition-all active:scale-95"
+                            title="Diesem Team einen Joker schenken - z.B. als Ausgleich fürs Präsentieren"
+                        >
+                            <i class="fa-solid fa-masks-theater"></i> + Joker
+                        </button>
+                        <button
+                            onclick="toggleTeamPresenter('${team.id}')"
+                            class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold px-2 py-1 rounded transition-all active:scale-95"
+                            title="Präsentier-Modus beenden - Team rät wieder mit"
+                        >
+                            Fertig
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /* Schenkt einem Team seinen Joker (zurück). Die Lehrkraft ist dabei die Instanz,
+           die entscheidet - das iPad übernimmt den Stand beim nächsten Rundensignal. */
+        function grantJoker(id) {
+            const team = teams.find(t => t.id === id);
+            if (!team) return;
+            if (!team.jokerUsed) {
+                showToast(`"${team.name}" hat seinen Joker noch.`, "info");
+                return;
+            }
+            team.jokerUsed = false;
+            saveState();
+            renderScoreboard();
+            broadcastControlState();
+            showToast(`🃏 Joker für "${team.name}" freigeschaltet!`, "success");
+            playSound('up');
+        }
+
         function renderScoreboard() {
             const container = getEl('scoreboard-container');
             const emptyState = getEl('empty-state');
@@ -4214,7 +4297,19 @@
             const highestScore = Math.max(...teams.map(t => t.score));
             const hasLeader = teams.length > 1 && highestScore > 0;
 
-            renderTeams.forEach((team, index) => {
+            /* Der Platz muss aus der GESAMTEN Rangliste kommen, nicht aus der Position im
+               Raster: Präsentierende Teams stehen in einer eigenen Zeile und fehlen im
+               Raster - sonst rückte jedes Team darunter faelschlich einen Platz auf. */
+            const platzierung = {};
+            [...teams].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+                      .forEach((t, i) => { platzierung[t.id] = i + 1; });
+
+            const praesentierende = renderTeams.filter(t => t.presenting);
+            renderTeams = renderTeams.filter(t => !t.presenting);
+            renderPresenterRow(praesentierende, platzierung);
+
+            renderTeams.forEach((team) => {
+                const index = platzierung[team.id] - 1;
                 const isLeader = hasLeader && team.score === highestScore;
                 const isSelected = team.activeThisRound;
                 
