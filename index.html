@@ -44,6 +44,79 @@
             animation: pulse-gold 2.5s infinite ease-in-out;
         }
 
+        /* Große Restzeit am Beamer. Fest positioniert, damit sie auch dann sichtbar
+           bleibt, wenn zu den eingehenden Antworten gescrollt wird - das kleine
+           Abzeichen oben in der Steuerleiste war dann weg. Unten links, weil unten
+           rechts die Hinweis-Einblendungen aufpoppen. */
+        /* Standardmäßig aus. Bewusst NICHT über Tailwinds .hidden gesteuert: Ein
+           ID-Selektor sticht eine Klasse aus, display:flex würde .hidden schlagen
+           und die Anzeige bliebe dauerhaft stehen. */
+        #timer-big-display {
+            position: fixed;
+            left: 1.25rem;
+            bottom: 1.25rem;
+            z-index: 30;
+            pointer-events: none;
+            display: none;
+            align-items: baseline;
+            gap: 0.15em;
+            padding: 0.15em 0.45em 0.2em;
+            border-radius: 1.25rem;
+            background: rgba(15, 23, 42, 0.78);
+            border: 2px solid rgba(245, 158, 11, 0.45);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(6px);
+        }
+        #timer-big-display.sichtbar { display: flex; }
+        #timer-big-display .zahl {
+            font-size: min(13vw, 132px);
+            line-height: 0.95;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+            color: #fbbf24;
+            text-shadow: 0 0 45px rgba(245, 158, 11, 0.55);
+        }
+        #timer-big-display .einheit {
+            font-size: min(4vw, 34px);
+            font-weight: 800;
+            color: #fcd34d;
+            opacity: 0.85;
+        }
+        /* Letzte fünf Sekunden: Farbe und Puls wechseln auf Rot. */
+        #timer-big-display.kritisch {
+            border-color: rgba(244, 63, 94, 0.85);
+            background: rgba(76, 5, 25, 0.82);
+            animation: timerCritical 0.6s infinite ease-in-out;
+        }
+        #timer-big-display.kritisch .zahl {
+            color: #fda4af;
+            text-shadow: 0 0 45px rgba(244, 63, 94, 0.6);
+        }
+        #timer-big-display.kritisch .einheit { color: #fecdd3; }
+
+        html[data-theme="light"] #timer-big-display {
+            background: rgba(255, 255, 255, 0.92);
+            border-color: rgba(217, 119, 6, 0.7);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
+        }
+        html[data-theme="light"] #timer-big-display .zahl {
+            color: #b45309;
+            text-shadow: none;
+        }
+        html[data-theme="light"] #timer-big-display .einheit { color: #92400e; }
+        html[data-theme="light"] #timer-big-display.kritisch {
+            background: rgba(255, 241, 242, 0.95);
+        }
+        html[data-theme="light"] #timer-big-display.kritisch .zahl { color: #be123c; }
+        html[data-theme="light"] #timer-big-display.kritisch .einheit { color: #9f1239; }
+
+        /* Kein Zeilenumbruch in kurzen Kopfzeilen-Knöpfen. Als eigene Regel und nicht
+           als Tailwind-Klasse, weil tailwind.css vorgeneriert ist und "whitespace-nowrap"
+           dort nicht vorkommt - siehe CLAUDE.md. */
+        .kein-umbruch {
+            white-space: nowrap;
+        }
+
         /* Sanfte Einblendung */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(8px); }
@@ -294,6 +367,11 @@
     <div id="reaction-layer" class="fixed inset-0 pointer-events-none z-40 overflow-hidden"></div>
 
     <!-- Großer 3-2-1 Countdown auf dem Beamer-Bildschirm -->
+    <!-- Große Restzeit am Beamer, sichtbar unabhängig von der Scrollposition -->
+    <div id="timer-big-display">
+        <span class="zahl" id="timer-big-number">30</span><span class="einheit">s</span>
+    </div>
+
     <div id="timer-countdown-overlay" class="fixed inset-0 flex items-center justify-center pointer-events-none z-40 hidden">
         <span id="timer-countdown-number" class="font-black text-amber-400" style="font-size: min(35vw, 320px); line-height: 1; text-shadow: 0 0 60px rgba(245, 158, 11, 0.6), 0 8px 24px rgba(0,0,0,0.6);"></span>
     </div>
@@ -387,12 +465,21 @@
                     <span id="student-prep-conn-dot" class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span id="student-prep-badge-info" class="text-xs font-bold text-slate-300">Verbunden: </span>
                 </div>
-                <button
-                    onclick="leaveQuizRoom()"
-                    class="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                    Wechseln <i class="fa-solid fa-right-from-bracket"></i>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button
+                        onclick="reconnectStudentChannel(true)"
+                        class="text-[10px] text-slate-500 hover:text-slate-300 transition-colors kein-umbruch"
+                        title="Holt den aktuellen Stand neu, falls das iPad hängen geblieben ist"
+                    >
+                        <i class="fa-solid fa-rotate"></i> Neu verbinden
+                    </button>
+                    <button
+                        onclick="leaveQuizRoom()"
+                        class="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                        Wechseln <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="space-y-3">
@@ -419,12 +506,21 @@
                     <span id="student-badge-info" class="text-xs font-bold text-slate-300">Verbunden: </span>
                     <span id="student-round-badge" class="hidden text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30 px-2.5 py-0.5 rounded-full">Runde -</span>
                 </div>
-                <button 
-                    onclick="leaveQuizRoom()" 
-                    class="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                    Wechseln <i class="fa-solid fa-right-from-bracket"></i>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button
+                        onclick="reconnectStudentChannel(true)"
+                        class="text-[10px] text-slate-500 hover:text-slate-300 transition-colors kein-umbruch"
+                        title="Holt den aktuellen Stand neu, falls das iPad hängen geblieben ist"
+                    >
+                        <i class="fa-solid fa-rotate"></i> Neu verbinden
+                    </button>
+                    <button
+                        onclick="leaveQuizRoom()"
+                        class="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                        Wechseln <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="space-y-4">
@@ -535,6 +631,90 @@
                         class="w-1/2 px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-lg shadow-violet-900/30"
                     >
                         Freischalten 🔑
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- CLOUD-SICHERUNG DIALOG (verschlüsselter Tresor) -->
+    <!-- ========================================== -->
+    <div id="cloud-sync-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-sm w-full shadow-2xl animate-fadeIn space-y-4 text-center">
+            <div class="inline-block p-4 bg-violet-600/20 rounded-3xl border border-violet-500/30 shadow-lg shadow-violet-950/40">
+                <i class="fa-solid fa-cloud text-3xl text-violet-400"></i>
+            </div>
+            <div>
+                <h3 id="cloud-modal-title" class="text-lg font-bold text-white">Cloud-Sicherung einrichten</h3>
+                <p id="cloud-modal-desc" class="text-slate-400 text-xs mt-1">Deine Klassen liegen sonst nur in diesem Browser. Mit einem Passwort werden sie verschlüsselt in der Cloud gesichert.</p>
+            </div>
+
+            <!-- Noch nicht verbunden: Passwort eingeben -->
+            <div id="cloud-connect-section" class="space-y-3">
+                <div class="relative flex items-center">
+                    <input
+                        type="password"
+                        id="cloud-pass-input"
+                        placeholder="Passwort (min. 12 Zeichen)"
+                        class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 text-center font-sans"
+                        onkeydown="if(event.key === 'Enter') CloudTresor.connectFromInput()"
+                    >
+                    <button
+                        type="button"
+                        onclick="togglePasswordVisibility('cloud-pass-input', 'cloud-pw-icon')"
+                        class="absolute right-4 text-slate-500 hover:text-slate-300 text-xs p-1"
+                        title="Passwort anzeigen/verbergen"
+                    >
+                        <i class="fa-solid fa-eye" id="cloud-pw-icon"></i>
+                    </button>
+                </div>
+                <p class="text-slate-500 text-[10px] font-sans">Notier dir das Passwort. <span class="text-amber-400">Ohne es ist die Sicherung nicht wiederherstellbar – es gibt bewusst keine Hintertür.</span></p>
+                <div class="flex gap-2">
+                    <button
+                        onclick="CloudTresor.closeModal()"
+                        class="w-1/2 px-4 py-3 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-2xl text-xs font-bold transition-all active:scale-95"
+                    >
+                        Abbrechen
+                    </button>
+                    <button
+                        onclick="CloudTresor.connectFromInput()"
+                        class="w-1/2 px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-lg shadow-violet-900/30"
+                    >
+                        Einrichten 🔒
+                    </button>
+                </div>
+            </div>
+
+            <!-- Verbunden: Sichern / Wiederherstellen / Beenden -->
+            <div id="cloud-actions-section" class="space-y-3 hidden">
+                <div class="grid grid-cols-2 gap-2">
+                    <button
+                        onclick="CloudTresor.upload(true)"
+                        class="px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-lg shadow-violet-900/30"
+                    >
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Jetzt sichern
+                    </button>
+                    <button
+                        onclick="CloudTresor.restore()"
+                        class="px-4 py-3 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-2xl text-xs font-bold transition-all active:scale-95"
+                    >
+                        <i class="fa-solid fa-cloud-arrow-down"></i> Wiederherstellen
+                    </button>
+                </div>
+                <div class="flex gap-2">
+                    <button
+                        onclick="CloudTresor.disconnect()"
+                        class="w-1/2 px-4 py-3 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-900/40 text-rose-300 rounded-2xl text-xs font-bold transition-all active:scale-95"
+                    >
+                        Sicherung beenden
+                    </button>
+                    <button
+                        onclick="CloudTresor.closeModal()"
+                        class="w-1/2 px-4 py-3 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-2xl text-xs font-bold transition-all active:scale-95"
+                    >
+                        Schließen
                     </button>
                 </div>
             </div>
@@ -715,6 +895,16 @@
                             <i class="fa-solid fa-upload"></i> Datei laden
                         </button>
                         <input type="file" id="backup-file-input" accept="application/json" class="hidden" onchange="handleImportBackupFile(event)">
+                    </div>
+                </div>
+
+                <!-- Cloud-Sicherung: verschlüsselte Kopie der Klassen, falls der Browser sie verliert -->
+                <div class="border-t border-slate-700/40 pt-1.5 space-y-1">
+                    <div class="grid grid-cols-2 gap-1.5 items-center">
+                        <button id="cloud-sync-btn" onclick="CloudTresor.menu()" class="bg-slate-900/60 hover:bg-slate-900 border border-slate-700/50 text-slate-300 font-bold py-1 rounded-lg text-[10px] transition-all font-sans" title="Spielstände verschlüsselt in der Cloud sichern">
+                            <i class="fa-solid fa-cloud"></i> Cloud-Sicherung
+                        </button>
+                        <span id="cloud-sync-status" class="text-slate-500 text-[10px] text-center font-sans">nicht verbunden</span>
                     </div>
                 </div>
 
@@ -976,7 +1166,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
         import {
-            getDatabase, ref, push, set, onValue, onChildAdded,
+            getDatabase, ref, push, set, get, onValue, onChildAdded,
             query, orderByChild, startAfter, serverTimestamp, remove
         } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
@@ -999,6 +1189,7 @@
         window.fbRef = ref;
         window.fbPush = push;
         window.fbSet = set;
+        window.fbGet = get;
         window.fbOnValue = onValue;
         window.fbOnChildAdded = onChildAdded;
         window.fbQuery = query;
@@ -1103,6 +1294,9 @@
                 };
                 
                 localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys', JSON.stringify(saveDataObj));
+
+                // Läuft der Cloud-Sync, wandert jede Änderung verzögert mit hoch.
+                if (window.CloudTresor && CloudTresor.active()) CloudTresor.scheduleUpload();
             } catch (err) {
                 console.error("Fehler beim Speichern des Zustands:", err);
             }
@@ -1170,6 +1364,375 @@
             };
             reader.readAsText(file);
         }
+
+        /* ==========================================================
+           CLOUD-SICHERUNG (verschlüsselter Tresor)
+           ==========================================================
+           Der Spielstand liegt sonst nur im localStorage dieses einen Browsers -
+           ein "Website-Daten löschen" genügt, und die Klassen sind weg. Hier wird er
+           auf DIESEM Gerät verschlüsselt (AES-GCM, Schlüssel per PBKDF2 aus dem
+           Sicherungs-Passwort) und erst danach zu Firebase geschickt. Dort steht nur
+           unlesbarer Zeichensalat - Klassennamen, Teamnamen und Punkte sind ohne das
+           Passwort nicht zu sehen.
+
+           BEWUSST NUR EINE SICHERUNG, KEIN GERÄTE-ABGLEICH: Dieses Gerät schreibt,
+           die Cloud liest mit. Zurück kommen die Daten nur, wenn man sie ausdrücklich
+           wiederherstellt. Damit entfällt jede Konflikt- und Vorrangfrage zwischen
+           zwei Geräten - die gäbe es hier ohnehin nicht, gespielt wird auf einem Mac.
+
+           Der Speicherort ergibt sich aus dem Passwort selbst (SHA-256 mit eigenem
+           Zusatz). Kehrseite: Ohne das Passwort ist die Sicherung verloren - das ist
+           der Sinn echter Verschlüsselung, es gibt bewusst keine Hintertür.
+
+           Verwandt, aber getrennt: school-tool nutzt dasselbe Verfahren in einem
+           eigenen Firebase-Projekt und unter einem eigenen Pfad. */
+        const CloudTresor = {
+            MASTER_KEY: 'quiz_scoreboard_master_data_v5_greenboys',
+            PASS_KEY: 'cloud-sync-passwort',
+            STAND_KEY: 'cloud-sync-stand',
+            PFAD: 'tresor',
+            MIN_LAENGE: 12,
+            ITERATIONEN: 250000,
+
+            passwort: null,
+            id: null,
+            salz: null,
+            schluessel: null,
+            timer: null,
+            amLaufen: false,
+
+            active() { return !!this.schluessel; },
+
+            /* Beim Öffnen der Lehrer-Ansicht: gemerktes Passwort still wiederverwenden.
+               Die Schüler-Ansicht fasst die Sicherung nie an. */
+            init() {
+                if (this.active()) return;
+                const gemerkt = localStorage.getItem(this.PASS_KEY);
+                if (gemerkt) this.connect(gemerkt, true);
+                else this.updateButton();
+            },
+
+            /* ---------- Bedienung ---------- */
+            menu() {
+                const modal = getEl('cloud-sync-modal');
+                const connectSection = getEl('cloud-connect-section');
+                const actionsSection = getEl('cloud-actions-section');
+                const title = getEl('cloud-modal-title');
+                const desc = getEl('cloud-modal-desc');
+
+                if (this.active()) {
+                    if (title) title.innerText = "Cloud-Sicherung läuft";
+                    if (desc) desc.innerText = `Nach jeder Änderung wird automatisch gesichert. Zuletzt: ${this.zeit(this.localStand())}.`;
+                    if (connectSection) connectSection.classList.add('hidden');
+                    if (actionsSection) actionsSection.classList.remove('hidden');
+                } else {
+                    if (title) title.innerText = "Cloud-Sicherung einrichten";
+                    if (desc) desc.innerText = "Deine Klassen liegen sonst nur in diesem Browser. Mit einem Passwort werden sie verschlüsselt in der Cloud gesichert.";
+                    if (connectSection) connectSection.classList.remove('hidden');
+                    if (actionsSection) actionsSection.classList.add('hidden');
+                    const input = getEl('cloud-pass-input');
+                    if (input) input.value = '';
+                }
+
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
+                const input = getEl('cloud-pass-input');
+                if (input && !this.active()) input.focus();
+            },
+
+            closeModal() {
+                const modal = getEl('cloud-sync-modal');
+                const input = getEl('cloud-pass-input');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+                if (input) input.value = '';
+            },
+
+            connectFromInput() {
+                const input = getEl('cloud-pass-input');
+                const pw = input ? input.value.trim() : "";
+                if (pw.length < this.MIN_LAENGE) {
+                    showToast(`Das Passwort braucht mindestens ${this.MIN_LAENGE} Zeichen.`, "danger");
+                    return;
+                }
+                this.closeModal();
+                this.connect(pw, false);
+            },
+
+            disconnect() {
+                this.closeModal();
+                showCustomConfirm(
+                    "Cloud-Sicherung beenden?",
+                    "Die Klassen bleiben auf diesem Gerät und in der Cloud erhalten - dieses Gerät sichert nur nicht mehr automatisch.",
+                    () => {
+                        localStorage.removeItem(this.PASS_KEY);
+                        clearTimeout(this.timer);
+                        this.passwort = this.id = this.salz = this.schluessel = null;
+                        this.setStatus("nicht verbunden");
+                        this.updateButton();
+                        showToast("Cloud-Sicherung beendet.", "info");
+                    }
+                );
+            },
+
+            /* ---------- Verbinden ---------- */
+            async connect(pw, still) {
+                try {
+                    await this._connect(pw, still);
+                } catch (e) {
+                    this.schluessel = null;
+                    this.updateButton();
+                    this.setStatus("Fehler", true);
+                    showToast("Cloud-Sicherung fehlgeschlagen: " + this.fehlertext(e), "danger");
+                }
+            },
+
+            async _connect(pw, still) {
+                if (!window.fbDb || !window.fbGet) throw new Error("Datenbank noch nicht bereit");
+                this.passwort = pw;
+                this.id = await this.tresorId(pw);
+                this.setStatus("verbinde …");
+
+                const snap = await window.fbGet(window.fbRef(window.fbDb, `${this.PFAD}/${this.id}`));
+                const vorhanden = snap.val();
+
+                if (vorhanden && vorhanden.salz) {
+                    this.salz = this.vonB64(vorhanden.salz);
+                    this.schluessel = await this.schluesselAus(pw, this.salz);
+                    let fern;
+                    try {
+                        fern = await this.entschluesseln(vorhanden);
+                    } catch (e) {
+                        this.schluessel = null;
+                        this.setStatus("falsches Passwort", true);
+                        this.updateButton();
+                        showToast("Mit diesem Passwort lassen sich die Daten nicht entschlüsseln.", "danger");
+                        return;
+                    }
+                    localStorage.setItem(this.PASS_KEY, pw);
+                    this.updateButton();
+                    this.setStatus("verbunden");
+                    // Kein automatischer Upload beim Verbinden: Läge hier ein frisch
+                    // aufgesetzter Browser, überschriebe er damit sofort die Sicherung,
+                    // die er eigentlich braucht. Hochgeladen wird erst bei einer
+                    // echten Änderung - und leer nie, siehe upload().
+                    if (!still) {
+                        showToast(`Verbunden. In der Cloud liegen ${this.zaehle(fern)} (${this.zeit(vorhanden.stand)}).`, "success");
+                    }
+                } else {
+                    // Unter diesem Passwort liegt nichts. Entweder erste Einrichtung - oder
+                    // ein Tippfehler, der sonst still eine zweite, leere Sicherung anlegt
+                    // und die eigene unauffindbar macht. Deshalb nachfragen.
+                    const weiter = async () => {
+                        this.salz = crypto.getRandomValues(new Uint8Array(16));
+                        this.schluessel = await this.schluesselAus(pw, this.salz);
+                        localStorage.setItem(this.PASS_KEY, pw);
+                        this.updateButton();
+                        await this.upload(false);
+                        showToast("Cloud-Sicherung eingerichtet. 🔒", "success");
+                    };
+                    if (still) { await weiter(); return; }
+                    showCustomConfirm(
+                        "Neue Sicherung anlegen?",
+                        `Unter diesem Passwort liegt noch nichts. Richtest du die Sicherung gerade erst ein? Dann OK - ${this.zaehle(this.localData())} von diesem Gerät werden verschlüsselt hochgeladen. ` +
+                        `Wolltest du eine bestehende Sicherung öffnen, hast du dich vermutlich vertippt: abbrechen und noch einmal versuchen.`,
+                        weiter
+                    );
+                    this.setStatus("nicht verbunden");
+                }
+            },
+
+            /* ---------- Sichern ---------- */
+            /* Der Anstoß kommt aus saveState(). Während eines laufenden Uploads
+               ignorieren: upload() ruft selbst saveState() auf, sonst würde sich
+               der Timer endlos neu setzen. */
+            scheduleUpload() {
+                if (this.amLaufen) return;
+                clearTimeout(this.timer);
+                this.timer = setTimeout(() => this.upload(false), 1500);
+            },
+
+            async upload(laut) {
+                if (!this.active() || this.amLaufen) return;
+
+                const daten = this.localData();
+                // Eine leere Sitzung darf eine gefüllte Sicherung nie ersetzen. Sonst
+                // löscht ein frisch aufgesetzter Browser beim ersten Speichern genau
+                // das, wofür die Sicherung da ist.
+                if (this.zaehlKlassen(daten) === 0) {
+                    this.setStatus("nichts zu sichern");
+                    if (laut) showToast("Auf diesem Gerät sind keine Klassen - es wird nichts hochgeladen, damit die vorhandene Sicherung erhalten bleibt.", "info");
+                    return;
+                }
+
+                this.amLaufen = true;
+                try {
+                    const stand = Date.now();
+                    const paket = await this.verschluesseln(daten);
+                    await window.fbSet(window.fbRef(window.fbDb, `${this.PFAD}/${this.id}`), {
+                        ...paket, stand: stand, geraet: this.geraetName()
+                    });
+                    localStorage.setItem(this.STAND_KEY, String(stand));
+                    this.setStatus("gesichert " + this.zeit(stand));
+                    if (laut) {
+                        this.closeModal();
+                        showToast("Verschlüsselt gesichert. 🔒", "success");
+                    }
+                } catch (e) {
+                    this.setStatus("Sichern fehlgeschlagen", true);
+                    if (laut) showToast("Sichern fehlgeschlagen: " + this.fehlertext(e), "danger");
+                } finally {
+                    this.amLaufen = false;
+                }
+            },
+
+            /* ---------- Wiederherstellen ---------- */
+            async restore() {
+                if (!this.active()) return;
+                try {
+                    const snap = await window.fbGet(window.fbRef(window.fbDb, `${this.PFAD}/${this.id}`));
+                    const paket = snap.val();
+                    if (!paket) { showToast("In der Cloud liegt noch nichts.", "info"); return; }
+                    const daten = await this.entschluesseln(paket);
+                    this.closeModal();
+                    showCustomConfirm(
+                        "Aus der Cloud wiederherstellen?",
+                        `Sicherung (${this.zeit(paket.stand)}, ${paket.geraet || 'anderes Gerät'}): ${this.zaehle(daten)}. ` +
+                        `Auf diesem Gerät: ${this.zaehle(this.localData())}. ` +
+                        `Die Klassen auf diesem Gerät werden dabei ersetzt.`,
+                        () => this.uebernehmen(daten, paket.stand || Date.now())
+                    );
+                } catch (e) {
+                    showToast("Wiederherstellen fehlgeschlagen: " + this.fehlertext(e), "danger");
+                }
+            },
+
+            async uebernehmen(daten, stand) {
+                localStorage.setItem(this.MASTER_KEY, JSON.stringify(daten));
+                localStorage.setItem(this.STAND_KEY, String(stand));
+                showToast("Wiederhergestellt - Seite wird neu geladen.", "success");
+                setTimeout(() => location.reload(), 800);
+            },
+
+            /* ---------- Verschlüsselung ---------- */
+            async schluesselAus(pw, salz) {
+                const basis = await crypto.subtle.importKey(
+                    'raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+                return crypto.subtle.deriveKey(
+                    { name: 'PBKDF2', salt: salz, iterations: this.ITERATIONEN, hash: 'SHA-256' },
+                    basis, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+            },
+
+            /* Der Speicherort hängt am Passwort, damit ein neu aufgesetzter Browser nur
+               dieses eine Geheimnis braucht. Bewusst ein anderer Zusatz als bei der
+               Verschlüsselung. */
+            async tresorId(pw) {
+                const h = await crypto.subtle.digest('SHA-256',
+                    new TextEncoder().encode('musik-quiz-tresor-v1|' + pw));
+                return [...new Uint8Array(h)].slice(0, 16).map(b => b.toString(16).padStart(2, '0')).join('');
+            },
+
+            async verschluesseln(daten) {
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+                const klar = new TextEncoder().encode(JSON.stringify(daten));
+                const chiffre = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, this.schluessel, klar);
+                return {
+                    chiffre: this.nachB64(new Uint8Array(chiffre)),
+                    iv: this.nachB64(iv),
+                    salz: this.nachB64(this.salz)
+                };
+            },
+
+            async entschluesseln(paket) {
+                const iv = this.vonB64(paket.iv);
+                const chiffre = this.vonB64(paket.chiffre);
+                const klar = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, this.schluessel, chiffre);
+                return JSON.parse(new TextDecoder().decode(klar));
+            },
+
+            nachB64(bytes) {
+                let bin = '';
+                bytes.forEach(b => { bin += String.fromCharCode(b); });
+                return btoa(bin);
+            },
+            vonB64(s) { return Uint8Array.from(atob(s), c => c.charCodeAt(0)); },
+
+            /* ---------- Kleinkram ---------- */
+            localData() {
+                saveState();
+                try { return JSON.parse(localStorage.getItem(this.MASTER_KEY) || '{}'); }
+                catch (e) { return {}; }
+            },
+
+            localStand() {
+                return parseInt(localStorage.getItem(this.STAND_KEY) || '0', 10) || 0;
+            },
+
+            /* "Standard-Sitzung" ist der leere Vorgabeplatz, keine echte Klasse. */
+            zaehlKlassen(daten) {
+                const cls = (daten && daten.classes) || {};
+                return Object.keys(cls).filter(n => n !== "Standard-Sitzung").length;
+            },
+
+            zaehle(daten) {
+                const cls = (daten && daten.classes) || {};
+                const namen = Object.keys(cls).filter(n => n !== "Standard-Sitzung");
+                const teamZahl = namen.reduce((a, n) => a + ((cls[n] && cls[n].teams) || []).length, 0);
+                return `${namen.length} ${namen.length === 1 ? 'Klasse' : 'Klassen'}, ` +
+                       `${teamZahl} ${teamZahl === 1 ? 'Team' : 'Teams'}`;
+            },
+
+            /* Der häufigste Stolperstein ist die fehlende Freigabe in der Firebase-Konsole. */
+            fehlertext(e) {
+                const code = ((e && (e.code || e.message)) || '').toString().toUpperCase();
+                if (code.includes('PERMISSION_DENIED') || code.includes('PERMISSION DENIED')) {
+                    return 'Die Firebase-Regeln geben den Pfad „tresor" noch nicht frei - siehe firebase-regeln.md.';
+                }
+                return (e && e.message) ? e.message : String(e);
+            },
+
+            geraetName() {
+                const p = navigator.platform || '';
+                if (/iPad|iPhone/i.test(navigator.userAgent)) return 'iPad/iPhone';
+                if (/Mac/i.test(p)) return 'Mac';
+                if (/Win/i.test(p)) return 'Windows';
+                return 'Gerät';
+            },
+
+            zeit(ms) {
+                if (!ms) return '–';
+                const d = new Date(ms);
+                const heute = new Date().toDateString() === d.toDateString();
+                return heute
+                    ? d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+                    : d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ' ' +
+                      d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            },
+
+            setStatus(text, warnung) {
+                const el = getEl('cloud-sync-status');
+                if (!el) return;
+                el.innerText = text || '';
+                el.classList.toggle('text-rose-400', !!warnung);
+                el.classList.toggle('text-slate-500', !warnung);
+            },
+
+            updateButton() {
+                const btn = getEl('cloud-sync-btn');
+                if (!btn) return;
+                const an = this.active();
+                btn.innerHTML = an
+                    ? '<i class="fa-solid fa-cloud"></i> Sicherung an'
+                    : '<i class="fa-solid fa-cloud"></i> Cloud-Sicherung';
+                btn.classList.toggle('text-emerald-400', an);
+                btn.classList.toggle('text-slate-300', !an);
+            }
+        };
+        window.CloudTresor = CloudTresor;
 
         /* Rundenwechsel/Timer-Synchronisierung auf die Schüler-iPads (über Firebase) */
         async function broadcastControlState(timerSeconds = -1, resetToken = null) {
@@ -1379,6 +1942,8 @@
             if (view === 'student') {
                 studentSection.classList.remove('hidden');
                 teacherSection.classList.add('hidden');
+                // Die große Restzeit gehört zum Beamerbild, nicht über die Buzzer-Ansicht.
+                if (typeof hideBigTimer === 'function') hideBigTimer();
                 if (fbUnsubscribeMessages) {
                     fbUnsubscribeMessages();
                     fbUnsubscribeMessages = null;
@@ -1404,6 +1969,8 @@
                 studentSection.classList.add('hidden');
                 teacherSection.classList.remove('hidden');
                 connectLiveRoom(true);
+                // Erst hier, nie in der Schüler-Ansicht: der Tresor gehört der Lehrkraft.
+                if (window.CloudTresor) CloudTresor.init();
             }
         }
 
@@ -1532,6 +2099,8 @@
            aktuellen Stand beim Verbinden UND hält sich danach automatisch aktuell -
            inklusive automatischer Wiederverbindung, falls die Verbindung kurz aussetzt. */
         let fbUnsubscribeControl = null;
+        let controlRetryTimer = null;      // Läuft, wenn ein Neuaufbau ansteht
+        let controlRetryDelay = 0;         // Wartezeit des nächsten Versuchs (ms)
 
         function connectStudentControlChannel(room) {
             if (fbUnsubscribeControl) {
@@ -1541,6 +2110,7 @@
 
             const controlRef = window.fbRef(window.fbDb, `rooms/${room}/control`);
             fbUnsubscribeControl = window.fbOnValue(controlRef, (snapshot) => {
+                controlRetryDelay = 0;   // Zustellung klappt wieder
                 const payload = snapshot.val();
                 if (payload) {
                     if (payload.reset) {
@@ -1556,8 +2126,56 @@
                     // auch wenn Runde/Timer den Button gerade erst wieder freigegeben hätten.
                     updateStudentLockState(payload.locked === true);
                 }
+            }, (fehler) => {
+                // Ohne diesen Zweig verschwand ein abgebrochener Listener stillschweigend:
+                // Das iPad blieb im letzten Zustand stehen (z.B. "Zeit abgelaufen", Feld
+                // gesperrt) und wurde erst durch ein Neuladen der Seite wieder wach.
+                console.error("Live-Kanal abgebrochen:", fehler);
+                fbUnsubscribeControl = null;
+                scheduleControlRetry();
             });
         }
+
+        /* Neuaufbau mit wachsender Wartezeit (1s, 2s, 4s … max. 15s), damit ein
+           dauerhaft blockierter Kanal nicht im Sekundentakt gegen die Wand läuft. */
+        function scheduleControlRetry() {
+            clearTimeout(controlRetryTimer);
+            controlRetryDelay = controlRetryDelay ? Math.min(controlRetryDelay * 2, 15000) : 1000;
+            controlRetryTimer = setTimeout(() => reconnectStudentChannel(false), controlRetryDelay);
+        }
+
+        /* Baut den Live-Kanal des Schülergeräts neu auf. laut = vom "Neu verbinden"-
+           Knopf ausgelöst, dann gibt es eine Rückmeldung; still passiert es von selbst,
+           wenn die Seite wieder sichtbar wird, das Netz zurückkommt oder ein Listener
+           abgebrochen ist. */
+        function reconnectStudentChannel(laut) {
+            const room = localStorage.getItem('student_room_code');
+            const name = localStorage.getItem('student_team_name');
+            if (!room || !name || currentView !== 'student') return;
+
+            // Das Firebase-Modul lädt verzögert. Kommt der Anstoß zu früh (z.B. weil die
+            // Seite gerade erst sichtbar wurde), später noch einmal versuchen statt zu werfen.
+            if (!window.fbDb || !window.fbRef || !window.fbOnValue) {
+                scheduleControlRetry();
+                return;
+            }
+
+            clearTimeout(controlRetryTimer);
+            connectStudentControlChannel(room);
+            // Bewusst OHNE loadStudentPrepSongs: Das leert die Song-Felder, solange der
+            // Spickzettel noch nicht abgeschickt ist - beim App-Wechsel wäre damit
+            // weggewischt, was das Kind gerade tippt.
+            if (laut) showToast("Verbindung neu aufgebaut. 🔄", "success");
+        }
+
+        /* Die beiden häufigsten Fälle auf einem iPad: Gerät war gesperrt oder das Kind
+           war kurz in einer anderen App (Safari friert die Seite dann ein), und das WLAN
+           war einen Moment weg. Beide Male den Kanal neu aufsetzen - kommt der alte noch,
+           schadet das nichts, weil connectStudentControlChannel vorher abmeldet. */
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) reconnectStudentChannel(false);
+        });
+        window.addEventListener('online', () => reconnectStudentChannel(false));
 
         /* Die Lehrkraft hat eine neue Sitzung gestartet: Joker, Antwortsperre und
            Spickzettel auf diesem Gerät wieder freigeben. Das Token verhindert, dass
@@ -1980,6 +2598,10 @@
                         showToast("✅ Verbindung wiederhergestellt!", "success");
                     }
                 }
+                // Nach einem Abriss den Runden-Kanal des Schülergeräts neu aufsetzen:
+                // Die Leitung steht dann zwar wieder, der Listener darüber aber nicht
+                // zwangsläufig - und ohne ihn bleibt das iPad im alten Zustand stehen.
+                if (connected) reconnectStudentChannel(false);
             }
         }
 
@@ -2787,6 +3409,7 @@
 
         /* Countdown Timer Logik (Lehrer) */
         let timerInterval = null;
+        let bigTimerHideTimeout = null;   // Nachlauf der großen Restzeit-Anzeige
         let preTimerCountdownInterval = null;
 
         function startTimer() {
@@ -2819,6 +3442,28 @@
             }, 1000);
         }
 
+        /* Die Restzeit steht an zwei Stellen: klein in der Steuerleiste, wo der Timer
+           bedient wird, und groß unten links, wo sie auch beim Scrollen am Beamer
+           sichtbar bleibt. */
+        function showBigTimer(secondsLeft) {
+            const box = getEl('timer-big-display');
+            const number = getEl('timer-big-number');
+            if (!box || !number) return;
+            // Nur im Beamerbild. Die Prüfung muss hier stehen und nicht beim
+            // Ansichtswechsel: Die Sekundenschleife ruft diese Funktion jede Sekunde
+            // erneut auf und würde die Anzeige sonst sofort wieder einblenden.
+            if (currentView !== 'teacher') { hideBigTimer(); return; }
+            number.innerText = String(Math.max(secondsLeft, 0));
+            box.classList.add('sichtbar');
+            box.classList.toggle('kritisch', secondsLeft > 0 && secondsLeft <= 5);
+        }
+
+        function hideBigTimer() {
+            const box = getEl('timer-big-display');
+            if (!box) return;
+            box.classList.remove('sichtbar', 'kritisch');
+        }
+
         function runTimer(duration) {
             let secondsLeft = duration;
             const display = getEl('teacher-timer-display');
@@ -2826,12 +3471,14 @@
                 display.innerText = `${secondsLeft}s`;
                 display.classList.remove('hidden', 'timer-critical');
             }
+            showBigTimer(secondsLeft);
 
             broadcastControlState(secondsLeft);
 
             timerInterval = setInterval(() => {
                 secondsLeft--;
                 if (display) display.innerText = `${secondsLeft}s`;
+                showBigTimer(secondsLeft);
 
                 broadcastControlState(secondsLeft);
 
@@ -2849,6 +3496,11 @@
                         display.classList.remove('hidden', 'timer-critical');
                         setTimeout(() => display.classList.add('hidden'), 6000);
                     }
+                    // Die große Anzeige ebenso: erst einen Moment auf 0 stehen lassen,
+                    // damit die Klasse das Ende sieht, dann ausblenden.
+                    showBigTimer(0);
+                    clearTimeout(bigTimerHideTimeout);
+                    bigTimerHideTimeout = setTimeout(hideBigTimer, 6000);
                     playSound('down');
 
                     const autoLockEl = getEl('auto-lock-toggle');
@@ -2875,6 +3527,11 @@
 
             const display = getEl('teacher-timer-display');
             if (display) display.classList.add('hidden');
+
+            // Beim Abbrechen sofort weg. Läuft der Timer regulär aus, setzt runTimer
+            // die Anzeige direkt danach noch einmal auf 0 - mit eigenem Nachlauf.
+            clearTimeout(bigTimerHideTimeout);
+            hideBigTimer();
 
             hideCountdownOverlay();
 

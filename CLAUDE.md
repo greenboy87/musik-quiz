@@ -21,3 +21,19 @@ ob dort Commits liegen, die es auf GitHub noch nicht gibt.
 
 Läuft über GitHub, nicht über Dateisynchronisation: `git pull` vor dem Arbeiten,
 `git commit` und `git push` danach.
+
+## Tailwind: auf diesem Mac nur vorhandene Klassen verwenden
+
+`tailwind.css` ist vorgeneriert. Das Standalone-Binary ist hier **nicht**
+installiert (und Node auch nicht), `./build-css.sh` läuft also nicht. Eine neue
+Tailwind-Klasse, die noch nirgends im Code steht, bleibt deshalb wirkungslos —
+vor dem Einsatz einer Klasse prüfen, ob sie in `tailwind.css` vorkommt, sonst
+eine vorhandene Abstufung nehmen (z. B. `text-emerald-400` statt
+`text-emerald-300`).
+
+## Cloud-Sync liegt im Firebase-Projekt greenboys-scoreboard
+
+Der verschlüsselte Spielstand liegt unter `tresor/<id>`, direkt neben `rooms` im
+selben Projekt. School-Tool hat ein eigenes Projekt (`school-tool-cbbf9`) und ist
+davon nicht berührt. Die nötige Regel-Freigabe steht in `firebase-regeln.md` —
+den `rooms`-Block dabei niemals ersetzen.
