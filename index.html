@@ -3012,7 +3012,7 @@
                 // Falls Joker aktiv war
                 let jokerBadge = '';
                 if (ans.joker) {
-                    jokerBadge = `<span class="bg-amber-500 text-slate-950 text-[8px] font-black px-1.5 py-0.5 rounded animate-pulse" title="Doppel-Joker ist aktiv!"><i class="fa-solid fa-masks-theater"></i> JOKER!</span>`;
+                    jokerBadge = `<span class="bg-amber-500 text-slate-950 text-[8px] font-black px-1.5 py-0.5 rounded animate-pulse" title="Doppel-Joker aktiv: Die vergebenen Punkte zählen für dieses Team doppelt."><i class="fa-solid fa-masks-theater"></i> JOKER ×2</span>`;
                 }
 
                 let answerTextContent = '';
@@ -3175,7 +3175,13 @@
 
             scoringUndoStack.push({ teamId: team.id, teamName: team.name, prevState, historyEntry, answerObj: incomingAns, answerIndex: index });
 
-            showToast(`Punkte für "${team.name}" wurden vorgemerkt (+${pointsToAdd})!`, "success");
+            // Mit Joker zählt die Runde doppelt. Das muss SOFORT dastehen: Bisher las die
+            // Klasse "+3", bekam beim Rundenwechsel 6 und hielt das für einen Fehler.
+            if (hasJoker) {
+                showToast(`🃏 "${team.name}": ${pointsToAdd} × 2 = +${pointsToAdd * 2} Punkte (Joker) vorgemerkt!`, "success");
+            } else {
+                showToast(`Punkte für "${team.name}" wurden vorgemerkt (+${pointsToAdd})!`, "success");
+            }
             if (index === 0) {
                 showToast(`⚡ Blitzschnell: "${team.name}" war als Erstes da!`, "info");
             }
@@ -3941,6 +3947,9 @@
                     team.activeThisRound = true;
                     team.pendingPoints = points;
                     playSound('up');
+                    if (team.jokerActiveThisRound) {
+                        showToast(`🃏 "${team.name}": ${points} × 2 = +${points * 2} Punkte (Joker) vorgemerkt!`, "success");
+                    }
                 }
                 saveState();
                 renderScoreboard();
@@ -4184,7 +4193,15 @@
                             <i class="fa-solid fa-microphone"></i> PRÄSENTIERT GERADE
                         </div>`;
                 } else if (team.jokerActiveThisRound) {
-                    jokerCardBadge = `
+                    // Sobald Punkte vorgemerkt sind, die Rechnung ausschreiben statt nur
+                    // "doppelt" zu behaupten - sonst steht auf der Karte 3 und es kommen 6.
+                    const vorgemerkt = team.activeThisRound ? (team.pendingPoints || 0) : 0;
+                    jokerCardBadge = vorgemerkt > 0
+                        ? `
+                        <div class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black px-1.5 py-0.5 rounded animate-pulse text-center mt-1">
+                            <i class="fa-solid fa-masks-theater"></i> JOKER: ${vorgemerkt} × 2 = +${vorgemerkt * 2}
+                        </div>`
+                        : `
                         <div class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black px-1.5 py-0.5 rounded animate-pulse text-center mt-1">
                             <i class="fa-solid fa-masks-theater"></i> JOKER AKTIV (Doppelt / Risiko!)
                         </div>`;
