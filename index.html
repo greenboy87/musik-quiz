@@ -1100,14 +1100,6 @@
                     <span>Runde zurück</span>
                 </button>
                 <button 
-                    onclick="markAllActive()" 
-                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-200 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
-                    title="Alle Teams aus- oder abwählen"
-                >
-                    <i class="fa-solid fa-check-double text-emerald-400"></i>
-                    <span>Alle Richtig / Null</span>
-                </button>
-                <button 
                     onclick="nextRound()" 
                     class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-1.5 px-4.5 rounded-lg text-[11px] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 font-sans"
                     title="Punkte für diese Runde gutschreiben und nächste Runde starten"
@@ -4106,20 +4098,6 @@
                 saveState();
                 renderScoreboard();
             }
-        }
-
-        function markAllActive() {
-            if (teams.length === 0) return;
-            const anyActive = teams.some(t => t.activeThisRound);
-            teams.forEach(t => {
-                if (t.presenting) return; // Präsentierendes Team wird übersprungen
-                t.activeThisRound = !anyActive;
-                t.pendingPoints = !anyActive ? 1 : 0;
-            });
-            playSound('up');
-            saveState();
-            renderScoreboard();
-            showToast(anyActive ? "Auswahl zurückgesetzt!" : "Alle Teams ausgewählt (+1)!", "success");
         }
 
         /* Spielrunde zurücksetzen (Runde zurück Button) */
