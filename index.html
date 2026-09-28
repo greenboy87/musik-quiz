@@ -111,6 +111,43 @@
         html[data-theme="light"] #timer-big-display.kritisch .zahl { color: #be123c; }
         html[data-theme="light"] #timer-big-display.kritisch .einheit { color: #9f1239; }
 
+        /* Teamkarten mit aktivem Joker leuchten, damit am Beamer sofort klar ist, wo
+           diese Runde das Doppelte auf dem Spiel steht. Gold, sobald Punkte vorgemerkt
+           sind (dann zählt doppelt), sonst Rot - denn ohne vergebene Punkte zieht der
+           Rundenwechsel dem Team einen Punkt ab. Beides ist aus dem Zustand abgeleitet
+           und kann deshalb nicht veralten. */
+        @keyframes jokerSchimmerGold {
+            0%, 100% { box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.5), 0 0 16px rgba(245, 158, 11, 0.22); }
+            50%      { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.95), 0 0 34px rgba(245, 158, 11, 0.6); }
+        }
+        @keyframes jokerSchimmerRot {
+            0%, 100% { box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.5), 0 0 16px rgba(244, 63, 94, 0.22); }
+            50%      { box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.95), 0 0 34px rgba(244, 63, 94, 0.6); }
+        }
+        .joker-karte-gold {
+            animation: jokerSchimmerGold 1.7s ease-in-out infinite;
+            border-color: rgba(245, 158, 11, 0.85) !important;
+            background-image: linear-gradient(160deg, rgba(245, 158, 11, 0.16), rgba(245, 158, 11, 0.03) 60%);
+        }
+        .joker-karte-rot {
+            animation: jokerSchimmerRot 1.7s ease-in-out infinite;
+            border-color: rgba(244, 63, 94, 0.85) !important;
+            background-image: linear-gradient(160deg, rgba(244, 63, 94, 0.16), rgba(244, 63, 94, 0.03) 60%);
+        }
+        /* Im hellen Design trägt der Schein weniger - dort etwas kräftiger tönen. */
+        html[data-theme="light"] .joker-karte-gold {
+            background-image: linear-gradient(160deg, rgba(245, 158, 11, 0.3), rgba(245, 158, 11, 0.08) 60%);
+        }
+        html[data-theme="light"] .joker-karte-rot {
+            background-image: linear-gradient(160deg, rgba(244, 63, 94, 0.3), rgba(244, 63, 94, 0.08) 60%);
+        }
+        /* Wer Bewegung auf dem Bildschirm nicht verträgt, bekommt den Rahmen ohne Puls. */
+        @media (prefers-reduced-motion: reduce) {
+            .joker-karte-gold, .joker-karte-rot { animation: none; }
+            .joker-karte-gold { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.9); }
+            .joker-karte-rot  { box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.9); }
+        }
+
         /* Kein Zeilenumbruch in kurzen Kopfzeilen-Knöpfen. Als eigene Regel und nicht
            als Tailwind-Klasse, weil tailwind.css vorgeneriert ist und "whitespace-nowrap"
            dort nicht vorkommt - siehe CLAUDE.md. */
@@ -3237,7 +3274,9 @@
 
             scoringUndoStack.push({ teamId: team.id, teamName: team.name, prevState, historyEntry, answerObj: incomingAns, answerIndex: index });
 
-            showToast(`"${team.name}" als falsch vermerkt (0 Punkte)${hasJoker ? ' – Joker-Risiko!' : ''}`, "danger");
+            showToast(hasJoker
+                ? `🃏 "${team.name}" falsch – Joker greift: −1 Punkt beim Rundenwechsel!`
+                : `"${team.name}" als falsch vermerkt (0 Punkte)`, "danger");
             playSound('down');
             removeLiveAnswerByIndex(index);
             saveState();
@@ -4185,7 +4224,14 @@
                         </span>`;
                 }
 
-                // Joker Statusanzeige auf dem Lehrerboard
+                // Joker Statusanzeige auf dem Lehrerboard. Ein präsentierendes Team ist vom
+                // Joker-Risiko ausgenommen (es konnte ja nicht mitraten), deshalb leuchtet
+                // dessen Karte auch nicht - siehe die Ausnahme in nextRound().
+                const jokerVorgemerkt = team.activeThisRound ? (team.pendingPoints || 0) : 0;
+                const jokerGewinn = jokerVorgemerkt * 2;
+                const jokerSchimmer = (team.jokerActiveThisRound && !team.presenting)
+                    ? (jokerGewinn > 0 ? ' joker-karte-gold' : ' joker-karte-rot')
+                    : '';
                 let jokerCardBadge = '';
                 if (team.presenting) {
                     jokerCardBadge = `
@@ -4195,15 +4241,16 @@
                 } else if (team.jokerActiveThisRound) {
                     // Sobald Punkte vorgemerkt sind, die Rechnung ausschreiben statt nur
                     // "doppelt" zu behaupten - sonst steht auf der Karte 3 und es kommen 6.
-                    const vorgemerkt = team.activeThisRound ? (team.pendingPoints || 0) : 0;
-                    jokerCardBadge = vorgemerkt > 0
+                    // Ohne vorgemerkte Punkte ist die Lage umgekehrt: Der Rundenwechsel
+                    // zieht dann einen Punkt ab, also auch das ansagen.
+                    jokerCardBadge = jokerGewinn > 0
                         ? `
-                        <div class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black px-1.5 py-0.5 rounded animate-pulse text-center mt-1">
-                            <i class="fa-solid fa-masks-theater"></i> JOKER: ${vorgemerkt} × 2 = +${vorgemerkt * 2}
+                        <div class="bg-amber-500/25 text-amber-300 border border-amber-500/50 text-[9px] font-black px-1.5 py-0.5 rounded text-center mt-1">
+                            <i class="fa-solid fa-masks-theater"></i> JOKER: ${jokerVorgemerkt} × 2 = +${jokerGewinn}
                         </div>`
                         : `
-                        <div class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[9px] font-black px-1.5 py-0.5 rounded animate-pulse text-center mt-1">
-                            <i class="fa-solid fa-masks-theater"></i> JOKER AKTIV (Doppelt / Risiko!)
+                        <div class="bg-rose-500/25 text-rose-300 border border-rose-500/50 text-[9px] font-black px-1.5 py-0.5 rounded text-center mt-1">
+                            <i class="fa-solid fa-masks-theater"></i> JOKER: −1 ohne Punkte
                         </div>`;
                 } else {
                     // Zeigt an, ob das Team seinen Joker in diesem Spiel noch hat oder verbraucht hat
@@ -4212,7 +4259,7 @@
                         `<span class="text-[9px] text-emerald-500/85 font-bold block mt-1"><i class="fa-solid fa-masks-theater"></i> Joker bereit</span>`;
                 }
 
-                card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-48 select-none ${borderStyle}`;
+                card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-48 select-none ${borderStyle}${jokerSchimmer}`;
                 card.onclick = () => toggleTeamActive(team.id);
 
                 // GRUPPENNAME FÄRBT SICH HIER DIREKT GRÜN BEI AUSWAHL
