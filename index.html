@@ -4564,24 +4564,45 @@
             }
         }
 
+        /* Der gescannte QR-Code nennt den Raum. Zeigt er auf eine ANDERE Klasse als die,
+           in der das Gerät noch angemeldet ist, ist die alte Anmeldung überholt und wird
+           gelöscht. Ohne das landeten die Schüler nach dem Scannen wortlos im Spiel der
+           Vorstunde und mussten selbst auf "Wechseln" tippen.
+           Derselbe Raum bleibt unangetastet: Ein erneuter Scan mitten in der Stunde soll
+           niemanden aus der laufenden Sitzung werfen. */
+        let raumWechselPerQr = null;
+
+        function applyRoomFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryRoom = (urlParams.get('room') || '').trim().toLowerCase();
+            if (!queryRoom) return;
+
+            const storedRoom = (localStorage.getItem('student_room_code') || '').trim().toLowerCase();
+            if (storedRoom && storedRoom !== queryRoom) {
+                localStorage.removeItem('student_team_name');
+                localStorage.removeItem('student_room_code');
+                localStorage.removeItem('student_team_emoji');
+                raumWechselPerQr = queryRoom;
+            }
+
+            const roomInput = getEl('student-room-input');
+            if (roomInput) roomInput.value = queryRoom;
+        }
+
         // Starten
         window.onload = function() {
             resizeCanvas();
+            // Muss VOR loadState() laufen: loadState() schaltet selbst schon in die
+            // Schüleransicht und würde die alte Anmeldung wiederherstellen.
+            applyRoomFromUrl();
             loadState();
             checkOneDriveEnvironment();
             applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const queryRoom = urlParams.get('room');
-            if (queryRoom) {
-                const roomInput = getEl('student-room-input');
-                if (roomInput) roomInput.value = queryRoom;
+            if (raumWechselPerQr) {
+                showToast(`Neuer Raum ${raumWechselPerQr.toUpperCase()} – bitte Teamnamen eingeben. 🎯`, "info");
             }
         };
-
-        // Firebase hält die Verbindung selbst aufrecht und synchronisiert automatisch
-        // wieder, sobald ein iPad aus dem Hintergrund/Standby zurückkommt - ein manuelles
-        // Neuverbinden beim Sichtbarwerden ist damit nicht mehr nötig.
     </script>
 </body>
 </html>
