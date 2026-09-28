@@ -161,6 +161,14 @@
         .presenter-links  { min-width: 0; flex-wrap: wrap; }
         .presenter-rechts { flex-shrink: 0; }
 
+        /* Spannungs-Modus: Die Punktzahl wird unkenntlich, bleibt aber stehen - die Karte
+           behält ihre Größe, und man sieht, dass da etwas verdeckt ist. Sichtbar wieder
+           machen kostet nur einen Klick, deshalb kein Ausblenden. */
+        .punkte-verdeckt {
+            filter: blur(11px);
+            user-select: none;
+        }
+
         /* Ohne erkannten Raum ist der Beitritt gesperrt. Eigene Regel, weil
            disabled:opacity-40 in der vorgenerierten tailwind.css nicht vorkommt. */
         #student-join-btn:disabled {
@@ -603,8 +611,9 @@
 
                 <!-- Joker Button inside student-buzzer-card -->
                 <div class="border-t border-slate-800/60 pt-3 mt-1 flex flex-col items-center">
-                    <div class="text-[9px] text-slate-500 mb-1.5 flex items-center gap-1 text-center font-bold">
+                    <div class="text-[9px] text-slate-500 mb-1.5 flex flex-col items-center gap-0.5 text-center font-bold">
                         <span>🃏 JOKER (Doppelte Punkte bei Erfolg, aber -1 Punkt bei Fehler!)</span>
+                        <span class="text-amber-400/90">Am Ende zählt jeder übrige Joker 1 Punkt.</span>
                     </div>
                     <button 
                         type="button" 
@@ -1046,6 +1055,15 @@
                     <button id="start-timer-btn" onclick="startTimer()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all">Start ⏱️</button>
                     <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">Stop 🛑</button>
                     <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-1.5 py-0.5 rounded">30s</div>
+                </div>
+
+                <!-- Spannungs-Modus: verdeckt Punkte UND Rangfolge vor der letzten Runde -->
+                <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px]" title="Punkte, Plätze und Sortierung verdecken - für ein spannendes Finale">
+                    <span class="text-slate-300 font-bold flex items-center gap-1"><i class="fa-solid fa-eye-slash text-violet-400"></i> Punkte verdeckt:</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="hide-scores-toggle" class="sr-only peer" onchange="toggleScoreHiding()">
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                    </label>
                 </div>
 
                 <!-- Auto-Sperre: sperrt Eingaben automatisch, sobald der Timer abläuft -->
@@ -4228,6 +4246,23 @@
            darüber. Sie raten in dieser Runde nicht mit - eine volle Karte mit Punkteknöpfen
            wäre also nutzlos und nähme am Beamer nur Platz weg. Die Zeile zeigt, was zählt:
            Platz, Punkte, und der Knopf, um dem Team als Ausgleich einen Joker zu schenken. */
+        function punkteSindVerdeckt() {
+            const el = getEl('hide-scores-toggle');
+            return !!(el && el.checked);
+        }
+
+        /* Bewusst NICHT im Spielstand gespeichert: Ein Neuladen soll die Punkte wieder
+           zeigen. Eine Tafel, die nach dem Öffnen unerklärt unscharf ist, kostet mehr
+           Nerven als der eine Klick, mit dem man sie vor dem Finale wieder verdeckt. */
+        function toggleScoreHiding() {
+            const an = punkteSindVerdeckt();
+            renderScoreboard();
+            showToast(an
+                ? "Punkte und Plätze verdeckt – Reihenfolge ist jetzt alphabetisch. 🤫"
+                : "Punkte wieder sichtbar.", "info");
+            playSound(an ? 'down' : 'up');
+        }
+
         function renderPresenterRow(praesentierende, platzierung) {
             const zeile = getEl('presenter-row');
             if (!zeile) return;
@@ -4245,8 +4280,8 @@
                         <i class="fa-solid fa-microphone text-violet-300"></i>
                         <span class="text-violet-200 text-[11px] font-black uppercase tracking-wider">Präsentiert</span>
                         <span class="text-slate-100 text-sm font-bold truncate">${team.emoji || '🎵'} ${escapeHtml(team.name)}</span>
-                        <span class="text-slate-400 text-[11px] font-bold">Platz ${platzierung[team.id]}</span>
-                        <span class="text-slate-100 text-sm font-black">${team.score} Pkt</span>
+                        ${punkteSindVerdeckt() ? '' : `<span class="text-slate-400 text-[11px] font-bold">Platz ${platzierung[team.id]}</span>`}
+                        <span class="text-slate-100 text-sm font-black${punkteSindVerdeckt() ? ' punkte-verdeckt' : ''}">${team.score} Pkt</span>
                         ${(team.jokerCount || 0) > 0
                             ? `<span class="text-emerald-400 text-[10px] font-bold"><i class="fa-solid fa-masks-theater"></i> noch ${team.jokerCount} Joker</span>`
                             : '<span class="text-slate-500 text-[10px] font-bold"><i class="fa-solid fa-ban"></i> keine Joker</span>'}
@@ -4313,14 +4348,19 @@
 
             let renderTeams = [...teams];
             const autoSortEl = getEl('auto-sort-toggle');
-            const autoSort = autoSortEl ? autoSortEl.checked : true;
-            
+            const verdeckt = punkteSindVerdeckt();
+            // Im Spannungs-Modus darf NICHT nach Punkten sortiert werden: Die Reihenfolge
+            // verriete den Stand, auch wenn die Zahlen unscharf sind. Also alphabetisch.
+            const autoSort = !verdeckt && (autoSortEl ? autoSortEl.checked : true);
+
             if (autoSort) {
                 renderTeams.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+            } else if (verdeckt) {
+                renderTeams.sort((a, b) => a.name.localeCompare(b.name));
             }
 
             const highestScore = Math.max(...teams.map(t => t.score));
-            const hasLeader = teams.length > 1 && highestScore > 0;
+            const hasLeader = !verdeckt && teams.length > 1 && highestScore > 0;
 
             /* Der Platz muss aus der GESAMTEN Rangliste kommen, nicht aus der Position im
                Raster: Präsentierende Teams stehen in einer eigenen Zeile und fehlen im
@@ -4364,7 +4404,7 @@
 
                 // Auf-/Abstieg seit der letzten Runde (nur sinnvoll bei aktivierter Auto-Sortierung)
                 let rankChangeBadge = '';
-                if (autoSort && typeof team.rankBeforeRound === 'number' && team.rankBeforeRound !== index) {
+                if (autoSort && !verdeckt && typeof team.rankBeforeRound === 'number' && team.rankBeforeRound !== index) {
                     rankChangeBadge = team.rankBeforeRound > index
                         ? `<span class="text-emerald-400 text-xs font-black" title="Aufgestiegen seit letzter Runde">▲</span>`
                         : `<span class="text-rose-400 text-xs font-black" title="Abgestiegen seit letzter Runde">▼</span>`;
@@ -4422,7 +4462,7 @@
                 card.innerHTML = `
                     ${cardOverlay}
                     <div class="flex items-start justify-between gap-1 font-sans">
-                        <span class="text-[10px] text-slate-500 font-bold tracking-wider flex items-center gap-1">PLATZ ${index + 1} ${rankChangeBadge}</span>
+                        <span class="text-[10px] text-slate-500 font-bold tracking-wider flex items-center gap-1">${verdeckt ? 'TEAM' : `PLATZ ${index + 1}`} ${rankChangeBadge}</span>
                         ${streakBadge}
                         <div class="flex items-center gap-0.5">
                             <button
@@ -4446,7 +4486,7 @@
                         <h3 class="text-sm font-black ${isSelected ? 'text-emerald-400 font-black' : 'text-slate-200'} tracking-wide truncate px-1" title="${escapeHtml(team.name)}">
                             <span class="text-lg">${escapeHtml(team.emoji || "🎵")}</span> ${escapeHtml(team.name)}
                         </h3>
-                        <span class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-b ${isLeader ? 'from-amber-200 to-amber-500' : 'from-slate-100 to-slate-400'}">
+                        <span class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-b ${isLeader ? 'from-amber-200 to-amber-500' : 'from-slate-100 to-slate-400'}${verdeckt ? ' punkte-verdeckt' : ''}">
                             ${team.score}
                         </span>
                         ${jokerCardBadge}
