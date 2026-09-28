@@ -1152,6 +1152,9 @@
             </div>
         </div>
 
+        <!-- Vorschlag, wer als Nächstes auftritt (Regel: bestplatziertes Team, das noch nicht dran war) -->
+        <div id="next-presenter-hint" class="mb-2 hidden"></div>
+
         <!-- Präsentierendes Team: schmale Zeile statt voller Karte im Raster -->
         <div id="presenter-row" class="space-y-1 mb-2 hidden"></div>
 
@@ -4040,6 +4043,7 @@
                 teams.forEach(t => { t.presenting = false; });
                 team.presenting = true;
                 team.presentGrants = 0;   // Zähler gilt je Präsentation
+                team.hatPraesentiert = true;   // fällt aus dem Auftritts-Vorschlag heraus
                 // Ein präsentierendes Team kann in dieser Runde keine Punkte vorgemerkt haben
                 team.activeThisRound = false;
                 team.pendingPoints = 0;
@@ -4246,6 +4250,52 @@
            darüber. Sie raten in dieser Runde nicht mit - eine volle Karte mit Punkteknöpfen
            wäre also nutzlos und nähme am Beamer nur Platz weg. Die Zeile zeigt, was zählt:
            Platz, Punkte, und der Knopf, um dem Team als Ausgleich einen Joker zu schenken. */
+        /* Wer tritt als Nächstes auf? Regel: das noch nicht aufgetretene Team, das gerade
+           am weitesten vorne liegt. Präsentieren kostet eine Runde Punkte, und diese Kosten
+           soll tragen, wer es sich am ehesten leisten kann - so bleibt das Feld eng, und
+           zum Schluss sind genau die Teams übrig, denen die fehlende letzte Runde am
+           wenigsten wehtut. Vorschlag, keine Automatik: Die Lehrkraft entscheidet. */
+        function naechsterAuftritt() {
+            const offen = teams.filter(t => !t.hatPraesentiert && !t.presenting);
+            if (!offen.length) return null;
+            return [...offen].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))[0];
+        }
+
+        function renderNextPresenterHint(platzierung) {
+            const box = getEl('next-presenter-hint');
+            if (!box) return;
+
+            const naechster = naechsterAuftritt();
+            const jemandPraesentiert = teams.some(t => t.presenting);
+
+            if (!naechster || jemandPraesentiert) {
+                box.classList.add('hidden');
+                box.innerHTML = '';
+                return;
+            }
+
+            const verdeckt = punkteSindVerdeckt();
+            const platz = platzierung[naechster.id];
+            box.classList.remove('hidden');
+            box.innerHTML = `
+                <div class="flex items-center justify-between gap-2 bg-slate-900/70 border border-slate-700/50 rounded-xl px-3 py-1 font-sans">
+                    <div class="flex items-center gap-2 presenter-links">
+                        <i class="fa-solid fa-microphone-lines text-violet-400"></i>
+                        <span class="text-slate-400 text-[11px] font-bold">Nächster Auftritt:</span>
+                        <span class="text-slate-100 text-sm font-bold truncate">${naechster.emoji || '🎵'} ${escapeHtml(naechster.name)}</span>
+                        <span class="text-slate-400 text-[11px] font-bold${verdeckt ? ' punkte-verdeckt' : ''}">Platz ${platz}</span>
+                    </div>
+                    <button
+                        onclick="toggleTeamPresenter('${naechster.id}')"
+                        class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black px-2 py-1 rounded transition-all active:scale-95 presenter-rechts"
+                        title="Dieses Team präsentiert jetzt"
+                    >
+                        <i class="fa-solid fa-microphone"></i> Auftritt starten
+                    </button>
+                </div>
+            `;
+        }
+
         function punkteSindVerdeckt() {
             const el = getEl('hide-scores-toggle');
             return !!(el && el.checked);
@@ -4372,6 +4422,7 @@
             const praesentierende = renderTeams.filter(t => t.presenting);
             renderTeams = renderTeams.filter(t => !t.presenting);
             renderPresenterRow(praesentierende, platzierung);
+            renderNextPresenterHint(platzierung);
 
             renderTeams.forEach((team) => {
                 const index = platzierung[team.id] - 1;
@@ -4450,9 +4501,13 @@
                 } else {
                     // Zeigt an, ob das Team seinen Joker in diesem Spiel noch hat oder verbraucht hat
                     const vorrat = team.jokerCount || 0;
-                    jokerCardBadge = vorrat > 0
+                    // Damit die Lehrkraft nicht mitzählen muss, wer noch auftreten muss.
+                    const auftrittVermerk = team.hatPraesentiert
+                        ? '<span class="text-[9px] text-violet-400/80 font-bold block"><i class="fa-solid fa-microphone"></i> war dran</span>'
+                        : '';
+                    jokerCardBadge = auftrittVermerk + (vorrat > 0
                         ? `<span class="text-[9px] text-emerald-500/85 font-bold block mt-1"><i class="fa-solid fa-masks-theater"></i> noch ${vorrat} Joker</span>`
-                        : `<span class="text-[9px] text-slate-500 font-bold block mt-1"><i class="fa-solid fa-ban"></i> keine Joker</span>`;
+                        : `<span class="text-[9px] text-slate-500 font-bold block mt-1"><i class="fa-solid fa-ban"></i> keine Joker</span>`);
                 }
 
                 card.className = `relative rounded-xl p-3 border cursor-pointer transition-all duration-300 flex flex-col justify-between h-48 select-none ${borderStyle}${jokerSchimmer}`;
@@ -4462,7 +4517,7 @@
                 card.innerHTML = `
                     ${cardOverlay}
                     <div class="flex items-start justify-between gap-1 font-sans">
-                        <span class="text-[10px] text-slate-500 font-bold tracking-wider flex items-center gap-1">${verdeckt ? 'TEAM' : `PLATZ ${index + 1}`} ${rankChangeBadge}</span>
+                        <span class="text-[10px] text-slate-500 font-bold tracking-wider flex items-center gap-1"><span class="${verdeckt ? 'punkte-verdeckt' : ''}">PLATZ ${index + 1}</span> ${rankChangeBadge}</span>
                         ${streakBadge}
                         <div class="flex items-center gap-0.5">
                             <button
