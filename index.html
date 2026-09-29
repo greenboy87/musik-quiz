@@ -1804,9 +1804,18 @@
 
         /* Rundenwechsel/Timer-Synchronisierung auf die Schüler-iPads (über Firebase) */
         async function broadcastControlState(timerSeconds = -1, resetToken = null) {
+            /* Maßgeblich ist der Raum, mit dem tatsächlich VERBUNDEN ist - nicht der Text
+               im Eingabefeld. Das Feld lässt sich jederzeit ändern oder leeren; war es
+               leer, brach diese Funktion stillschweigend ab. Empfangen wurde weiter
+               (dafür zählt liveRoomCode), gesendet nichts: Die iPads blieben auf ihrer
+               alten Runde stehen, während die Lehrkraft längst weitergeschaltet hatte. */
             const codeInput = getEl('room-code-input');
-            const roomCode = codeInput ? normalisiereRaumCode(codeInput.value) : "7c";
-            if (!roomCode) return;
+            const roomCode = liveRoomCode || (codeInput ? normalisiereRaumCode(codeInput.value) : "");
+            if (!roomCode) {
+                console.warn("Kein Raum verbunden - Rundensignal nicht gesendet.");
+                updateLiveWarning();
+                return;
+            }
 
             // Der Vorrat jedes Teams geht an die iPads. Das Lehrergerät ist die Instanz;
             // das iPad merkt sich nur noch, ob es DIESE Runde schon einen gesetzt hat.
