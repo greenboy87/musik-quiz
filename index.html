@@ -942,6 +942,9 @@
                         <input type="checkbox" id="sound-toggle" checked class="sr-only peer" onchange="handleSoundToggle()">
                         <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
                     </label>
+                        <button onclick="testeTon()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded transition-all active:scale-95 ml-2" title="Ton neu aufbauen, abspielen und melden, woran es liegt">
+                            <i class="fa-solid fa-volume-high"></i> Ton testen
+                        </button>
                 </div>
                 <div class="flex items-center justify-between gap-2">
                     <span class="text-slate-300 flex items-center gap-1">
@@ -3985,6 +3988,39 @@
         /* Der Ton-Schieber baut die Tonausgabe beim Einschalten neu auf. Aus- und
            wieder einschalten ist der Griff, zu dem man intuitiv greift, wenn nichts zu
            hören ist - bisher setzte er nur ein Flag und half deshalb nie. */
+        /* Selbsttest. Der Ton fällt im Unterricht immer wieder aus, und aus der Ferne
+           lässt sich nicht unterscheiden, ob die Tonausgabe des Browsers klemmt, der Tab
+           stummgeschaltet ist oder es schlicht zu leise war. Dieser Knopf baut die
+           Ausgabe neu auf, spielt einen Ton und sagt anschließend, was er vorgefunden
+           hat - damit lässt sich die Ursache benennen statt raten. */
+        async function testeTon() {
+            const Ctor = window.AudioContext || window.webkitAudioContext;
+            if (!Ctor) { showToast("Dieser Browser kann gar keine Töne erzeugen.", "danger"); return; }
+
+            const soundEl = getEl('sound-toggle');
+            if (soundEl && !soundEl.checked) {
+                showToast("Der Ton-Schieber steht auf AUS - erst einschalten.", "danger");
+                return;
+            }
+
+            baueAudioContextNeu(Ctor);
+            const ctx = audioCtx;
+            try { await ctx.resume(); } catch (e) { /* ohne Geste abgelehnt */ }
+
+            const startZeit = ctx.currentTime;
+            playSound('up');
+            await new Promise(r => setTimeout(r, 700));
+            const uhrLaeuft = ctx.currentTime - startZeit > 0.2;
+
+            if (ctx.state !== 'running') {
+                showToast(`Tonausgabe ist "${ctx.state}" – der Browser lässt keinen Ton zu. Einmal irgendwo auf die Seite klicken und erneut testen.`, "danger");
+            } else if (!uhrLaeuft) {
+                showToast("Tonausgabe steht still – meist übernimmt eine andere App die Ausgabe oder das Ausgabegerät hat gewechselt.", "danger");
+            } else {
+                showToast("Tonausgabe läuft einwandfrei. Kein Ton hörbar? Dann prüfe: Ist der Tab stummgeschaltet (Lautsprechersymbol im Browser-Tab) und ist die Lautstärke am Mac und am Beamer aufgedreht?", "info");
+            }
+        }
+
         function handleSoundToggle() {
             saveState();
             const soundEl = getEl('sound-toggle');
@@ -4029,7 +4065,7 @@
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(550, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.1);
-                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.32, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.1);
@@ -4037,7 +4073,7 @@
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(300, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.15);
-                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.32, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.15);
@@ -4045,7 +4081,7 @@
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(440, audioCtx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2);
-                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.28, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.2);
@@ -4069,7 +4105,7 @@
                 } else if (type === 'tick') {
                     osc.type = 'square';
                     osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
                     osc.start();
                     osc.stop(audioCtx.currentTime + 0.05);
