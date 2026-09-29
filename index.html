@@ -3874,10 +3874,22 @@
             if (!select) return;
             select.innerHTML = '';
             
+            /* Teamzahl und Runde dazuschreiben. Ohne das ließ sich nicht erkennen, welche
+               Klasse noch Daten enthält und welche eine leere Karteileiche ist - eine
+               gefährliche Lage, wenn danach gelöscht wird. */
             Object.keys(classes).forEach(cls => {
                 const option = document.createElement('option');
                 option.value = cls;
-                option.textContent = cls === 'Standard-Sitzung' ? '🔄 Neue Sitzung' : cls;
+                if (cls === 'Standard-Sitzung') {
+                    option.textContent = '🔄 Neue Sitzung';
+                } else {
+                    const daten = classes[cls] || {};
+                    const anzahl = (daten.teams || []).length;
+                    const runde = daten.currentRound || 1;
+                    option.textContent = anzahl === 0
+                        ? `${cls} — leer`
+                        : `${cls} — ${anzahl} ${anzahl === 1 ? 'Team' : 'Teams'}, Runde ${runde}`;
+                }
                 if (cls === activeClass) option.selected = true;
                 select.appendChild(option);
             });
