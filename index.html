@@ -3937,7 +3937,6 @@
                 return;
             }
             const className = roomCode.toUpperCase();
-            if (activeClass === className) return;
 
             /* Seit dem Säubern der Raum-Codes fehlen Leerzeichen: Aus "7c 2026" wird
                "7C2026". Bestehende Klassen tragen aber noch die alte Schreibweise mit
@@ -3962,8 +3961,33 @@
                     if (alteTeams > 0) {
                         showToast(`Klasse "${alterName}" übernommen – ${alteTeams} Teams und Punkte sind erhalten.`, "success");
                     }
+                    /* Ist diese Klasse bereits die aktive, muss der übernommene Stand
+                       jetzt in die Anzeige - sonst bliebe die Tafel leer, obwohl die
+                       Daten wieder da sind. */
+                    if (activeClass === className) {
+                        const uebernommen = classes[className];
+                        teams = uebernommen.teams || [];
+                        currentRound = uebernommen.currentRound || 1;
+                        teamSongs = uebernommen.teamSongs || {};
+                        answerHistory = uebernommen.answerHistory || [];
+                        const rd = getEl('header-round-display');
+                        if (rd) rd.innerText = currentRound;
+                        const mrd = getEl('manager-round-display');
+                        if (mrd) mrd.innerText = currentRound;
+                        saveState();
+                        updateClassDropdown();
+                        updateActiveBadge();
+                        renderScoreboard();
+                        renderHistoryArchive();
+                        return;
+                    }
                 }
             }
+
+            /* Der frühe Ausstieg steht bewusst NACH der Zusammenführung: Stand die Klasse
+               schon auf der neuen Schreibweise, stieg die Funktion vorher aus und fand die
+               alte Fassung mit allen Punkten nie - die Tafel blieb leer. */
+            if (activeClass === className) return;
 
             if (!classes[className]) {
                 // Neue Klasse: aktuellen Stand übernehmen, falls man aus der Standard-Sitzung kommt
