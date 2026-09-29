@@ -882,7 +882,7 @@
                         <div class="flex gap-1.5">
                             <input 
                                 type="text" 
-                                id="room-code-input" 
+                                id="room-code-input" oninput="this.value = normalisiereRaumCode(this.value)" 
                                 value="" 
                                 placeholder="Raum-Code (z.B. 7c)..." 
                                 maxlength="8"
@@ -1776,7 +1776,7 @@
         /* Rundenwechsel/Timer-Synchronisierung auf die Schüler-iPads (über Firebase) */
         async function broadcastControlState(timerSeconds = -1, resetToken = null) {
             const codeInput = getEl('room-code-input');
-            const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "7c";
+            const roomCode = codeInput ? normalisiereRaumCode(codeInput.value) : "7c";
             if (!roomCode) return;
 
             // Der Vorrat jedes Teams geht an die iPads. Das Lehrergerät ist die Instanz;
@@ -2021,7 +2021,7 @@
                     const lehrerRaum = getEl('room-code-input');
                     const studentRaum = getEl('student-room-input');
                     if (studentRaum && !studentRaum.value && lehrerRaum && lehrerRaum.value.trim()) {
-                        studentRaum.value = lehrerRaum.value.trim().toLowerCase();
+                        studentRaum.value = normalisiereRaumCode(lehrerRaum.value);
                     }
                     updateStudentRoomDisplay();
                     if (studentJoinCard) studentJoinCard.classList.remove('hidden');
@@ -2420,7 +2420,7 @@
             const roomEl = getEl('student-room-input');
             const nameEl = getEl('student-name-input');
             const emojiEl = getEl('student-emoji-input');
-            const room = roomEl ? roomEl.value.trim().toLowerCase() : "";
+            const room = roomEl ? normalisiereRaumCode(roomEl.value) : "";
             const name = nameEl ? nameEl.value.trim() : "";
             const emoji = emojiEl ? emojiEl.value : "🎵";
 
@@ -2690,7 +2690,7 @@
            leerer Raum-Code normal und soll keine rote Fehlermeldung auslösen. */
         function connectLiveRoom(silent = false) {
             const codeInput = getEl('room-code-input');
-            const roomCode = codeInput ? codeInput.value.trim().toLowerCase() : "";
+            const roomCode = codeInput ? normalisiereRaumCode(codeInput.value) : "";
 
             if (!roomCode) {
                 if (!silent) showToast("Bitte gib einen Raum-Code ein!", "danger");
@@ -2712,7 +2712,16 @@
             // Empfangsgrenze einmalig auf die SERVER-Zeit setzen: So gehen keine Antworten
             // verloren, wenn die Uhr des Lehrergeräts oder eines iPads falsch geht.
             if (!fbBoundaryInitialized) {
-                fbLastMessageTimestamp = Date.now() + fbServerTimeOffset;
+                /* Beim ERSTEN Verbinden ein Stück in die Vergangenheit greifen. Vorher
+                   lag die Grenze auf "jetzt", und wer beitrat, bevor die Lehrkraft auf
+                   "Starten" geklickt hatte, blieb unsichtbar - die Klasse scannt den
+                   QR-Code ja sofort, geklickt wird oft erst danach. Drei Stunden decken
+                   jede Unterrichtsstunde ab und verhindern zugleich, dass Beiträge einer
+                   Sitzung von letzter Woche wieder auftauchen.
+                   Ein erneuter Beitritt legt kein zweites Team an: handleLiveJoin()
+                   erkennt vorhandene Teams am Namen. */
+                const RUECKBLICK_MS = 3 * 60 * 60 * 1000;
+                fbLastMessageTimestamp = (Date.now() + fbServerTimeOffset) - RUECKBLICK_MS;
                 fbBoundaryInitialized = true;
             }
 
@@ -3657,7 +3666,7 @@
         function generateQRCode() {
             const qrContainer = getEl('qr-code-container');
             const roomCodeInput = getEl('room-code-input');
-            const roomCode = roomCodeInput ? roomCodeInput.value.trim().toLowerCase() : "7c";
+            const roomCode = roomCodeInput ? normalisiereRaumCode(roomCodeInput.value) : "7c";
 
             const qrRoomDisplay = getEl('qr-room-code-display');
             if (qrRoomDisplay) qrRoomDisplay.innerText = roomCode.toUpperCase();
@@ -3667,7 +3676,7 @@
             // Immer die Adresse, unter der diese Seite gerade läuft.
             const targetUrl = window.location.href.split('?')[0];
 
-            const finalUrl = `${targetUrl}?role=student&room=${roomCode}`;
+            const finalUrl = `${targetUrl}?role=student&room=${encodeURIComponent(roomCode)}`;
             // Wird lokal im Browser erzeugt (statt über einen externen Web-Dienst) -
             // funktioniert damit auch, wenn das Schul-WLAN externe Seiten blockiert.
             if (qrContainer && typeof QRCode !== 'undefined') {
@@ -4366,6 +4375,18 @@
             `;
         }
 
+        /* Ein Raum-Code wird zum Firebase-Pfad UND in die QR-Adresse geschrieben.
+           Leerzeichen brechen dabei die Adresse: Die Kamera-App schneidet die URL am
+           Leerzeichen ab, die Schüler landen in einem anderen Raum und tauchen bei der
+           Lehrkraft nie auf. Firebase-Schlüssel verbieten zudem . $ # [ ] und /.
+           Deshalb an EINER Stelle säubern, statt sich auf trim() zu verlassen. */
+        function normalisiereRaumCode(roh) {
+            return String(roh || '')
+                .toLowerCase()
+                .replace(/\s+/g, '')        // "7b 2026" -> "7b2026"
+                .replace(/[.$#\[\]\/]/g, ''); // in Firebase-Schlüsseln unzulässig
+        }
+
         function punkteSindVerdeckt() {
             const el = getEl('hide-scores-toggle');
             return !!(el && el.checked);
@@ -4953,7 +4974,7 @@
             // Alte Nachrichten des Raums in Firebase mitlöschen, damit dort nichts
             // unbegrenzt anwächst (Antworten/Beitritte/Spickzettel vergangener Sitzungen).
             const resetRoomInput = getEl('room-code-input');
-            const resetRoomCode = resetRoomInput ? resetRoomInput.value.trim().toLowerCase() : "";
+            const resetRoomCode = resetRoomInput ? normalisiereRaumCode(resetRoomInput.value) : "";
             if (resetRoomCode && window.fbRemove) {
                 try {
                     window.fbRemove(window.fbRef(window.fbDb, `rooms/${resetRoomCode}/messages`));
@@ -5014,10 +5035,10 @@
 
         function applyRoomFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
-            const queryRoom = (urlParams.get('room') || '').trim().toLowerCase();
+            const queryRoom = normalisiereRaumCode(urlParams.get('room'));
             if (!queryRoom) return;
 
-            const storedRoom = (localStorage.getItem('student_room_code') || '').trim().toLowerCase();
+            const storedRoom = normalisiereRaumCode(localStorage.getItem('student_room_code'));
             if (storedRoom && storedRoom !== queryRoom) {
                 localStorage.removeItem('student_team_name');
                 localStorage.removeItem('student_room_code');
