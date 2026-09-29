@@ -1334,7 +1334,12 @@
         
         // Schüler Runden Synchronisierung Variablen
         let studentCurrentRound = 1;
-        let studentJokerVorrat = 1;   // Vom Lehrergerät gemeldeter Vorrat
+        /* Bewusst -1 = "noch unbekannt" statt 1. Früher stand hier 1, und weil ein
+           Neuladen diese Zeile erneut ausführt, hatte jedes iPad nach jedem Neuladen
+           wieder einen Joker - unabhängig davon, wie viele es wirklich hatte. Solange
+           das Lehrergerät ein Team nicht kannte, korrigierte auch nie jemand den Wert.
+           Der Vorrat kommt jetzt ausschließlich vom Lehrergerät. */
+        let studentJokerVorrat = -1;
         let studentJokerActive = false;
         let studentRoundLocked = false;
         
@@ -2330,7 +2335,15 @@
                     jokerBtn.className = "w-full bg-slate-950/40 border border-slate-900 text-slate-600 py-2.5 rounded-xl text-xs cursor-not-allowed text-center";
                     jokerBtn.innerHTML = `<span>🃏 Joker in dieser Runde gesetzt</span>`;
                 }
-            } else if (studentJokerVorrat <= 0) {
+            } else if (studentJokerVorrat < 0) {
+                // Das Lehrergerät hat den Vorrat noch nicht gemeldet.
+                studentJokerActive = false;
+                if (jokerBtn) {
+                    jokerBtn.disabled = true;
+                    jokerBtn.className = "w-full bg-slate-950/40 border border-slate-900 text-slate-600 py-2.5 rounded-xl text-xs cursor-not-allowed text-center";
+                    jokerBtn.innerHTML = `<span>🃏 Joker wird geladen …</span>`;
+                }
+            } else if (studentJokerVorrat === 0) {
                 studentJokerActive = false;
                 if (jokerBtn) {
                     jokerBtn.disabled = true;
@@ -2500,7 +2513,11 @@
                 showToast("In dieser Runde hast du deinen Joker schon gesetzt!", "danger");
                 return;
             }
-            if (studentJokerVorrat <= 0) {
+            if (studentJokerVorrat < 0) {
+                showToast("Joker-Stand wird noch geladen – gleich nochmal versuchen.", "info");
+                return;
+            }
+            if (studentJokerVorrat === 0) {
                 showToast("Du hast keine Joker mehr. Verdient euch welche beim Präsentieren!", "danger");
                 return;
             }
@@ -2817,6 +2834,9 @@
                 teams.push(newTeam);
                 saveState();
                 renderScoreboard();
+                // Dem neuen iPad sofort seinen Joker-Vorrat melden - sonst stünde dort
+                // bis zum nächsten Timer- oder Rundensignal "wird geladen".
+                broadcastControlState();
                 showToast(`🚀 "${teamName}" ist dem Spiel beigetreten!`, "success");
                 playSound('up');
             } else {
