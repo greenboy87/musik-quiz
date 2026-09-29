@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Ohne das servierten Safari und die iPads tagelang eine alte Fassung aus dem
+         Cache: Korrekturen kamen nicht an, und Lehr- wie Schülergeräte liefen auf
+         unterschiedlichen Ständen - mit Fehlern, die sich nicht erklären ließen. -->
+    <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
     <title>greenboys Scoreboard 🏆</title>
     <!-- Tailwind CSS (statisch vorgeneriert - schneller Start, kein CDN nötig).
          WICHTIG: Nach Änderungen mit NEUEN Tailwind-Klassen muss tailwind.css
@@ -3733,7 +3738,12 @@
             // Immer die Adresse, unter der diese Seite gerade läuft.
             const targetUrl = window.location.href.split('?')[0];
 
-            const finalUrl = `${targetUrl}?role=student&room=${encodeURIComponent(roomCode)}`;
+            /* Anhängsel mit dem Anzeigezeitpunkt: Der QR-Code zeigt damit bei jedem
+               Einblenden auf eine leicht andere Adresse, und die iPads MÜSSEN frisch
+               laden statt aus dem Cache zu servieren. Ohne das lief eine Klasse auf
+               einem Stand von vorgestern, während das Lehrergerät längst aktuell war. */
+            const frischKennung = Math.floor(Date.now() / 1000);
+            const finalUrl = `${targetUrl}?role=student&room=${encodeURIComponent(roomCode)}&v=${frischKennung}`;
             // Wird lokal im Browser erzeugt (statt über einen externen Web-Dienst) -
             // funktioniert damit auch, wenn das Schul-WLAN externe Seiten blockiert.
             if (qrContainer && typeof QRCode !== 'undefined') {
@@ -4407,7 +4417,10 @@
                 renderScoreboard();
                 renderHistoryArchive();
             } catch (err) {
+                // Sichtbar machen statt nur protokollieren: Ein stiller Anzeigefehler hat
+                // schon einmal eine ganze Stunde gekostet, weil niemand ihn bemerkte.
                 console.error("Anzeige nach dem Rundenwechsel fehlgeschlagen:", err);
+                showToast("Anzeigefehler nach dem Rundenwechsel – die Runde ist trotzdem bei den iPads angekommen. Bitte melden.", "danger");
             }
 
             // Comeback-Achievement: von der letzten Position direkt auf Platz 1
