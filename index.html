@@ -173,6 +173,18 @@
            werden. flex-shrink:0 gibt es in der vorgenerierten tailwind.css nicht. */
         .nummernkreis { flex-shrink: 0; }
 
+        /* Die Warnung soll auffallen, ohne den Beamer zu dominieren. */
+        @keyframes warnungBlinkt {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+            50%      { opacity: 0.75; box-shadow: 0 0 0 6px rgba(244, 63, 94, 0); }
+        }
+        .warnung-blinkt { animation: warnungBlinkt 1.2s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) {
+            .warnung-blinkt { animation: none; }
+        }
+        /* Sichtbarkeit über eine eigene Klasse: Der ID-Selektor sticht Tailwinds .hidden. */
+        #live-warning.sichtbar { display: inline-flex; }
+
         /* Ohne erkannten Raum ist der Beitritt gesperrt. Eigene Regel, weil
            disabled:opacity-40 in der vorgenerierten tailwind.css nicht vorkommt. */
         #student-join-btn:disabled {
@@ -1075,6 +1087,15 @@
                     <button id="stop-timer-btn" onclick="stopTimer()" class="bg-rose-950 hover:bg-rose-900 text-rose-300 font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all hidden">Stop 🛑</button>
                     <div id="teacher-timer-display" class="font-black text-xs text-amber-400 hidden animate-pulse bg-amber-950/40 border border-amber-900 px-1.5 py-0.5 rounded">30s</div>
                 </div>
+
+                <!-- Warnung, solange kein Live-Empfang läuft. Steht bewusst HIER in der
+                     Rundenleiste und nicht im Einrichtungsbereich: Der wird beim Spielen
+                     zugeklappt, und genau dann fiel das Versäumnis nicht mehr auf. -->
+                <button id="live-warning" onclick="connectLiveRoom(false)"
+                        class="hidden items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg px-2.5 py-1 text-[11px] font-black transition-all active:scale-95 warnung-blinkt"
+                        title="Ohne Live-Empfang kommen keine Teams und keine Antworten an. Klicken, um den Raum zu starten.">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Raum noch nicht gestartet – hier klicken
+                </button>
 
                 <!-- Spannungs-Modus: verdeckt Punkte UND Rangfolge vor der letzten Runde -->
                 <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px]" title="Punkte, Plätze und Sortierung verdecken - für ein spannendes Finale">
@@ -2005,6 +2026,7 @@
                 teacherSection.classList.add('hidden');
                 // Die große Restzeit gehört zum Beamerbild, nicht über die Buzzer-Ansicht.
                 if (typeof hideBigTimer === 'function') hideBigTimer();
+                if (typeof updateLiveWarning === 'function') updateLiveWarning();
                 if (fbUnsubscribeMessages) {
                     fbUnsubscribeMessages();
                     fbUnsubscribeMessages = null;
@@ -2039,6 +2061,7 @@
                 studentSection.classList.add('hidden');
                 teacherSection.classList.remove('hidden');
                 connectLiveRoom(true);
+                updateLiveWarning();
                 // Erst hier, nie in der Schüler-Ansicht: der Tresor gehört der Lehrkraft.
                 if (window.CloudTresor) CloudTresor.init();
             }
@@ -2718,6 +2741,7 @@
                 if (statusDiv) {
                     statusDiv.innerHTML = `<span class="h-2 w-2 rounded-full bg-rose-500"></span> Bitte Code eingeben und Starten klicken`;
                 }
+                updateLiveWarning();
                 return;
             }
 
@@ -2765,6 +2789,7 @@
             if (livePanel) livePanel.classList.remove('hidden');
             generateQRCode();
             broadcastControlState();
+            updateLiveWarning();
         }
 
         /* Verarbeitet ein einzelnes Quiz-Ereignis (Beitritt / Antwort / Spickzettel / Reaktion) */
@@ -3723,6 +3748,10 @@
                 panel.classList.remove('hidden');
                 panel.classList.add('grid');
                 btn.innerHTML = `<i class="fa-solid fa-qrcode mr-1"></i> QR-Code verbergen`;
+                /* Den QR-Code zeigt man genau dann, wenn die Klasse gleich scannt. Wer
+                   hier nicht verbunden ist, verliert jeden Beitritt bis zum Klick auf
+                   "Starten" - das ist dreimal passiert. Also von selbst verbinden. */
+                if (!liveRoomCode) connectLiveRoom(false);
             } else {
                 panel.classList.add('hidden');
                 panel.classList.remove('grid');
@@ -4455,6 +4484,15 @@
                 .replace(/[.$#\[\]\/]/g, ''); // in Firebase-Schlüsseln unzulässig
         }
 
+        /* Zeigt die Warnung, solange kein Live-Empfang läuft - und nur in der
+           Lehrer-Ansicht, wo sie hingehört. */
+        function updateLiveWarning() {
+            const warn = getEl('live-warning');
+            if (!warn) return;
+            const laeuft = !!liveRoomCode && !!fbUnsubscribeMessages;
+            warn.classList.toggle('sichtbar', !laeuft && currentView === 'teacher');
+        }
+
         function punkteSindVerdeckt() {
             const el = getEl('hide-scores-toggle');
             return !!(el && el.checked);
@@ -5118,6 +5156,10 @@
             if (roomInput) roomInput.value = queryRoom;
             updateStudentRoomDisplay();
         }
+
+        // Sicherheitsnetz: Auch wenn der Kanal unbemerkt wegbricht, soll die Warnung
+        // erscheinen - sie ist billig zu prüfen.
+        setInterval(() => { if (typeof updateLiveWarning === 'function') updateLiveWarning(); }, 3000);
 
         // Starten
         window.onload = function() {
