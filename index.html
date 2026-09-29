@@ -4384,21 +4384,31 @@
             beamerProtectionActive = true;
 
             currentRound++;
-            // Erst NACH dem Hochzählen neu zeichnen: Das Antwortfenster fragt, ob in der
-            // aktuellen Runde schon bewertet wurde. Vorher gezeichnet, zeigte es in der
-            // neuen Runde weiter die Aufforderung "Nächste Runde" der alten.
-            renderIncomingAnswersList();
+
+            /* Das Signal an die iPads ZUERST - vor allem Zeichnen und vor dem Ton.
+               Stand es am Ende, verschluckte ein Fehler in der Darstellung den ganzen
+               Rundenwechsel: Die Runde zählte lokal hoch, die Klasse erfuhr nie davon
+               und blieb in der alten Runde hängen, mit gesperrtem Antwortfeld. */
+            broadcastControlState();
+            saveState();
 
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
             const managerRoundDisplay = getEl('manager-round-display');
             if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
-            
-            playSound('next');
-            saveState();
-            renderScoreboard();
-            broadcastControlState();
-            renderHistoryArchive();
+
+            /* Darstellung abgeschottet: Ein Fehler hier darf den Rundenwechsel nicht mehr
+               mitreißen - er ist zu diesem Zeitpunkt bereits gesendet und gespeichert. */
+            try {
+                // Erst NACH dem Hochzählen neu zeichnen: Das Antwortfenster fragt, ob in
+                // der aktuellen Runde schon bewertet wurde.
+                renderIncomingAnswersList();
+                playSound('next');
+                renderScoreboard();
+                renderHistoryArchive();
+            } catch (err) {
+                console.error("Anzeige nach dem Rundenwechsel fehlgeschlagen:", err);
+            }
 
             // Comeback-Achievement: von der letzten Position direkt auf Platz 1
             if (teams.length > 1) {
