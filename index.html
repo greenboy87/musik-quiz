@@ -1137,10 +1137,10 @@
                 <div class="flex gap-1.5">
                     <button
                         onclick="undoLastScoring()"
-                        class="text-[9px] bg-slate-700 hover:bg-violet-900 hover:text-violet-200 border border-slate-600/40 text-slate-300 px-2 py-1 rounded transition-all font-bold font-sans"
-                        title="Letzte Bewertung (+3/+2/+1/0) rückgängig machen"
+                        class="text-[11px] bg-amber-600 hover:bg-amber-500 text-slate-950 px-3 py-1 rounded-lg transition-all font-black font-sans active:scale-95"
+                        title="Letzte Bewertung zurücknehmen - das Antwort-Kärtchen kommt zurück in die Liste"
                     >
-                        <i class="fa-solid fa-rotate-left mr-1"></i> Rückgängig
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Bewertung zurück
                     </button>
                     <button
                         onclick="clearIncomingAnswers()"
@@ -1157,6 +1157,20 @@
             </div>
             <div id="live-answers-empty" class="text-center py-4 text-[11px] text-slate-500 font-sans">
                 <i class="fa-solid fa-spinner animate-spin text-slate-600 mr-1"></i> Warte auf Antworten von den Schüler-iPads... (Beamerbild ist standardmäßig verdeckt 🖥️🔒)
+            </div>
+            <!-- Erscheint, sobald alle Antworten dieser Runde bewertet sind: Der Rundenwechsel
+                 wird sonst leicht vergessen, und dann stimmt die Rundenzahl nicht mehr. -->
+            <div id="round-done-hint" class="hidden text-center py-3 space-y-2 font-sans">
+                <p class="text-emerald-300 text-xs font-bold">
+                    <i class="fa-solid fa-circle-check"></i> Alle Antworten dieser Runde sind bewertet.
+                </p>
+                <button
+                    onclick="nextRound()"
+                    class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2 px-5 rounded-lg text-xs transition-all active:scale-95 shadow-lg shadow-emerald-600/20"
+                    title="Punkte gutschreiben und nächste Runde starten"
+                >
+                    Nächste Runde <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
             </div>
         </div>
 
@@ -3095,11 +3109,19 @@
             if (!list) return;
             list.innerHTML = '';
 
+            const doneHint = getEl('round-done-hint');
+            // "Bewertet" heisst: In dieser Runde wurde schon etwas gewertet und es liegt
+            // nichts Unbewertetes mehr in der Liste.
+            const schonBewertet = answerHistory.some(h => h.round === currentRound);
+
             if (incomingAnswers.length === 0) {
-                if (emptyDiv) emptyDiv.classList.remove('hidden');
+                const fertig = schonBewertet;
+                if (emptyDiv) emptyDiv.classList.toggle('hidden', fertig);
+                if (doneHint) doneHint.classList.toggle('hidden', !fertig);
                 return;
             } else {
                 if (emptyDiv) emptyDiv.classList.add('hidden');
+                if (doneHint) doneHint.classList.add('hidden');
             }
 
             // Beamer Sichtschutz Banner einfügen
@@ -4194,9 +4216,13 @@
             incomingAnswers = [];
             // Sichtschutz für die neue Runde immer wieder aktivieren - manuelles Aufdecken nötig!
             beamerProtectionActive = true;
-            renderIncomingAnswersList();
 
             currentRound++;
+            // Erst NACH dem Hochzählen neu zeichnen: Das Antwortfenster fragt, ob in der
+            // aktuellen Runde schon bewertet wurde. Vorher gezeichnet, zeigte es in der
+            // neuen Runde weiter die Aufforderung "Nächste Runde" der alten.
+            renderIncomingAnswersList();
+
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
             const managerRoundDisplay = getEl('manager-round-display');
