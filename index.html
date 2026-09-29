@@ -3939,6 +3939,32 @@
             const className = roomCode.toUpperCase();
             if (activeClass === className) return;
 
+            /* Seit dem Säubern der Raum-Codes fehlen Leerzeichen: Aus "7c 2026" wird
+               "7C2026". Bestehende Klassen tragen aber noch die alte Schreibweise mit
+               Leerzeichen - beim Starten wurde deshalb eine NEUE, leere Klasse angelegt
+               und die alte mit allen Punkten lag unsichtbar daneben. Darum hier nach
+               einer inhaltsgleichen Schreibweise suchen und sie übernehmen. */
+            const gesucht = className.replace(/\s+/g, '');
+            const alterName = Object.keys(classes).find(k =>
+                k !== className && k.replace(/\s+/g, '').toUpperCase() === gesucht);
+            if (alterName) {
+                const alteDaten = classes[alterName] || {};
+                const zielDaten = classes[className];
+                const alteTeams = (alteDaten.teams || []).length;
+                const zielTeams = ((zielDaten && zielDaten.teams) || []).length;
+                /* Übernehmen, wenn es das Ziel noch nicht gibt - oder wenn dort bereits
+                   eine LEERE Klasse steht, weil beim ersten Starten schon eine angelegt
+                   wurde. Eine gefüllte Zielklasse wird nie überschrieben. */
+                if (!zielDaten || (zielTeams === 0 && alteTeams > 0)) {
+                    classes[className] = alteDaten;
+                    delete classes[alterName];
+                    if (activeClass === alterName) activeClass = className;
+                    if (alteTeams > 0) {
+                        showToast(`Klasse "${alterName}" übernommen – ${alteTeams} Teams und Punkte sind erhalten.`, "success");
+                    }
+                }
+            }
+
             if (!classes[className]) {
                 // Neue Klasse: aktuellen Stand übernehmen, falls man aus der Standard-Sitzung kommt
                 classes[className] = {
