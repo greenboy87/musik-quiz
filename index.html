@@ -169,6 +169,10 @@
             user-select: none;
         }
 
+        /* Die Ziffernkreise der Kurzanleitung dürfen nicht zu Ovalen zusammengedrückt
+           werden. flex-shrink:0 gibt es in der vorgenerierten tailwind.css nicht. */
+        .nummernkreis { flex-shrink: 0; }
+
         /* Ohne erkannten Raum ist der Beitritt gesperrt. Eigene Regel, weil
            disabled:opacity-40 in der vorgenerierten tailwind.css nicht vorkommt. */
         #student-join-btn:disabled {
@@ -1024,16 +1028,28 @@
                 <h4 class="text-base font-black text-violet-400 flex items-center gap-2">
                     <i class="fa-solid fa-qrcode"></i> Raum: <span class="text-violet-300 font-mono" id="qr-room-code-display">7c</span>
                 </h4>
-                <div class="pt-2 text-[10px] text-slate-400 flex flex-col md:flex-row md:items-center gap-2">
-                    <span>Manuelle URL (falls im Internet gehostet):</span>
-                    <input 
-                        type="text" 
-                        id="custom-url-input" 
-                        placeholder="https://deine-plattform.de/datei.html" 
-                        class="bg-slate-950 border border-slate-800 text-slate-300 text-[10px] rounded px-2 py-1 flex-grow focus:outline-none"
-                        oninput="generateQRCode()"
-                    >
-                </div>
+                <!-- Kurzanleitung mit den echten Knöpfen der Schüleransicht: Die Schritte
+                     sollen an der Wand wiedererkennbar sein, ohne dass jemand vorliest. -->
+                <ol class="space-y-2 text-sm text-slate-200 font-sans">
+                    <li class="flex items-center gap-2">
+                        <span class="bg-violet-600 text-white font-black rounded-full w-5 h-5 flex items-center justify-center text-[11px] nummernkreis">1</span>
+                        <span>QR-Code scannen und prüfen: Steht oben der Raum <span class="font-mono font-bold text-violet-300" id="qr-guide-room">7C</span>?</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="bg-violet-600 text-white font-black rounded-full w-5 h-5 flex items-center justify-center text-[11px] nummernkreis">2</span>
+                        <span>Teamnamen und Logo wählen, dann</span>
+                        <span class="bg-violet-600 text-white font-bold px-3 py-1 rounded-lg text-xs">Raum beitreten 🚀</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="bg-violet-600 text-white font-black rounded-full w-5 h-5 flex items-center justify-center text-[11px] nummernkreis">3</span>
+                        <span>Vier Songs eintragen, dann</span>
+                        <span class="bg-violet-600 text-white font-bold px-3 py-1 rounded-lg text-xs">An Lehrkraft senden 🤫</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="bg-emerald-600 text-white font-black rounded-full w-5 h-5 flex items-center justify-center text-[11px] nummernkreis">4</span>
+                        <span class="text-slate-400">Fertig – der Buzzer erscheint von allein.</span>
+                    </li>
+                </ol>
             </div>
         </div>
 
@@ -3618,17 +3634,16 @@
         /* QR-Code Generator */
         function generateQRCode() {
             const qrContainer = getEl('qr-code-container');
-            const customUrlInput = getEl('custom-url-input');
             const roomCodeInput = getEl('room-code-input');
             const roomCode = roomCodeInput ? roomCodeInput.value.trim().toLowerCase() : "7c";
 
             const qrRoomDisplay = getEl('qr-room-code-display');
             if (qrRoomDisplay) qrRoomDisplay.innerText = roomCode.toUpperCase();
+            const qrGuideRoom = getEl('qr-guide-room');
+            if (qrGuideRoom) qrGuideRoom.innerText = roomCode.toUpperCase();
 
-            let targetUrl = customUrlInput ? customUrlInput.value.trim() : "";
-            if (!targetUrl) {
-                targetUrl = window.location.href.split('?')[0];
-            }
+            // Immer die Adresse, unter der diese Seite gerade läuft.
+            const targetUrl = window.location.href.split('?')[0];
 
             const finalUrl = `${targetUrl}?role=student&room=${roomCode}`;
             // Wird lokal im Browser erzeugt (statt über einen externen Web-Dienst) -
