@@ -1830,7 +1830,15 @@
             // Der Vorrat jedes Teams geht an die iPads. Das Lehrergerät ist die Instanz;
             // das iPad merkt sich nur noch, ob es DIESE Runde schon einen gesetzt hat.
             const jokerStand = {};
-            teams.forEach(t => { jokerStand[t.name.toLowerCase()] = t.jokerCount || 0; });
+            /* Gegen einen einzigen kaputten Eintrag abgesichert: Hat ein Team keinen
+               Namen, warf t.name.toLowerCase() - und riss den GESAMTEN Versand mit.
+               Runde, Timer und Sperre wären dann nie bei der Klasse angekommen, obwohl
+               mit den Daten sonst alles in Ordnung ist. */
+            teams.forEach(t => {
+                const name = String((t && t.name) || '').toLowerCase();
+                if (!name) return;
+                jokerStand[name] = (t && t.jokerCount) || 0;
+            });
 
             try {
                 await window.fbSet(window.fbRef(window.fbDb, `rooms/${roomCode}/control`), {
@@ -1874,7 +1882,18 @@
         /* Joker sind seit dem Umbau eine Anzahl, nicht mehr ein Ja/Nein. Ältere Stände
            kennen nur `jokerUsed` - daraus wird einmalig ein Vorrat: verbraucht = 0, sonst 1.
            Gespielt werden darf weiterhin höchstens einer pro Runde. */
+        /* Ein einziges Team ohne Namen legte das ganze Scoreboard lahm: a.name.localeCompare
+           warf, renderScoreboard() brach ab - und weil der Versand an die iPads dahinter
+           stand, kam der Rundenwechsel nie an. Alle Sortierungen laufen deshalb über diesen
+           Vergleich, der fehlende Namen verträgt. */
+        function teamName(t) { return String((t && t.name) || ''); }
+        function vergleicheTeams(a, b) {
+            return (b.score || 0) - (a.score || 0) || teamName(a).localeCompare(teamName(b));
+        }
+
         function normalisiereJoker(t) {
+            // Sichtbar reparieren statt stillschweigend abstürzen lassen.
+            if (!teamName(t)) t.name = 'Team ohne Namen';
             if (typeof t.jokerCount !== 'number' || !isFinite(t.jokerCount) || t.jokerCount < 0) {
                 t.jokerCount = t.jokerUsed ? 0 : 1;
             }
@@ -2645,7 +2664,7 @@
             if (!name) return;
             
             const formattedName = name.substring(0, 12);
-            if (teams.some(t => t.name.toLowerCase() === formattedName.toLowerCase())) {
+            if (teams.some(t => teamName(t).toLowerCase() === formattedName.toLowerCase())) {
                 showToast(`Das Team "${formattedName}" existiert bereits!`, 'danger');
                 return;
             }
@@ -2848,7 +2867,7 @@
             // am Ende verworfen statt mit "0" gewertet wird (z.B. im verdeckten Modus,
             // wo nur der Papierkorb zur Verfügung steht).
             if (answerObj.joker) {
-                const jokerTeam = teams.find(t => t.name.toLowerCase() === String(answerObj.team).toLowerCase());
+                const jokerTeam = teams.find(t => teamName(t).toLowerCase() === String(answerObj.team).toLowerCase());
                 if (jokerTeam && !jokerTeam.jokerActiveThisRound) {
                     jokerTeam.jokerActiveThisRound = true;
                     saveState();
@@ -2862,7 +2881,7 @@
 
         /* NEU: Verarbeitet das Beitritts-Signal eines Schülergeräts und legt das Team sofort mit 0 Punkten an */
         function handleLiveJoin(teamName, emoji) {
-            let team = teams.find(t => t.name.toLowerCase() === teamName.toLowerCase());
+            let team = teams.find(t => String(t && t.name || '').toLowerCase() === String(teamName || '').toLowerCase());
             if (!team) {
                 const newTeam = {
                     id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
@@ -3038,7 +3057,7 @@
             }
 
             teams.forEach((t, teamIndex) => {
-                const teamKey = t.name.toLowerCase();
+                const teamKey = teamName(t).toLowerCase();
                 const record = teamSongs[teamKey];
                 const card = document.createElement('div');
                 card.className = "bg-slate-950/60 border border-slate-800 p-3 rounded-2xl space-y-2 animate-fadeIn";
@@ -3055,7 +3074,7 @@
                     card.innerHTML = `
                         <div class="flex justify-between items-center border-b border-slate-800 pb-1.5 font-sans">
                             <span class="font-bold text-slate-200 text-xs flex items-center gap-1.5">
-                                <span class="text-sm">${escapeHtml(t.emoji || '🎵')}</span> ${escapeHtml(t.name)}
+                                <span class="text-sm">${escapeHtml(t.emoji || '🎵')}</span> ${escapeHtml(teamName(t))}
                             </span>
                             <button
                                 type="button"
@@ -3078,7 +3097,7 @@
                     card.innerHTML = `
                         <div class="flex justify-between items-center font-sans">
                             <span class="font-bold text-slate-500 text-xs flex items-center gap-1.5">
-                                <span class="text-sm opacity-50">${escapeHtml(t.emoji || '🎵')}</span> ${escapeHtml(t.name)}
+                                <span class="text-sm opacity-50">${escapeHtml(t.emoji || '🎵')}</span> ${escapeHtml(teamName(t))}
                             </span>
                             <span class="text-[10px] text-slate-500 italic"><i class="fa-solid fa-hourglass-half mr-1"></i> Wartet auf Eingabe...</span>
                         </div>
@@ -3152,7 +3171,7 @@
             box.classList.remove('hidden');
             box.classList.add('flex');
 
-            const presenterNames = new Set(teams.filter(t => t.presenting).map(t => t.name.toLowerCase()));
+            const presenterNames = new Set(teams.filter(t => t.presenting).map(t => teamName(t).toLowerCase()));
             const expected = teams.length - presenterNames.size;
 
             const answered = new Set();
@@ -3370,7 +3389,7 @@
 
         /* Einloggen der Punkte von der Live-Antwort und Archivierung im Backup-System */
         function applyLiveAnswer(teamName, pointsToAdd, index, hasJoker = false) {
-            let team = teams.find(t => t.id === teamName || t.name.toLowerCase() === teamName.toLowerCase());
+            let team = teams.find(t => t.id === teamName || String(t && t.name || '').toLowerCase() === String(teamName || '').toLowerCase());
             const incomingAns = incomingAnswers[index];
             const emoji = incomingAns ? (incomingAns.emoji || "🎵") : "🎵";
             const prevState = team ? { activeThisRound: team.activeThisRound, pendingPoints: team.pendingPoints, jokerActiveThisRound: team.jokerActiveThisRound } : null;
@@ -3433,7 +3452,7 @@
            dadurch greift beim Rundenwechsel automatisch das Joker-Risiko (-1 Punkt), falls
            der Joker aktiv war, genau wie bei einer nicht abgegebenen Antwort. */
         function markLiveAnswerWrong(teamName, index, hasJoker = false) {
-            let team = teams.find(t => t.id === teamName || t.name.toLowerCase() === teamName.toLowerCase());
+            let team = teams.find(t => t.id === teamName || String(t && t.name || '').toLowerCase() === String(teamName || '').toLowerCase());
             const incomingAns = incomingAnswers[index];
             const emoji = incomingAns ? (incomingAns.emoji || "🎵") : "🎵";
             const prevState = team ? { activeThisRound: team.activeThisRound, pendingPoints: team.pendingPoints, jokerActiveThisRound: team.jokerActiveThisRound } : null;
@@ -4345,7 +4364,7 @@
             }
 
             // Rangliste VOR dieser Runde festhalten - Grundlage für die Auf-/Abstieg-Pfeile
-            const sortedBefore = [...teams].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+            const sortedBefore = [...teams].sort(vergleicheTeams);
             sortedBefore.forEach((t, idx) => { t.rankBeforeRound = idx; });
 
             // Nach dem Rundenwechsel sind Punkte final vergeben - Rückgängig-Verlauf leeren
@@ -4430,7 +4449,7 @@
 
             // Comeback-Achievement: von der letzten Position direkt auf Platz 1
             if (teams.length > 1) {
-                const sortedAfter = [...teams].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+                const sortedAfter = [...teams].sort(vergleicheTeams);
                 const newFirst = sortedAfter[0];
                 if (newFirst && newFirst.rankBeforeRound === teams.length - 1) {
                     showToast(`🔄 Comeback des Tages: "${newFirst.name}" springt von ganz hinten auf Platz 1!`, "success");
@@ -4471,7 +4490,7 @@
         function naechsterAuftritt() {
             const offen = teams.filter(t => !t.hatPraesentiert && !t.presenting);
             if (!offen.length) return null;
-            return [...offen].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))[0];
+            return [...offen].sort(vergleicheTeams)[0];
         }
 
         function renderNextPresenterHint(platzierung) {
@@ -4563,7 +4582,7 @@
                     <div class="flex items-center gap-2 presenter-links">
                         <i class="fa-solid fa-microphone text-violet-300"></i>
                         <span class="text-violet-200 text-[11px] font-black uppercase tracking-wider">Präsentiert</span>
-                        <span class="text-slate-100 text-sm font-bold truncate">${team.emoji || '🎵'} ${escapeHtml(team.name)}</span>
+                        <span class="text-slate-100 text-sm font-bold truncate">${team.emoji || '🎵'} ${escapeHtml(teamName(team))}</span>
                         ${punkteSindVerdeckt() ? '' : `<span class="text-slate-400 text-[11px] font-bold">Platz ${platzierung[team.id]}</span>`}
                         <span class="text-slate-100 text-sm font-black${punkteSindVerdeckt() ? ' punkte-verdeckt' : ''}">${team.score} Pkt</span>
                         ${(team.jokerCount || 0) > 0
@@ -4674,9 +4693,9 @@
             const autoSort = !verdeckt && (autoSortEl ? autoSortEl.checked : true);
 
             if (autoSort) {
-                renderTeams.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+                renderTeams.sort(vergleicheTeams);
             } else if (verdeckt) {
-                renderTeams.sort((a, b) => a.name.localeCompare(b.name));
+                renderTeams.sort((a, b) => teamName(a).localeCompare(teamName(b)));
             }
 
             const highestScore = Math.max(...teams.map(t => t.score));
@@ -4686,7 +4705,7 @@
                Raster: Präsentierende Teams stehen in einer eigenen Zeile und fehlen im
                Raster - sonst rückte jedes Team darunter faelschlich einen Platz auf. */
             const platzierung = {};
-            [...teams].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+            [...teams].sort(vergleicheTeams)
                       .forEach((t, i) => { platzierung[t.id] = i + 1; });
 
             const praesentierende = renderTeams.filter(t => t.presenting);
@@ -4816,8 +4835,8 @@
                     </div>
 
                     <div class="text-center flex-grow flex flex-col justify-center">
-                        <h3 class="text-sm font-black ${isSelected ? 'text-emerald-400 font-black' : 'text-slate-200'} tracking-wide truncate px-1" title="${escapeHtml(team.name)}">
-                            <span class="text-lg">${escapeHtml(team.emoji || "🎵")}</span> ${escapeHtml(team.name)}
+                        <h3 class="text-sm font-black ${isSelected ? 'text-emerald-400 font-black' : 'text-slate-200'} tracking-wide truncate px-1" title="${escapeHtml(teamName(team))}">
+                            <span class="text-lg">${escapeHtml(team.emoji || "🎵")}</span> ${escapeHtml(teamName(team))}
                         </h3>
                         <span class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-b ${isLeader ? 'from-amber-200 to-amber-500' : 'from-slate-100 to-slate-400'}${verdeckt ? ' punkte-verdeckt' : ''}">
                             ${team.score}
@@ -5036,7 +5055,7 @@
             const container = getEl('finale-podium-container');
             if (!overlay || !container) return;
 
-            const sorted = [...teams].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+            const sorted = [...teams].sort(vergleicheTeams);
             const top3 = sorted.slice(0, 3);
 
             const placeStyles = {
@@ -5058,7 +5077,7 @@
                 col.className = "flex flex-col items-center gap-1.5 flex-1 max-w-[180px] animate-scaleIn";
                 col.innerHTML = `
                     <div class="${style.emojiSize}">${escapeHtml(team.emoji || '🎵')}</div>
-                    <div class="font-black ${style.textSize} text-white truncate max-w-full px-1">${escapeHtml(team.name)}</div>
+                    <div class="font-black ${style.textSize} text-white truncate max-w-full px-1">${escapeHtml(teamName(team))}</div>
                     <div class="font-black ${style.textSize} ${style.scoreColor}">${team.score} Pkt.</div>
                     <div class="w-full ${style.height} bg-gradient-to-b ${style.barColor} rounded-t-2xl flex items-start justify-center pt-2 md:pt-4 shadow-2xl">
                         <span class="text-2xl md:text-4xl">${style.medal}</span>
