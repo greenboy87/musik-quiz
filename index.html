@@ -1287,6 +1287,11 @@
     <!-- Kompakter Footer -->
     <footer class="text-center py-2.5 text-slate-600 text-[10px] border-t border-slate-800/30 bg-slate-950/20 select-none">
         <p>🎵 greenboys Scoreboard • Mentimeter Musik-Quiz Helfer</p>
+        <!-- Standanzeige. Kommt ohne Pflege aus: document.lastModified ist der Zeitpunkt,
+             zu dem der Server diese Datei zuletzt geändert hat. Damit lässt sich in einem
+             Blick sagen, ob ein Gerät eine alte Fassung aus dem Cache serviert - genau die
+             Frage, die einen ganzen Vormittag gekostet hat. -->
+        <p id="build-stamp" class="text-slate-700 mt-0.5"></p>
     </footer>
 
     <!-- ========================================== -->
@@ -5193,9 +5198,21 @@
         // erscheinen - sie ist billig zu prüfen.
         setInterval(() => { if (typeof updateLiveWarning === 'function') updateLiveWarning(); }, 3000);
 
+        /* Zeigt im Fuß, von wann die geladene Fassung ist - auf Lehrer- wie Schülergerät.
+           Stimmen die Angaben auf zwei Geräten nicht überein, läuft eines im Cache. */
+        function zeigeStand() {
+            const el = getEl('build-stamp');
+            if (!el) return;
+            const d = new Date(document.lastModified);
+            if (isNaN(d.getTime())) return;
+            el.innerText = 'Stand: ' + d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+                         + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+        }
+
         // Starten
         window.onload = function() {
             resizeCanvas();
+            zeigeStand();
             // Muss VOR loadState() laufen: loadState() schaltet selbst schon in die
             // Schüleransicht und würde die alte Anmeldung wiederherstellen.
             applyRoomFromUrl();
