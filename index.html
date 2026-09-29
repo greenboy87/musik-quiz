@@ -4071,6 +4071,18 @@
             try {
                 if (!ensureAudioContext()) return;
 
+                /* Safari startet eine frisch gebaute Ausgabe als 'suspended'. Spielte man
+                   sofort los, liefe der Ton in eine schlafende Ausgabe und wäre verloren -
+                   der Klang fehlte genau dann, wenn gerade neu aufgebaut wurde. Deshalb
+                   hier auf das Aufwachen warten und den Ton danach anstoßen. */
+                if (audioCtx.state !== 'running') {
+                    const wartender = audioCtx;
+                    wartender.resume()
+                        .then(() => { if (audioCtx === wartender && wartender.state === 'running') playSound(type); })
+                        .catch(() => { /* ohne Nutzergeste abgelehnt - dann bleibt es still */ });
+                    return;
+                }
+
                 // Marken für die Hänger-Erkennung beim nächsten Ton
                 audioCtxZeitmarke = audioCtx.currentTime;
                 audioCtxWanduhr = Date.now();
