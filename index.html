@@ -1835,9 +1835,9 @@
                Runde, Timer und Sperre wären dann nie bei der Klasse angekommen, obwohl
                mit den Daten sonst alles in Ordnung ist. */
             teams.forEach(t => {
-                const name = String((t && t.name) || '').toLowerCase();
-                if (!name) return;
-                jokerStand[name] = (t && t.jokerCount) || 0;
+                const schluessel = jokerSchluessel(teamName(t));
+                if (!schluessel) return;
+                jokerStand[schluessel] = (t && t.jokerCount) || 0;
             });
 
             try {
@@ -1887,6 +1887,15 @@
            stand, kam der Rundenwechsel nie an. Alle Sortierungen laufen deshalb über diesen
            Vergleich, der fehlende Namen verträgt. */
         function teamName(t) { return String((t && t.name) || ''); }
+
+        /* Teamnamen dienen als Schlüssel im Joker-Stand, der zu Firebase geht. Firebase
+           verbietet dort . # $ / [ ] - ein Team namens "." brachte deshalb den GESAMTEN
+           Versand zum Scheitern: Runde, Timer und Sperre kamen bei der ganzen Klasse nie
+           an, während auf dem Lehrergerät alles richtig aussah. Beide Seiten wandeln den
+           Namen deshalb über dieselbe Funktion. */
+        function jokerSchluessel(name) {
+            return String(name || '').toLowerCase().replace(/[.#$/\[\]]/g, '_');
+        }
         function vergleicheTeams(a, b) {
             return (b.score || 0) - (a.score || 0) || teamName(a).localeCompare(teamName(b));
         }
@@ -2384,7 +2393,7 @@
                merkt sich nur, ob es in DIESER Runde schon einen gesetzt hat - früher war
                das ein dauerhafter Merker, weshalb ein geschenkter Joker hier nie ankam. */
             if (jokerStandObj && typeof jokerStandObj === 'object') {
-                const gemeldet = jokerStandObj[myName.toLowerCase()];
+                const gemeldet = jokerStandObj[jokerSchluessel(myName)];
                 if (typeof gemeldet === 'number') studentJokerVorrat = gemeldet;
             }
             const jokerRundeBenutzt = parseInt(localStorage.getItem(`joker_runde_${room}`) || '0', 10) === newRound;
