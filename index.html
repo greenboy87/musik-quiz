@@ -233,6 +233,24 @@
             .minispiel-regel { animation: none; opacity: 1; transform: none; }
         }
 
+        /* Bedienung auf der Buehne: Sie deckt alles ab, also gehoeren die Knoepfe
+           hierher und nicht in die Leiste darunter. */
+        .minispiel-knopfreihe { display: flex; flex-wrap: wrap; gap: .8rem; justify-content: center; margin-top: 1rem; }
+        .minispiel-knopf {
+            font-size: min(2.2vw, 18px); font-weight: 800;
+            padding: .7rem 1.4rem; border-radius: 12px; cursor: pointer;
+            background: rgba(255,255,255,.14); color: #f8fafc; border: 1px solid rgba(255,255,255,.25);
+        }
+        .minispiel-knopf:hover { background: rgba(255,255,255,.24); }
+        .minispiel-knopf.gruen-knopf { background: #059669; border-color: #10b981; }
+        .minispiel-knopf.gruen-knopf:hover { background: #10b981; }
+        .minispiel-abbruch {
+            position: absolute; top: 1.2rem; right: 1.6rem;
+            font-size: min(3vw, 26px); line-height: 1; cursor: pointer;
+            background: none; border: none; color: rgba(255,255,255,.55);
+        }
+        .minispiel-abbruch:hover { color: #fff; }
+
         /* Rangliste nach dem Spiel */
         .minispiel-rang {
             display: flex; align-items: center; gap: 1rem;
@@ -2029,6 +2047,11 @@
             }, MINISPIEL_REGELN_MS));
         }
 
+        /* Esc ist der Notausgang - wer im Vollbild steckt, sucht ihn zuerst. */
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && minispiel) beendeMinispiel();
+        });
+
         function beendeMinispiel() {
             if (minispiel) minispiel.uhren.forEach(clearTimeout);
             minispiel = null;
@@ -2060,15 +2083,17 @@
             b.className = 'minispiel-buehne sichtbar' +
                 (minispiel.phase === 'rot' ? ' rot' : minispiel.phase === 'gruen' ? ' gruen' : '');
 
+            const abbruch = `<button type="button" onclick="event.stopPropagation(); beendeMinispiel();"
+                    class="minispiel-abbruch" title="Reaktionsspiel abbrechen (oder Esc)">✕</button>`;
             if (minispiel.phase === 'regeln') {
-                b.innerHTML = minispielRegelnHtml();
+                b.innerHTML = abbruch + minispielRegelnHtml();
             } else if (minispiel.phase === 'rot') {
-                b.innerHTML = `<div class="gross">WARTEN</div>
+                b.innerHTML = abbruch + `<div class="gross">WARTEN</div>
                     <div class="mittel">Noch nicht tippen!</div>
                     <div class="klein">Wer zu früh tippt, ist raus.</div>`;
             } else if (minispiel.phase === 'gruen') {
                 const dabei = Object.keys(minispiel.zeiten).length;
-                b.innerHTML = `<div class="gross">JETZT!</div>
+                b.innerHTML = abbruch + `<div class="gross">JETZT!</div>
                     <div class="mittel">Tippen!</div>
                     <div class="klein">${dabei} ${dabei === 1 ? 'Team hat' : 'Teams haben'} getippt</div>`;
             } else {
@@ -2083,8 +2108,16 @@
                         </div>`;
                     }).join('')
                     : `<div class="mittel">Niemand hat getippt.</div>`;
+                /* Die Buehne deckt die ganze Seite ab - die Rundenleiste liegt darunter.
+                   Deshalb muessen die zwei Knoepfe hier stehen, sonst kommt man nach
+                   dem Spiel nicht mehr heraus. */
                 b.innerHTML = `<div class="mittel">⚡ Ergebnis</div>${zeilen}
-                    <div class="klein">Auf dem Lehrergerät: „Punkte vergeben“ – dann weiter im Spiel.</div>`;
+                    <div class="minispiel-knopfreihe">
+                        <button type="button" onclick="event.stopPropagation(); minispielPunkteVergeben();"
+                                class="minispiel-knopf gruen-knopf">Punkte vergeben (3 · 2 · 1)</button>
+                        <button type="button" onclick="event.stopPropagation(); beendeMinispiel();"
+                                class="minispiel-knopf">Schließen ohne Punkte</button>
+                    </div>`;
             }
             updateMinispielKnopf();
         }
