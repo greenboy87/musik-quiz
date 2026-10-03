@@ -1128,6 +1128,15 @@
             </div>
             <div class="flex items-center gap-2 w-full xl:w-auto justify-end">
                 <button
+                    id="spiel-start-btn"
+                    onclick="toggleSpielStart()"
+                    class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
+                    title="Solange das Spiel nicht gestartet ist, sehen die Teams „Warten auf den Spielbeginn“ statt des Antwortfeldes – sie können aber schon ihre Songs abgeben"
+                >
+                    <i class="fa-solid fa-play"></i>
+                    <span>Spiel starten</span>
+                </button>
+                <button
                     id="round-lock-btn"
                     onclick="toggleRoundLock()"
                     class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
@@ -1361,7 +1370,13 @@
         let isConfettiActive = false;
         let confirmActionCallback = null;
         let scoringUndoStack = []; // Erlaubt beliebig viele +3/+2/+1/0-Wertungen rückgängig zu machen
+        let studentWartetAufStart = false; // Schuelergeraet: Spiel noch nicht gestartet
         let roundLocked = false; // Sperrt Schüler-Eingaben für die aktuelle Runde (z.B. beim Aufdecken)
+        /* Wartehalle vor der ersten Runde: Die Teams treten bei und geben ihre Songs ab,
+           sehen aber noch kein Antwortfeld – sonst tippen sie dort herum, bevor es
+           losgeht. Eine schon laufende Sitzung gilt als gestartet, damit sich mitten im
+           Spiel nichts aendert. */
+        let spielLaeuft = true;
         
         // Schüler Runden Synchronisierung Variablen
         let studentCurrentRound = 1;
@@ -1414,6 +1429,7 @@
                         teams: teams,
                         currentRound: currentRound,
                         teamSongs: teamSongs,
+                        spielLaeuft: spielLaeuft,
                         answerHistory: answerHistory
                     };
                 }
@@ -1846,7 +1862,8 @@
                     timer: timerSeconds,
                     reset: resetToken,
                     jokerStand: jokerStand,
-                    locked: roundLocked
+                    locked: roundLocked,
+                    gestartet: spielLaeuft
                 });
             } catch(e) {
                 console.error("Fehler beim Senden des Updates:", e);
@@ -1865,6 +1882,36 @@
                 roundLocked ? "danger" : "success"
             );
             playSound(roundLocked ? 'down' : 'up');
+        }
+
+        /* Wartehalle auf / zu. Das Spiel laesst sich auch wieder anhalten – etwa wenn
+           man vor der naechsten Stunde noch einmal Songs einsammeln will. */
+        function toggleSpielStart() {
+            spielLaeuft = !spielLaeuft;
+            updateStartButtonUI();
+            saveState();
+            broadcastControlState();
+            showToast(
+                spielLaeuft
+                    ? '▶️ Spiel gestartet – die Teams können jetzt antworten.'
+                    : '⏸️ Wartehalle: Die Teams sehen „Warten auf den Spielbeginn“ und können nur Songs abgeben.',
+                spielLaeuft ? 'success' : 'info'
+            );
+            playSound(spielLaeuft ? 'up' : 'down');
+        }
+
+        function updateStartButtonUI() {
+            const btn = getEl('spiel-start-btn');
+            if (!btn) return;
+            if (spielLaeuft) {
+                btn.innerHTML = `<i class="fa-solid fa-pause"></i> <span>Spiel läuft</span>`;
+                btn.className = "bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans";
+                btn.title = "Zurück in die Wartehalle: Die Teams sehen wieder „Warten auf den Spielbeginn“ und können Songs abgeben";
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-play"></i> <span>Spiel starten</span>`;
+                btn.className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans";
+                btn.title = "Die Teams sehen noch „Warten auf den Spielbeginn“. Ein Klick gibt das Antwortfeld frei.";
+            }
         }
 
         function updateLockButtonUI() {
@@ -1977,6 +2024,7 @@
                 const currentData = classes[activeClass];
                 teams = currentData.teams || [];
                 currentRound = currentData.currentRound || 1;
+                spielLaeuft = currentData.spielLaeuft !== false;   // alte Sitzungen gelten als gestartet
                 teamSongs = currentData.teamSongs || {};
                 answerHistory = currentData.answerHistory || [];
 
@@ -1997,6 +2045,7 @@
                 if (roundDisplay) roundDisplay.innerText = currentRound;
                 const managerRoundDisplay = getEl('manager-round-display');
                 if (managerRoundDisplay) managerRoundDisplay.innerText = currentRound;
+                updateStartButtonUI();
 
                 const codeInput = getEl('room-code-input');
                 if (codeInput) codeInput.value = activeClass === 'Standard-Sitzung' ? '' : activeClass.toLowerCase();
@@ -2265,6 +2314,9 @@
                     // Zuletzt prüfen: eine aktive Sperre hat immer das letzte Wort,
                     // auch wenn Runde/Timer den Button gerade erst wieder freigegeben hätten.
                     updateStudentLockState(payload.locked === true);
+                    /* Ganz zuletzt: Solange nicht gestartet ist, hat die Wartehalle das
+                       letzte Wort – fehlt das Feld (aeltere Sitzung), gilt gestartet. */
+                    updateStudentStartState(payload.gestartet !== false);
                 }
             }, (fehler) => {
                 // Ohne diesen Zweig verschwand ein abgebrochener Listener stillschweigend:
@@ -2343,6 +2395,36 @@
 
             loadStudentPrepSongs(room);
             showToast("Neue Sitzung gestartet! Joker und Antwortfeld sind wieder frei. 🔄", "success");
+        }
+
+        /* Wartehalle auf dem Schuelergeraet: Songs abgeben ja, antworten noch nicht.
+           Ohne das stand nach dem Absenden der Songs sofort „Antwort abschicken“ da,
+           und die Teams tippten los, bevor die erste Runde lief. */
+        function updateStudentStartState(gestartet) {
+            studentWartetAufStart = !gestartet;
+            const btn = getEl('student-submit-btn');
+            const textarea = getEl('student-answer-input');
+            const feedback = getEl('student-feedback');
+            if (gestartet) {
+                // Freigabe erledigen updateStudentRound/-Timer; nur die Wartemeldung weg
+                if (feedback && feedback.dataset.warten === '1') {
+                    feedback.classList.add('hidden');
+                    delete feedback.dataset.warten;
+                }
+                return;
+            }
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> Warten auf den Spielbeginn`;
+                btn.className = "w-full bg-slate-800 border border-slate-700 text-slate-400 font-bold py-4 rounded-2xl cursor-not-allowed text-sm flex items-center justify-center gap-2";
+            }
+            if (textarea) textarea.disabled = true;
+            if (feedback) {
+                feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-slate-800/60 border-slate-700 text-slate-300";
+                feedback.innerHTML = `<i class="fa-solid fa-hourglass-half text-slate-400"></i> Alles abgegeben! Gleich geht es los – die Lehrkraft startet das Spiel.`;
+                feedback.classList.remove('hidden');
+                feedback.dataset.warten = '1';
+            }
         }
 
         /* Erzwingt eine gesperrte Eingabe auf dem Schülergerät (z.B. während die Lehrkraft aufdeckt) */
@@ -2445,6 +2527,9 @@
                     feedback.innerHTML = `<i class="fa-solid fa-circle-info text-amber-400"></i> Du hast für Runde ${newRound} bereits geantwortet. Warte auf die nächste Runde!`;
                     feedback.classList.remove('hidden');
                 }
+            } else if (studentWartetAufStart) {
+                // Wartehalle: Das Antwortfeld bleibt zu, egal was Runde und Timer sagen
+                updateStudentStartState(false);
             } else {
                 if (btn) {
                     btn.disabled = false;
@@ -2478,11 +2563,12 @@
                         feedback.innerHTML = `<i class="fa-solid fa-hourglass-half text-amber-400"></i> Noch ${seconds} Sekunden zum Raten! Schnell abgeben! ⏱️`;
                         feedback.classList.remove('hidden');
                     }
-                    if (submitBtn) {
+                    if (submitBtn && !studentWartetAufStart) {
                         submitBtn.disabled = false;
                         submitBtn.className = "w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 transition-all text-sm flex items-center justify-center gap-2";
                     }
-                    if (textarea) textarea.disabled = false;
+                    if (textarea && !studentWartetAufStart) textarea.disabled = false;
+                    if (studentWartetAufStart) updateStudentStartState(false);
                 }
             } else if (seconds === 0) {
                 if (feedback) {
@@ -2597,6 +2683,10 @@
         }
 
         async function sendStudentAnswer() {
+            if (studentWartetAufStart) {
+                showToast("Das Spiel hat noch nicht begonnen – gleich geht es los!", "info");
+                return;
+            }
             const room = localStorage.getItem('student_room_code');
             const name = localStorage.getItem('student_team_name');
             const emoji = localStorage.getItem('student_team_emoji') || "🎵";
@@ -2852,6 +2942,7 @@
                         };
                         saveState();
                         renderTeamSongsList();
+                        renderScoreboard();   // der Haken auf der Teamkarte soll sofort stehen
                         showToast(`🤫 Spickzettel von Team "${quizPayload.team}" erhalten!`, "success");
                     } else if (quizPayload.action === "reaction") {
                         spawnFloatingReaction(quizPayload.emoji || "❓");
@@ -3052,6 +3143,14 @@
             layer.appendChild(el);
 
             setTimeout(() => el.remove(), 6200);
+        }
+
+        /* Hat das Team seinen Spickzettel geschickt? Ein Eintrag mit lauter leeren
+           Feldern zaehlt nicht - sonst stuende der Haken da, obwohl nichts kam. */
+        function hatSongsAbgegeben(team) {
+            const eintrag = teamSongs[teamName(team).toLowerCase()];
+            return !!(eintrag && Array.isArray(eintrag.songs)
+                && eintrag.songs.some(s => String(s).trim() !== ''));
         }
 
         /* Lehrer-PC: Spickzettel rendern */
@@ -3913,6 +4012,7 @@
             const targetData = classes[activeClass] || { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
             teams = targetData.teams || [];
             currentRound = targetData.currentRound || 1;
+            spielLaeuft = targetData.spielLaeuft !== false;
             teamSongs = targetData.teamSongs || {};
             answerHistory = targetData.answerHistory || [];
 
@@ -3923,6 +4023,7 @@
 
             roundLocked = false;
             updateLockButtonUI();
+            updateStartButtonUI();
 
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
@@ -4015,6 +4116,7 @@
             const targetData = classes[activeClass];
             teams = targetData.teams || [];
             currentRound = targetData.currentRound || 1;
+            spielLaeuft = targetData.spielLaeuft !== false;
             teamSongs = targetData.teamSongs || {};
             answerHistory = targetData.answerHistory || [];
 
@@ -4025,6 +4127,7 @@
 
             roundLocked = false;
             updateLockButtonUI();
+            updateStartButtonUI();
 
             const roundDisplay = getEl('header-round-display');
             if (roundDisplay) roundDisplay.innerText = currentRound;
@@ -4444,6 +4547,7 @@
             // Neue Runde startet immer wieder entsperrt
             roundLocked = false;
             updateLockButtonUI();
+            updateStartButtonUI();
 
             const activeTeams = teams.filter(t => t.activeThisRound);
             const roundGains = [];
@@ -4821,6 +4925,14 @@
                         : `<span class="text-rose-400 text-xs font-black" title="Abgestiegen seit letzter Runde">▼</span>`;
                 }
 
+                /* Haken, sobald die Songs da sind. Grau derselbe Haken statt gar
+                   nichts: So sieht man auf einen Blick, wer noch fehlt, und die
+                   Karten bleiben gleich hoch. */
+                const songsDa = hatSongsAbgegeben(team);
+                const songBadge = songsDa
+                    ? `<span class="text-emerald-400" title="Songs abgegeben"><i class="fa-solid fa-circle-check text-[11px]"></i></span>`
+                    : `<span class="text-slate-600" title="Noch keine Songs abgegeben"><i class="fa-solid fa-circle-check text-[11px]"></i></span>`;
+
                 // Streak Flame Icon
                 let streakBadge = '';
                 if (team.streak >= 3) {
@@ -4888,6 +5000,7 @@
                         <span class="text-[10px] text-slate-500 font-bold tracking-wider flex items-center gap-1"><span class="${verdeckt ? 'punkte-verdeckt' : ''}">PLATZ ${index + 1}</span> ${rankChangeBadge}</span>
                         ${streakBadge}
                         <div class="flex items-center gap-0.5">
+                            ${songBadge}
                             <button
                                 onclick="event.stopPropagation(); toggleTeamPresenter('${team.id}')"
                                 class="${team.presenting ? 'bg-violet-600 text-white shadow' : 'text-slate-500 hover:text-violet-400'} p-1 rounded transition-all font-sans"
@@ -5200,8 +5313,12 @@
             answerHistory = []; // Verlauf bei Reset komplett löschen!
             incomingAnswers = [];
             scoringUndoStack = [];
+            /* Eine neue Sitzung beginnt in der Wartehalle: beitreten und Songs
+               abgeben ja, antworten noch nicht. */
+            spielLaeuft = false;
             roundLocked = false;
             updateLockButtonUI();
+            updateStartButtonUI();
             beamerProtectionActive = true; // Neue Sitzung startet immer verdeckt
 
             // Alte Nachrichten des Raums in Firebase mitlöschen, damit dort nichts
