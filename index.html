@@ -4161,7 +4161,14 @@
             const vorschub = { 4: 96, 2: 62, 1: 38, 0.5: 24, 0.25: 17 };
             const links = 16, halsOben = 13, linie = 46, balkenDicke = 5;
             const teile = [];
-            let x = links + (nackt ? 8 : 14);
+            // Im Takt beginnt das erste Zeichen mit Abstand zum Taktstrich - sonst
+            // klebt eine Halbe Pause mit ihrem Balken daran fest.
+            let x = links + (nackt ? 10 : 30);
+            // Linker und rechter Rand der tatsaechlichen Zeichnung - danach wird die
+            // Karte zugeschnitten. Nach dem Vorschub zu schneiden hiesse: Eine Halbe
+            // klebt links und hat rechts eine halbe Karte Luft.
+            let inkVon = Infinity, inkBis = -Infinity;
+            const ink = (von, bis) => { inkVon = Math.min(inkVon, von); inkBis = Math.max(inkBis, bis); };
 
             if (!nackt) {
                 teile.push(`<line x1="${links}" y1="${linie - 17}" x2="${links}" y2="${linie + 15}" stroke="${tinte}" stroke-width="3"/>`);
@@ -4175,20 +4182,40 @@
                     const px = x;
                     x += vorschub[t.d] || 38;
                     if (t.p) {
-                        if (t.d >= 4) teile.push(`<rect x="${px - 8}" y="${linie - 12}" width="16" height="7" fill="${tinte}"/>`);
-                        else if (t.d >= 2) teile.push(`<rect x="${px - 8}" y="${linie - 1}" width="16" height="7" fill="${tinte}"/>`);
-                        else if (t.d >= 1) teile.push(`<path d="M${px - 4} ${linie - 16} L${px + 4} ${linie - 7} L${px - 3} ${linie - 1} L${px + 5} ${linie + 8}` +
-                                   ` M${px - 3} ${linie + 2} q 6 2 7 9 q -5 -4 -9 -2" fill="none" stroke="${tinte}" stroke-width="3" stroke-linecap="round"/>`);
-                        else teile.push(`<path d="M${px + 4} ${linie - 10} L${px - 3} ${linie + 10}" stroke="${tinte}" stroke-width="2.5" stroke-linecap="round" fill="none"/>` +
-                                   `<circle cx="${px - 1}" cy="${linie - 8}" r="3.2" fill="${tinte}"/>`);
+                        if (t.d >= 2) {
+                            /* Ganze Pause haengt unter der Linie, Halbe sitzt darauf -
+                               ohne diese Linie sind die beiden nicht zu unterscheiden,
+                               deshalb bekommt die Karte ein Stueck davon mit. */
+                            const haengt = t.d >= 4;
+                            const oben = haengt ? linie : linie - 8;
+                            teile.push(`<rect x="${px - 11}" y="${oben}" width="22" height="8" fill="${tinte}"/>`);
+                            teile.push(`<line x1="${px - 18}" y1="${linie}" x2="${px + 18}" y2="${linie}" stroke="${tinte}" stroke-width="2" opacity=".8"/>`);
+                            ink(px - 19, px + 19);
+                        } else if (t.d >= 1) {
+                            /* Viertelpause: drei Zacken und ein Haken. Als gefuellte
+                               Form statt als duenner Strich - so sieht sie aus wie im
+                               Heft und nicht wie ein Blitz. */
+                            teile.push(`<path d="M${px - 5} ${linie - 15} L${px + 4} ${linie - 5.5}` +
+                                       ` L${px - 4} ${linie + 1} L${px + 5} ${linie + 10.5}"` +
+                                       ` fill="none" stroke="${tinte}" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/>`);
+                            teile.push(`<path d="M${px + 5} ${linie + 10.5} c -7 -3.5 -11 2 -5.5 7.5"` +
+                                       ` fill="none" stroke="${tinte}" stroke-width="3" stroke-linecap="round"/>`);
+                            ink(px - 8, px + 8);
+                        } else {
+                            teile.push(`<path d="M${px + 4} ${linie - 10} L${px - 3} ${linie + 10}" stroke="${tinte}" stroke-width="2.5" stroke-linecap="round" fill="none"/>` +
+                                       `<circle cx="${px - 1}" cy="${linie - 8}" r="3.2" fill="${tinte}"/>`);
+                            ink(px - 5, px + 6);
+                        }
                         gruppe.length = 0;      // eine Pause unterbricht den Balken
                         return;
                     }
                     const hohl = t.d >= 2;
                     teile.push(`<ellipse cx="${px}" cy="${linie}" rx="7.5" ry="5.4" transform="rotate(-18 ${px} ${linie})"` +
                                (hohl ? ` fill="none" stroke="${tinte}" stroke-width="2.6"/>` : ` fill="${tinte}"/>`));
+                    ink(px - 9, px + 9);
                     if (t.d >= 4) return;                       // die Ganze steht ohne Hals
                     const hx = px + 6.6;
+                    ink(px - 9, hx + (t.d <= 0.5 ? 11 : 2));
                     teile.push(`<line x1="${hx}" y1="${linie - 2}" x2="${hx}" y2="${halsOben}" stroke="${tinte}" stroke-width="2.4" stroke-linecap="round"/>`);
                     if (t.d <= 0.5) gruppe.push({ hx: hx, d: t.d });
                 });
@@ -4211,6 +4238,7 @@
             });
 
             const rechts = x + 6;
+            if (!isFinite(inkVon)) { inkVon = links; inkBis = rechts; }
             if (!nackt) {
                 teile.unshift(`<line x1="${linieVon}" y1="${linie}" x2="${rechts + 8}" y2="${linie}" stroke="${tinte}" stroke-width="1.5" opacity=".45"/>`);
                 teile.push(`<line x1="${rechts + 8}" y1="${linie - 17}" x2="${rechts + 8}" y2="${linie + 15}" stroke="${tinte}" stroke-width="3"/>`);
@@ -4220,7 +4248,10 @@
             /* Keine Hoehe im Stil: Die legt das CSS der jeweiligen Karte fest.
                Inline gesetzt gewaenne sie gegen jede Regel - und ohne Text im
                Kasten fiele das Bild auf null zusammen. */
-            return `<svg viewBox="${links} 2 ${rechts - links} 62" style="width:auto; display:block; margin:0 auto">${teile.join('')}</svg>`;
+            /* Eng um die Zeichnung herum zuschneiden: Nur so steht das Zeichen
+               mittig auf seiner Karte, statt links zu kleben. */
+            const von = inkVon - 5, breiteNackt = Math.max(24, inkBis + 5 - von);
+            return `<svg viewBox="${von} 2 ${breiteNackt} 62" style="width:auto; display:block; margin:0 auto">${teile.join('')}</svg>`;
         }
 
         /* Ein Eingabefeld fuer Rhythmen, das Schueler- und Lehrergeraet teilen.
