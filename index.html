@@ -353,6 +353,35 @@
             .noten-taste.falsch { animation: none; }
         }
 
+        /* Avocado oder Note: der Umriss auf hellem Grund, darunter zwei Knöpfe */
+        .avo-blatt {
+            display: block; width: min(92vw, 820px); aspect-ratio: 16 / 8; max-height: 42vh;
+            border-radius: 18px; border: 2px solid rgba(125,211,252,.4);
+            background: linear-gradient(180deg, rgba(248,250,252,.96), rgba(226,232,240,.92));
+            box-shadow: 0 10px 40px rgba(0,0,0,.5);
+        }
+        .avo-tasten { display: flex; flex-wrap: wrap; gap: .8rem; justify-content: center; }
+        .avo-taste {
+            font-family: inherit; font-weight: 900; cursor: pointer;
+            font-size: min(3.4vw, 26px); padding: .7rem 1.6rem; border-radius: 14px;
+            text-transform: uppercase; letter-spacing: .04em;
+            background: rgba(255,255,255,.12); color: #f8fafc;
+            border: 2px solid rgba(255,255,255,.32);
+            box-shadow: 0 5px 0 rgba(0,0,0,.4);
+            transition: transform .08s ease, background .15s ease;
+        }
+        .avo-taste:hover { background: rgba(255,255,255,.22); }
+        .avo-taste:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+        .avo-taste.richtig { background: #059669; border-color: #34d399; box-shadow: 0 5px 0 #064e3b; }
+        .avo-taste.falsch { background: #9f1239; border-color: #fb7185; box-shadow: 0 5px 0 #4c0519; animation: tasteZittern .3s ease-in-out; }
+        @media (max-width: 640px) {
+            .avo-blatt { width: 100%; aspect-ratio: 4 / 3; max-height: 44vh; }
+            .avo-taste { font-size: min(6vw, 26px); padding: .7rem 1.2rem; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .avo-taste.falsch { animation: none; }
+        }
+
         /* Farbfalle: das Wort auf hellem Grund, darunter die Farbfelder */
         .farb-blatt {
             width: min(92vw, 820px); max-width: 100%; box-sizing: border-box;
@@ -1503,7 +1532,7 @@
                     id="spiel-waehlen-btn"
                     onclick="spielAuswahl()"
                     class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
-                    title="Minispiel starten: fünf Spiele zur Auswahl"
+                    title="Minispiel starten: sechs Spiele zur Auswahl"
                     aria-label="Minispiel starten"
                 >
                     <i class="fa-solid fa-gamepad"></i>
@@ -2598,6 +2627,20 @@
                 ],
                 feld: (behaelter, dauer, senden) => farbfalleFeldAufbauen(behaelter, dauer, senden)
             },
+            avocado: {
+                titel: '&#129361; Avocado or Not(e)',
+                dauer: 45000,
+                einheit: ['Form', 'Formen'],
+                name: 'Avocado or Not(e)',
+                hinweis: 'Was ist das - Avocado oder Note?',
+                regeln: [
+                    ['1', 'Eine Form erscheint - Avocado oder Note?', ''],
+                    ['2', 'Tippe, was du siehst', ''],
+                    ['3', 'Die Knöpfe tauschen gern die Plätze', ''],
+                    ['?', 'Manchmal steht zweimal dasselbe - dann stimmt es auch', 'warnung']
+                ],
+                feld: (behaelter, dauer, senden) => avocadoFeldAufbauen(behaelter, dauer, senden)
+            },
             sortierer: {
                 titel: '&#127925; Notensortierer',
                 dauer: 50000,
@@ -2644,6 +2687,8 @@
                             onclick="event.stopPropagation(); starteSammelspiel('notenlesen');"><i class="fa-solid fa-book-open"></i> Notenlesen</button>
                     <button type="button" class="minispiel-knopf"
                             onclick="event.stopPropagation(); starteSammelspiel('farbfalle');"><i class="fa-solid fa-palette"></i> Farbfalle</button>
+                    <button type="button" class="minispiel-knopf"
+                            onclick="event.stopPropagation(); starteSammelspiel('avocado');"><i class="fa-solid fa-circle-question"></i> Avocado or Not(e)</button>
                 </div>
                 <div class="klein">Die drei besten bekommen 3 · 2 · 1 Punkte</div>`;
             updateSpielKnopf();
@@ -3339,6 +3384,200 @@
                     ctx.font = `800 ${Math.max(15, S.h * 0.09)}px 'DM Sans', sans-serif`;
                     ctx.fillStyle = '#7dd3fc';
                     ctx.fillText(`${punkteWort(S.punkte)} · ${zahlWort(S.extra, 'Note', 'Noten')}`, S.w / 2, S.h / 2 + S.h * 0.09);
+                }
+            }
+
+            messen();
+            naechsteFrage();
+            requestAnimationFrame(schritt);
+            return S;
+        }
+
+        /* ============================================================ */
+        /* AVOCADO ODER NOTE                                             */
+        /* Beides ist ein runder Koerper mit einem Stiel nach oben - als */
+        /* einfarbiger Umriss, in wechselnder Groesse und schief gestellt*/
+        /* sind sie sich aehnlicher, als einem lieb ist. Die Farbe       */
+        /* verraet nichts: Beide Formen bekommen dieselbe Auswahl.       */
+        /* Die Knoepfe tauschen die Plaetze, und manchmal steht auf      */
+        /* beiden dasselbe - aber nur dann, wenn genau das stimmt. Dann  */
+        /* ist jede Antwort richtig, und das ist der Witz an der Sache.  */
+        /* ============================================================ */
+        const AVO_TINTEN = ['#1f2937', '#166534', '#3f3f46', '#365314', '#422006'];
+
+        function avocadoFeldAufbauen(behaelter, dauer, senden) {
+            const leinwand = document.createElement('canvas');
+            leinwand.className = 'avo-blatt';
+            const reihe = document.createElement('div');
+            reihe.className = 'avo-tasten';
+            behaelter.appendChild(leinwand);
+            behaelter.appendChild(reihe);
+            const ctx = leinwand.getContext('2d');
+
+            const S = {
+                w: 0, h: 0, frage: null, antwort: 0, richtig: false,
+                punkte: 0, extra: 0, lauf: true, letzterSend: 0, folge: 0,
+                ende: performance.now() + dauer, zuletzt: performance.now(), uhrstand: -1
+            };
+
+            const tasten = [0, 1].map(() => {
+                const t = document.createElement('button');
+                t.type = 'button';
+                t.className = 'avo-taste';
+                reihe.appendChild(t);
+                return t;
+            });
+
+            function messen() {
+                const r = leinwand.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                S.w = r.width; S.h = r.height;
+                leinwand.width = Math.round(r.width * dpr);
+                leinwand.height = Math.round(r.height * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+
+            function naechsteFrage() {
+                const istAvocado = Math.random() < 0.5;
+                const loesung = istAvocado ? 'Avocado' : 'Note';
+                /* In einem von vier Faellen steht auf beiden Knoepfen dasselbe - und
+                   dann ist es immer die richtige Antwort. Niemals zweimal die
+                   falsche: Sonst koennte man nicht gewinnen, und der Spass waere weg. */
+                const doppelt = Math.random() < 0.25;
+                const andere = istAvocado ? 'Note' : 'Avocado';
+                const paar = doppelt ? [loesung, loesung]
+                                     : (Math.random() < 0.5 ? [loesung, andere] : [andere, loesung]);
+                S.frage = {
+                    avocado: istAvocado,
+                    loesung: loesung,
+                    paar: paar,
+                    groesse: 0.3 + Math.random() * 0.7,          // von winzig bis fast bildfuellend
+                    neigung: (Math.random() - 0.5) * 0.9,         // schief gestellt
+                    tinte: AVO_TINTEN[Math.floor(Math.random() * AVO_TINTEN.length)],
+                    schlank: 0.8 + Math.random() * 0.45,          // mal gedrungen, mal lang
+                    /* Die beiden Zufallszahlen machen die Grenzfaelle: eine Avocado
+                       fast ohne Taille sieht aus wie ein dicker Notenkopf, und ein
+                       Notenkopf mit kurzem Hals wie eine Avocado. */
+                    taille: Math.random(),
+                    stiel: Math.random()
+                };
+                S.antwort = 0;
+                S.richtig = false;
+                tasten.forEach((t, i) => {
+                    t.textContent = paar[i];
+                    t.className = 'avo-taste';
+                    t.onclick = (e) => { e.stopPropagation(); raten(paar[i], t); };
+                });
+            }
+
+            function raten(name, taste) {
+                if (!S.lauf || !S.frage || S.antwort) return;
+                S.richtig = name === S.frage.loesung;
+                S.antwort = performance.now();
+                S.extra++;
+                if (S.richtig) { S.punkte++; taste.classList.add('richtig'); }
+                else {
+                    taste.classList.add('falsch');
+                    const loesung = tasten.find(t => t.textContent === S.frage.loesung);
+                    if (loesung) loesung.classList.add('richtig');
+                }
+                senden(S, false);
+                setTimeout(() => { if (S.lauf) naechsteFrage(); }, S.richtig ? 400 : 1000);
+            }
+
+            window.addEventListener('resize', messen);
+            function aufraeumen() { S.lauf = false; window.removeEventListener('resize', messen); }
+
+            function schritt(jetzt) {
+                if (!S.lauf) { aufraeumen(); return; }
+                S.zuletzt = jetzt;
+                if (!S.w) messen();
+                const rest = Math.max(0, S.ende - jetzt);
+                if (!rest) { aufraeumen(); senden(S, true); zeichnen(0); return; }
+                zeichnen(rest);
+                requestAnimationFrame(schritt);
+            }
+
+            /* Note: runder Kopf, Hals nach oben. Mal ein dicker Kopf mit kurzem
+               Hals, mal ein schmaler mit langem - der kurze Hals ist der Grenzfall. */
+            function zeichneNotenform(r, f) {
+                const dick = 0.46 + f.taille * 0.14;
+                const hals = 0.7 + f.stiel * 0.6;
+                ctx.save();
+                ctx.rotate(-0.18 - f.taille * 0.2);
+                ctx.beginPath();
+                ctx.ellipse(0, r * 0.45, r * dick, r * 0.4 * f.schlank, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+                ctx.beginPath();
+                ctx.lineWidth = r * 0.12; ctx.lineCap = 'round';
+                ctx.moveTo(r * 0.42, r * 0.4);
+                ctx.lineTo(r * 0.42, r * 0.4 - r * hals * f.schlank);
+                ctx.stroke();
+            }
+
+            /* Avocado: Bauch, Schulter und ein Fuellstueck dazwischen. Je kleiner
+               die Taille, desto runder wird sie - und desto mehr sieht sie aus wie
+               ein Notenkopf mit Stiel. */
+            function zeichneAvocado(r, f) {
+                const taille = 0.1 + f.taille * 0.26;
+                ctx.beginPath();
+                ctx.ellipse(0, r * 0.45, r * 0.5, r * 0.46 * f.schlank, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(0, r * (0.45 - 0.5 * taille), r * (0.5 - taille * 0.55), r * 0.4 * f.schlank, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(0, r * (0.45 - taille), r * (0.42 - taille * 0.5), r * 0.4 * f.schlank, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.lineWidth = r * 0.11; ctx.lineCap = 'round';
+                const oben = r * (0.45 - taille) - r * 0.4 * f.schlank;
+                ctx.moveTo(r * 0.03, oben + r * 0.05);
+                if (f.stiel < 0.5) ctx.lineTo(r * 0.06, oben - r * 0.42 * f.schlank);   // gerader Stiel
+                else ctx.quadraticCurveTo(r * 0.26, oben - r * 0.2, r * 0.3, oben - r * 0.4 * f.schlank);
+                ctx.stroke();
+            }
+
+            function zeichnen(rest) {
+                ctx.clearRect(0, 0, S.w, S.h);
+                if (S.frage) {
+                    const r = Math.min(S.w, S.h) * 0.42 * S.frage.groesse;
+                    ctx.save();
+                    ctx.translate(S.w / 2, S.h * 0.54);
+                    ctx.rotate(S.frage.neigung);
+                    ctx.fillStyle = S.frage.tinte;
+                    ctx.strokeStyle = S.frage.tinte;
+                    if (S.frage.avocado) zeichneAvocado(r, S.frage);
+                    else zeichneNotenform(r, S.frage);
+                    ctx.restore();
+                    if (S.antwort) {
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.font = `900 ${Math.max(18, S.h * 0.12)}px 'DM Sans', sans-serif`;
+                        ctx.fillStyle = S.richtig ? '#047857' : '#be123c';
+                        ctx.fillText(S.richtig ? 'Ja!' : 'War ' + S.frage.loesung, S.w / 2, S.h * 0.9);
+                    }
+                }
+
+                ctx.font = `800 ${Math.max(13, S.h * 0.085)}px 'DM Sans', sans-serif`;
+                ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+                ctx.fillStyle = '#0369a1';
+                ctx.fillText(punkteWort(S.punkte), 14, 10);
+                ctx.textAlign = 'right';
+                const sek = Math.ceil(rest / 1000);
+                ctx.fillStyle = sek <= 10 ? '#be123c' : '#475569';
+                ctx.fillText(`${sek} s`, S.w - 14, 10);
+
+                if (!S.lauf) {
+                    ctx.fillStyle = 'rgba(5,6,15,.8)';
+                    ctx.fillRect(0, 0, S.w, S.h);
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.font = `900 ${Math.max(24, S.h * 0.18)}px 'DM Sans', sans-serif`;
+                    ctx.fillText('ZEIT UM', S.w / 2, S.h / 2 - S.h * 0.08);
+                    ctx.font = `800 ${Math.max(15, S.h * 0.09)}px 'DM Sans', sans-serif`;
+                    ctx.fillStyle = '#7dd3fc';
+                    ctx.fillText(`${punkteWort(S.punkte)} · ${zahlWort(S.extra, 'Form', 'Formen')}`, S.w / 2, S.h / 2 + S.h * 0.09);
                 }
             }
 
