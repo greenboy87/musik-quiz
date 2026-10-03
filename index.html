@@ -1915,6 +1915,7 @@
         function toggleSpielStart() {
             spielLaeuft = !spielLaeuft;
             updateStartButtonUI();
+            renderScoreboard();   // die Wartehallen-Faerbung der Karten gilt nur vor dem Start
             saveState();
             broadcastControlState();
             showToast(
@@ -4923,11 +4924,26 @@
                 const isLeader = hasLeader && team.score === highestScore;
                 const isSelected = team.activeThisRound;
                 
+                /* Haken, sobald die Songs da sind. Grau derselbe Haken statt gar
+                   nichts: So sieht man auf einen Blick, wer noch fehlt, und die
+                   Karten bleiben gleich hoch. */
+                const songsDa = hatSongsAbgegeben(team);
+                const songBadge = songsDa
+                    ? `<span class="text-emerald-400" title="Songs abgegeben"><i class="fa-solid fa-circle-check text-[11px]"></i></span>`
+                    : `<span class="text-slate-600" title="Noch keine Songs abgegeben"><i class="fa-solid fa-circle-check text-[11px]"></i></span>`;
+
                 const card = document.createElement('div');
                 card.setAttribute('data-team-id', team.id); // Wichtig für den FLIP-Effekt!
                 
                 let borderStyle = 'border-slate-800/80 bg-slate-900/40 hover:bg-slate-800/40 hover:border-slate-700/60';
                 let cardOverlay = '';
+
+                /* In der Wartehalle leuchtet die ganze Karte gruen, sobald die Songs da
+                   sind. Waehrend des Spiels waere das verwirrend - dort bedeutet Gruen
+                   "fuer diese Runde ausgewaehlt" -, deshalb nur vor dem Start. */
+                if (!spielLaeuft && songsDa) {
+                    borderStyle = 'border-emerald-500 bg-emerald-950/60 shadow-lg shadow-emerald-900/30 ring-2 ring-emerald-500/20';
+                }
 
                 if (team.presenting) {
                     borderStyle = 'border-violet-500/60 bg-slate-900/20 opacity-60';
@@ -4954,14 +4970,6 @@
                         ? `<span class="text-emerald-400 text-xs font-black" title="Aufgestiegen seit letzter Runde">▲</span>`
                         : `<span class="text-rose-400 text-xs font-black" title="Abgestiegen seit letzter Runde">▼</span>`;
                 }
-
-                /* Haken, sobald die Songs da sind. Grau derselbe Haken statt gar
-                   nichts: So sieht man auf einen Blick, wer noch fehlt, und die
-                   Karten bleiben gleich hoch. */
-                const songsDa = hatSongsAbgegeben(team);
-                const songBadge = songsDa
-                    ? `<span class="text-emerald-400" title="Songs abgegeben"><i class="fa-solid fa-circle-check text-[11px]"></i></span>`
-                    : `<span class="text-slate-600" title="Noch keine Songs abgegeben"><i class="fa-solid fa-circle-check text-[11px]"></i></span>`;
 
                 // Streak Flame Icon
                 let streakBadge = '';
