@@ -353,6 +353,10 @@
             .noten-taste.falsch { animation: none; }
         }
 
+        /* Glücksrad für die Spielauswahl */
+        .rad-feld { display: block; width: min(62vh, 86vw); aspect-ratio: 1; max-width: 560px; }
+        .rad-text { min-height: 1.6em; }
+
         /* Avocado oder Note: der Umriss auf hellem Grund, darunter zwei Knöpfe */
         .avo-blatt {
             display: block; width: min(92vw, 820px); aspect-ratio: 16 / 8; max-height: 42vh;
@@ -2380,7 +2384,10 @@
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return;
             if (minispiel) beendeMinispiel();
-            if (sammelspiel) beendeSammelspiel();
+            /* Auch die Auswahl und das Glücksrad liegen auf dieser Buehne, ohne dass
+               ein Spiel laeuft - Esc muss auch die wieder wegraeumen. */
+            const buehne = getEl('sammel-buehne');
+            if (sammelspiel || (buehne && buehne.classList.contains('sichtbar'))) beendeSammelspiel();
         });
 
         function beendeMinispiel() {
@@ -2685,6 +2692,8 @@
                 <div class="minispiel-titel">&#127918; Minispiel wählen</div>
                 <div class="minispiel-knopfreihe">
                     <button type="button" class="minispiel-knopf gruen-knopf"
+                            onclick="event.stopPropagation(); gluecksrad();"><i class="fa-solid fa-dharmachakra"></i> Glücksrad</button>
+                    <button type="button" class="minispiel-knopf"
                             onclick="event.stopPropagation(); beendeSammelspiel(); starteReaktionsspiel();"><i class="fa-solid fa-bolt"></i> Reaktionsspiel</button>
                     <button type="button" class="minispiel-knopf"
                             onclick="event.stopPropagation(); starteSammelspiel('katapult');"><i class="fa-solid fa-bullseye"></i> Notenschleuder</button>
@@ -2699,6 +2708,113 @@
                 </div>
                 <div class="klein">Die drei besten bekommen 3 · 2 · 1 Punkte</div>`;
             updateSpielKnopf();
+        }
+
+        /* Glücksrad: Es dreht sich am Beamer und sucht das Spiel aus. Danach
+           startet es von selbst - die Klasse sieht also erst, was kommt, und dann
+           kommt es auch. Das Rad ist kein Sammelspiel: Es laeuft nur auf dem
+           Lehrergeraet, die Schuelergeraete bleiben solange leer. */
+        function gluecksrad() {
+            const b = getEl('sammel-buehne');
+            if (!b) return;
+            if (!liveRoomCode) {
+                showToast("Erst einen Raum starten - ohne Live-Empfang kommt kein Ergebnis an.", "danger");
+                return;
+            }
+            const spiele = [{ art: 'reaktion', name: 'Reaktionsspiel' }].concat(
+                Object.keys(SAMMELSPIELE).map(a => ({ art: a, name: SAMMELSPIELE[a].name })));
+            const farben = ['#38bdf8', '#a78bfa', '#34d399', '#fbbf24', '#f472b6', '#fb923c', '#60a5fa'];
+
+            b.className = 'minispiel-buehne sichtbar';
+            b.innerHTML = `<button type="button" onclick="event.stopPropagation(); beendeSammelspiel();"
+                    class="minispiel-abbruch" title="Abbrechen (oder Esc)">&#10005;</button>
+                <div class="minispiel-titel">&#127920; Glücksrad</div>
+                <canvas class="rad-feld"></canvas>
+                <div class="klein rad-text">Es dreht …</div>`;
+            const leinwand = b.querySelector('.rad-feld');
+            const text = b.querySelector('.rad-text');
+            const ctx = leinwand.getContext('2d');
+            const teil = Math.PI * 2 / spiele.length;
+
+            /* Erst das Ergebnis, dann der Weg dorthin: Der Endwinkel wird so
+               gerechnet, dass die Mitte des gezogenen Feldes genau unter dem Zeiger
+               steht. Umgekehrt - erst drehen, dann ablesen - haengt das Ergebnis an
+               Rundungen, und bei einem Spiel, das Punkte vergibt, will man das nicht. */
+            const treffer = Math.floor(Math.random() * spiele.length);
+            /* Die zusaetzlichen Umdrehungen muessen ganze sein - ein angebrochener
+               Kreis verschiebt den Halt um genau diesen Bruchteil, und dann steht
+               der Zeiger woanders als angesagt. Die kleine Streuung bleibt sicher
+               innerhalb des Feldes und nimmt dem Halt das Mechanische. */
+            const umdrehungen = 4 + Math.floor(Math.random() * 3);
+            const streuung = (Math.random() - 0.5) * teil * 0.6;
+            const ziel = Math.PI * 2 * umdrehungen - (treffer + 0.5) * teil + streuung;
+            const dauer = 4200;
+            const start = performance.now();
+
+            function messen() {
+                const r = leinwand.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                leinwand.width = Math.round(r.width * dpr);
+                leinwand.height = Math.round(r.height * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                return { w: r.width, h: r.height };
+            }
+
+            function zeichnen(winkel, fertig) {
+                const { w, h } = messen();
+                const m = Math.min(w, h) / 2, cx = w / 2, cy = h / 2, r = m * 0.88;
+                ctx.clearRect(0, 0, w, h);
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(winkel);
+                spiele.forEach((sp, i) => {
+                    const von = -Math.PI / 2 + i * teil;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0); ctx.arc(0, 0, r, von, von + teil); ctx.closePath();
+                    ctx.fillStyle = farben[i % farben.length];
+                    ctx.globalAlpha = fertig && i !== treffer ? 0.35 : 1;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = 'rgba(5,6,15,.55)'; ctx.lineWidth = 3; ctx.stroke();
+                    // Beschriftung laeuft von innen nach aussen
+                    ctx.save();
+                    ctx.rotate(von + teil / 2);
+                    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#0f172a';
+                    ctx.font = `900 ${Math.max(11, r * 0.085)}px 'DM Sans', sans-serif`;
+                    ctx.fillText(sp.name, r * 0.92, 0);
+                    ctx.restore();
+                });
+                ctx.restore();
+                // Nabe und Zeiger stehen fest
+                ctx.beginPath(); ctx.arc(cx, cy, r * 0.13, 0, Math.PI * 2);
+                ctx.fillStyle = '#0b1120'; ctx.fill();
+                ctx.strokeStyle = '#7dd3fc'; ctx.lineWidth = 3; ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(cx, cy - r * 1.02);
+                ctx.lineTo(cx - r * 0.08, cy - r * 0.84);
+                ctx.lineTo(cx + r * 0.08, cy - r * 0.84);
+                ctx.closePath();
+                ctx.fillStyle = '#f8fafc'; ctx.fill();
+            }
+
+            function schritt(jetzt) {
+                // Mit der Buehne verschwindet auch das Rad - dann ist Schluss
+                if (!leinwand.isConnected) return;
+                const t = Math.min(1, (jetzt - start) / dauer);
+                const sanft = 1 - Math.pow(1 - t, 3);     // zum Ende hin langsamer
+                zeichnen(ziel * sanft, t >= 1);
+                if (t < 1) { requestAnimationFrame(schritt); return; }
+                const gewonnen = spiele[treffer];
+                text.textContent = gewonnen.name;
+                playSound('up');
+                setTimeout(() => {
+                    if (!leinwand.isConnected) return;   // inzwischen abgebrochen
+                    if (gewonnen.art === 'reaktion') { beendeSammelspiel(); starteReaktionsspiel(); }
+                    else starteSammelspiel(gewonnen.art);
+                }, 1600);
+            }
+            requestAnimationFrame(schritt);
         }
 
         function starteSammelspiel(art) {
