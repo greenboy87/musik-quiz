@@ -4263,6 +4263,27 @@
             liste.forEach(baustein => {
                 // Haelse und Koepfe eines Fragments merken, um danach die Balken zu ziehen
                 const gruppe = [];
+                /* Schliesst die offene Gruppe ab: zwei und mehr bekommen Balken, eine
+                   allein ihr Faehnchen. Muss auch mitten im Fragment aufgerufen
+                   werden - eine Pause unterbricht den Balken, und die Note davor
+                   braucht dann trotzdem ihr Faehnchen. Genau das fehlte bei
+                   "Achtel + Pause". */
+                const gruppeAbschliessen = () => {
+                    if (gruppe.length >= 2) {
+                        const a = gruppe[0].hx, b = gruppe[gruppe.length - 1].hx;
+                        teile.push(`<rect x="${a - 1.2}" y="${halsOben - 1}" width="${b - a + 2.4}" height="${balkenDicke}" fill="${tinte}"/>`);
+                        for (let i = 0; i < gruppe.length - 1; i++) {
+                            if (gruppe[i].d > 0.25 || gruppe[i + 1].d > 0.25) continue;
+                            teile.push(`<rect x="${gruppe[i].hx - 1.2}" y="${halsOben + balkenDicke + 1.5}" ` +
+                                       `width="${gruppe[i + 1].hx - gruppe[i].hx + 2.4}" height="${balkenDicke}" fill="${tinte}"/>`);
+                        }
+                    } else if (gruppe.length === 1 && gruppe[0].d <= 0.5) {
+                        const hx = gruppe[0].hx;
+                        teile.push(`<path d="M${hx} ${halsOben} q 11 5 9 16 q -2 -8 -9 -9" fill="${tinte}"/>`);
+                        ink(hx - 2, hx + 12, halsOben - 1, linie + 7);
+                    }
+                    gruppe.length = 0;
+                };
                 baustein.teile.forEach(t => {
                     const px = x;
                     x += vorschub[t.d] || 38;
@@ -4291,7 +4312,7 @@
                                        `<circle cx="${px - 1}" cy="${linie - 8}" r="3.2" fill="${tinte}"/>`);
                             ink(px - 5, px + 6, linie - 12, linie + 11);
                         }
-                        gruppe.length = 0;      // eine Pause unterbricht den Balken
+                        gruppeAbschliessen();   // eine Pause unterbricht den Balken
                         return;
                     }
                     const hohl = t.d >= 2;
@@ -4305,21 +4326,7 @@
                     if (t.d <= 0.5) gruppe.push({ hx: hx, d: t.d });
                 });
 
-                if (gruppe.length >= 2) {
-                    // Hauptbalken ueber die ganze Gruppe
-                    const a = gruppe[0].hx, b = gruppe[gruppe.length - 1].hx;
-                    teile.push(`<rect x="${a - 1.2}" y="${halsOben - 1}" width="${b - a + 2.4}" height="${balkenDicke}" fill="${tinte}"/>`);
-                    // Zweiter Balken nur zwischen benachbarten Sechzehnteln
-                    for (let i = 0; i < gruppe.length - 1; i++) {
-                        if (gruppe[i].d > 0.25 || gruppe[i + 1].d > 0.25) continue;
-                        teile.push(`<rect x="${gruppe[i].hx - 1.2}" y="${halsOben + balkenDicke + 1.5}" ` +
-                                   `width="${gruppe[i + 1].hx - gruppe[i].hx + 2.4}" height="${balkenDicke}" fill="${tinte}"/>`);
-                    }
-                } else if (gruppe.length === 1 && gruppe[0].d <= 0.5) {
-                    // Einzelne Achtel: Faehnchen statt Balken
-                    const hx = gruppe[0].hx;
-                    teile.push(`<path d="M${hx} ${halsOben} q 11 5 9 16 q -2 -8 -9 -9" fill="${tinte}"/>`);
-                }
+                gruppeAbschliessen();
             });
 
             const rechts = x + 6;
