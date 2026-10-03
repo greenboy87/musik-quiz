@@ -2010,7 +2010,9 @@
         let minispielSchueler = null;  // Schuelergeraet: { id, phase, gruenAb, getippt }
 
         const MINISPIEL_PUNKTE = [3, 2, 1];
-        const MINISPIEL_REGELN_MS = 6200;   // so lange stehen die Regeln
+        /* So lange stehen die Regeln. Sechs Sekunden waren zu knapp - die Klasse
+           muss vier Zeilen lesen, und die letzte erscheint erst nach drei. */
+        const MINISPIEL_REGELN_MS = 12000;
         const MINISPIEL_FENSTER_MS = 6000;  // so lange zaehlt ein Tipper nach Gruen
 
         function starteReaktionsspiel() {
@@ -2129,10 +2131,10 @@
                 `<div class="minispiel-regel" style="animation-delay: ${verzug}s">` +
                 `<span class="nummer">${nr}</span> ${text}</div>`;
             return `<div class="mittel">⚡ Reaktionsspiel</div>` +
-                regel('1', 'Schau auf dein iPad', 0.15) +
-                regel('2', 'Rot heißt warten', 0.75) +
-                regel('3', 'Grün heißt sofort tippen', 1.35) +
-                regel('!', 'Zu früh getippt – raus für diese Runde', 1.95) +
+                regel('1', 'Schau auf dein iPad', 0.2) +
+                regel('2', 'Rot heißt warten', 1.1) +
+                regel('3', 'Grün heißt sofort tippen', 2.0) +
+                regel('!', 'Zu früh getippt – raus für diese Runde', 2.9) +
                 `<div class="klein">Die schnellsten drei bekommen 3 · 2 · 1 Punkte</div>`;
         }
 
