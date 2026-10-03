@@ -2637,12 +2637,14 @@
                 einheit: ['Form', 'Formen'],
                 name: 'Avocado or Not(e)',
                 hinweis: 'Was ist das - Avocado oder Note?',
+                /* Was die Knoepfe sonst noch treiben - zweimal dasselbe sagen oder
+                   wegspringen - steht bewusst nicht in den Regeln. Es zu erleben ist
+                   der Witz; es vorher zu lesen nimmt ihn weg. */
                 regeln: [
                     ['1', 'Eine Form erscheint - Avocado oder Note?', ''],
                     ['2', 'Tippe, was du siehst', ''],
                     ['3', 'Die Knöpfe tauschen gern die Plätze', ''],
-                    ['?', 'Manchmal steht zweimal dasselbe - dann stimmt es auch', 'warnung'],
-                    ['!', 'Springt ein Knopf weg: nochmal drauf', 'warnung']
+                    ['45', 'Sekunden lang - so viele wie möglich', 'warnung']
                 ],
                 feld: (behaelter, dauer, senden) => avocadoFeldAufbauen(behaelter, dauer, senden)
             },
