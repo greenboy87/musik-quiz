@@ -2660,7 +2660,7 @@
                 dauer: 50000,
                 einheit: ['Takt', 'Takte'],
                 name: 'Taktfüller',
-                hinweis: 'Noten antippen, dann Fertig - im Takt antippen nimmt zurück',
+                hinweis: 'Noten antippen, Zurück nimmt die letzte weg, Fertig prüft',
                 regeln: [
                     ['1', 'Oben steht eine Taktart, zum Beispiel 3/4', ''],
                     ['2', 'Lege Noten in den Takt, so viele du willst', ''],
@@ -3565,7 +3565,7 @@
 
             const S = {
                 w: 0, h: 0, takt: null, drin: [], pause: 0, ergebnis: '',
-                felder: [], fertigFeld: null,
+                felder: [], zurueckFeld: null, fertigFeld: null,
                 punkte: 0, extra: 0, lauf: true, letzterSend: 0, folge: 0,
                 ende: performance.now() + dauer, zuletzt: performance.now()
             };
@@ -3577,14 +3577,14 @@
                 leinwand.width = Math.round(r.width * dpr);
                 leinwand.height = Math.round(r.height * dpr);
                 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-                // Unten die vier Notenwerte und daneben der Fertig-Knopf
-                const anzahl = NOTENWERTE.length + 1;
-                const breite = Math.min(S.w * 0.18, S.h * 0.28);
+                // Unten die vier Notenwerte, daneben Zurück und Fertig
+                const anzahl = NOTENWERTE.length + 2;
+                const breite = Math.min(S.w * 0.155, S.h * 0.26);
                 const links = (S.w - breite * anzahl) / 2;
-                S.felder = NOTENWERTE.map((n, i) => ({
-                    note: n, x: links + i * breite, y: S.h * 0.62, b: breite, h: S.h * 0.33
-                }));
-                S.fertigFeld = { x: links + NOTENWERTE.length * breite, y: S.h * 0.62, b: breite, h: S.h * 0.33 };
+                const reihe = { y: S.h * 0.62, b: breite, h: S.h * 0.33 };
+                S.felder = NOTENWERTE.map((n, i) => ({ note: n, x: links + i * breite, ...reihe }));
+                S.zurueckFeld = { x: links + NOTENWERTE.length * breite, ...reihe };
+                S.fertigFeld = { x: links + (NOTENWERTE.length + 1) * breite, ...reihe };
             }
 
             function neuerTakt() {
@@ -3608,6 +3608,14 @@
                 S.drin.push(note);
             }
 
+            /* Nimmt die zuletzt gelegte Note weg. Einzelne Noten lassen sich
+               weiterhin direkt im Takt antippen - bei sechs Achteln nebeneinander
+               ist das aber fummelig, und dafuer gibt es diesen Knopf. */
+            function zuruecknehmen() {
+                if (S.pause) return;
+                S.drin.pop();
+            }
+
             function abgeben() {
                 if (S.pause || !S.takt) return;
                 const ist = summe(), soll = S.takt.wert;
@@ -3626,6 +3634,7 @@
                 const r = leinwand.getBoundingClientRect();
                 const x = e.clientX - r.left, y = e.clientY - r.top;
                 if (imFeld(S.fertigFeld, x, y)) { abgeben(); return; }
+                if (imFeld(S.zurueckFeld, x, y)) { zuruecknehmen(); return; }
                 const feld = S.felder.find(f => imFeld(f, x, y));
                 if (feld) { legen(feld.note); return; }
                 // Im Takt nimmt ein Tipper die Note wieder heraus
@@ -3729,13 +3738,38 @@
                    Ob es stimmt, entscheidet erst der Fertig-Knopf. */
                 S.felder.forEach(f => {
                     kasten(f, 'rgba(255,255,255,.1)', 'rgba(125,211,252,.6)');
-                    zeichneNote(ctx, f.x + f.b * 0.5, f.y + f.h * 0.42, f.h * 0.5, f.note.typ, '#f8fafc');
+                    // Groesse nach dem engeren Mass: Sonst haengt die Ganze auf
+                    // schmalen Geraeten ueber den Rand ihres Feldes hinaus.
+                    zeichneNote(ctx, f.x + f.b * 0.5, f.y + f.h * 0.42,
+                                Math.min(f.h * 0.5, f.b * 0.72), f.note.typ, '#f8fafc');
                     ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
                     // Die Beschriftung muss in das Feld passen, nicht ueber den Rand
                     ctx.font = `800 ${Math.max(9, Math.min(S.h * 0.05, f.b * 0.2))}px 'DM Sans', sans-serif`;
                     ctx.fillStyle = 'rgba(248,250,252,.8)';
                     ctx.fillText(f.note.name, f.x + f.b * 0.5, f.y + f.h - 4);
                 });
+                if (S.zurueckFeld) {
+                    const f = S.zurueckFeld, geht = S.drin.length > 0;
+                    kasten(f, geht ? 'rgba(251,191,36,.22)' : 'rgba(255,255,255,.04)',
+                              geht ? '#fbbf24' : 'rgba(248,250,252,.15)');
+                    ctx.save();
+                    ctx.globalAlpha = geht ? 1 : 0.35;
+                    // Pfeil im Kreis - zurueck heisst zurueck, ohne Lesen
+                    ctx.strokeStyle = '#fde68a'; ctx.lineWidth = Math.max(2, f.b * 0.055);
+                    ctx.lineCap = 'round';
+                    const mx = f.x + f.b * 0.5, my = f.y + f.h * 0.4, rr = f.b * 0.22;
+                    ctx.beginPath(); ctx.arc(mx, my, rr, Math.PI * 0.75, Math.PI * 2.1); ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(mx - rr * 1.25, my - rr * 0.1);
+                    ctx.lineTo(mx - rr * 0.72, my - rr * 0.72);
+                    ctx.lineTo(mx - rr * 0.1, my - rr * 0.22);
+                    ctx.stroke();
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+                    ctx.font = `800 ${Math.max(9, Math.min(S.h * 0.05, f.b * 0.2))}px 'DM Sans', sans-serif`;
+                    ctx.fillStyle = '#fde68a';
+                    ctx.fillText('Zurück', mx, f.y + f.h - 4);
+                    ctx.restore();
+                }
                 if (S.fertigFeld) {
                     const f = S.fertigFeld;
                     kasten(f, 'rgba(16,185,129,.28)', '#34d399');
