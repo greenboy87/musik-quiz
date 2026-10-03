@@ -190,6 +190,32 @@
         /* Sichtbarkeit über eine eigene Klasse: Der ID-Selektor sticht Tailwinds .hidden. */
         #live-warning.sichtbar { display: inline-flex; }
 
+        /* Rundenleiste: immer eine Zeile.
+           Vorher brach sie bei knapper Fensterbreite um - erst rutschte der
+           Antwortzähler in eine zweite Reihe, dann zerfielen die Knopfbeschriftungen
+           in "Nächste / Runde". Das sprang beim Rundenwechsel ins Auge, als sei
+           etwas kaputt. Jetzt bleibt alles nebeneinander; passt es wirklich nicht
+           mehr, schiebt sich die Leiste seitlich statt umzubrechen.
+           Eigene Regeln, weil flex-nowrap, whitespace-nowrap und overflow-x-auto
+           in der vorgenerierten tailwind.css nicht vorkommen. */
+        .rundenleiste {
+            flex-direction: row;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+        .rundenleiste > * { flex-shrink: 0; }
+        .rundenleiste .leiste-links { flex-wrap: nowrap; }
+        .rundenleiste button,
+        .rundenleiste span,
+        .rundenleiste label { white-space: nowrap; }
+        /* Auf schmalen Fenstern lieber enger als umgebrochen */
+        @media (max-width: 1500px) {
+            .rundenleiste { gap: 0.4rem; }
+            .rundenleiste .leiste-links { gap: 0.4rem; }
+            .rundenleiste button { padding-left: 0.5rem; padding-right: 0.5rem; }
+        }
+
         /* Ohne erkannten Raum ist der Beitritt gesperrt. Eigene Regel, weil
            disabled:opacity-40 in der vorgenerierten tailwind.css nicht vorkommt. */
         #student-join-btn:disabled {
@@ -1076,8 +1102,8 @@
         <!-- ========================================== -->
         <!-- EINZEILIGER RUNDEN-MANAGER (ÜBER ANTWORTEN)-->
         <!-- ========================================== -->
-        <div class="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 mb-3 flex flex-col xl:flex-row items-center justify-between gap-3 animate-fadeIn">
-            <div class="flex flex-wrap items-center gap-2.5 text-xs">
+        <div class="rundenleiste bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-2.5 mb-3 flex items-center justify-between gap-3 animate-fadeIn">
+            <div class="leiste-links flex flex-wrap items-center gap-2.5 text-xs">
                 <!-- Neue, hochsichtbare Rundenanzeige direkt im Rundenmanager -->
                 <span class="bg-violet-500/25 text-violet-300 border border-violet-500/45 px-3 py-1 rounded-lg font-bold font-mono flex items-center gap-1">
                     Runde: <span id="manager-round-display" class="text-sm font-black text-violet-400">1</span>
@@ -1126,7 +1152,7 @@
                     <span id="answer-counter-value" class="font-black text-xs text-slate-100">0/0</span>
                 </div>
             </div>
-            <div class="flex items-center gap-2 w-full xl:w-auto justify-end">
+            <div class="flex items-center gap-2 justify-end">
                 <button
                     id="spiel-start-btn"
                     onclick="toggleSpielStart()"
