@@ -477,6 +477,11 @@
             text-shadow: 0 0 18px rgba(251,191,36,.8);
         }
         .snp-mitte { opacity: .5; }
+        .snp-stand {
+            font-size: 1.15em; font-weight: 900; font-variant-numeric: tabular-nums;
+            background: rgba(0,0,0,.35); border-radius: 999px; padding: .1em .6em;
+            border: 1px solid rgba(255,255,255,.25);
+        }
         @media (prefers-reduced-motion: reduce) {
             .snp-duell { animation: none; opacity: 1; transform: none; }
         }
@@ -2597,7 +2602,7 @@
                     sammel: sammelspiel ? { art: sammelspiel.art, id: sammelspiel.id, phase: sammelspiel.phase } : null,
                     /* Beim Gegnersuchen brauchen die Geraete die Teamnamen, beim Ziehen
                        die Paare - mehr nicht. Die Zuege bleiben beim Schiedsrichter. */
-                    snp: snp ? { id: snp.id, phase: snp.phase,
+                    snp: snp ? { id: snp.id, phase: snp.phase, runde: snp.runde, runden: snp.runden,
                                  namen: snp.phase === 'wahl' ? snp.namen : null,
                                  paare: snp.phase === 'zug' ? snp.paare : null } : null,
                     // Nur Taktlaenge und erlaubte Bausteine - die Loesung bleibt hier
@@ -2918,12 +2923,35 @@
         };
         const SNP_WAHL_MS = 15000;    // Gegner suchen
         const SNP_ZUG_MS = 8000;      // Zeichen waehlen
-        const SNP_SIEG = 2, SNP_REMIS = 1;
+        const SNP_MATCH_SIEG = 3, SNP_MATCH_REMIS = 1;
 
         let snp = null;            // Lehrergeraet
         let snpSchueler = null;    // Schuelergeraet
 
-        function starteSchereNote() {
+        /* Vor dem Start die Rundenzahl waehlen - mehr Einstellungen braucht es
+           nicht, und so sieht die Klasse am Beamer gleich, worauf sie sich
+           einlaesst. */
+        function schereNoteVorbereiten() {
+            const b = getEl('sammel-buehne');
+            if (!b) return;
+            if (!liveRoomCode) {
+                showToast("Erst einen Raum starten - ohne Live-Empfang kommt keine Wahl an.", "danger");
+                return;
+            }
+            b.className = 'minispiel-buehne sichtbar';
+            b.innerHTML = `<button type="button" onclick="event.stopPropagation(); beendeSchereNote();"
+                    class="minispiel-abbruch" title="Abbrechen (oder Esc)">&#10005;</button>
+                <div class="minispiel-titel">✂️ Schere, Note, Notenpapier</div>
+                <div class="klein">Wie viele Duelle gegen denselben Gegner?</div>
+                <div class="minispiel-knopfreihe">
+                    <button type="button" class="minispiel-knopf" onclick="event.stopPropagation(); starteSchereNote(1);">1 Duell</button>
+                    <button type="button" class="minispiel-knopf gruen-knopf" onclick="event.stopPropagation(); starteSchereNote(3);">3 Duelle</button>
+                    <button type="button" class="minispiel-knopf" onclick="event.stopPropagation(); starteSchereNote(5);">5 Duelle</button>
+                </div>
+                <div class="klein">Wer mehr Duelle gewinnt, bekommt ${SNP_MATCH_SIEG} Punkte · bei Gleichstand je ${SNP_MATCH_REMIS}</div>`;
+        }
+
+        function starteSchereNote(runden) {
             if (!liveRoomCode) {
                 showToast("Erst einen Raum starten - ohne Live-Empfang kommt keine Wahl an.", "danger");
                 return;
@@ -2934,7 +2962,8 @@
             if (namen.length < 1) { showToast("Dafür braucht es wenigstens ein Team.", "danger"); return; }
 
             snp = { id: 'n' + Date.now(), phase: 'regeln', uhren: [], namen: namen,
-                    wunsch: {}, zuege: {}, paare: [], bis: 0 };
+                    wunsch: {}, zuege: {}, paare: [], bis: 0,
+                    runden: Math.max(1, Number(runden) || 3), runde: 0, verlauf: [] };
             zeigeSnp();
             broadcastControlState();
             playSound('up');
@@ -2950,25 +2979,50 @@
                     if (!snp) return;
                     clearInterval(snp.takt);
                     snpPaareBilden();
-                    snp.phase = 'zug';
-                    snp.bis = Date.now() + SNP_ZUG_MS;
-                    zeigeSnp(); broadcastControlState(); playSound('up');
-                    snp.takt = setInterval(() => { if (snp) zeigeSnp(); }, 1000);
-
-                    snp.uhren.push(setTimeout(() => {
-                        if (!snp) return;
-                        clearInterval(snp.takt);
-                        snpRechnerZiehen();
-                        snp.phase = 'aufdeckung';
-                        zeigeSnp(); broadcastControlState(); playSound('up');
-                        snp.uhren.push(setTimeout(() => {
-                            if (!snp) return;
-                            snp.phase = 'ende';
-                            zeigeSnp(); broadcastControlState();
-                        }, 1200 + snp.paare.length * 900));
-                    }, SNP_ZUG_MS));
+                    snpDuellStarten();
                 }, SNP_WAHL_MS));
             }, SAMMEL_REGELN_MS));
+        }
+
+        /* Ein Duell: Zeichen waehlen, aufdecken - und danach entweder das naechste
+           oder das Ergebnis. Die Paarung bleibt ueber alle Duelle gleich; genau
+           davon lebt das Spiel, weil man den Gegner einschaetzen lernt. */
+        function snpDuellStarten() {
+            if (!snp) return;
+            snp.runde++;
+            snp.zuege = {};
+            snp.rechnerzug = {};
+            snp.phase = 'zug';
+            snp.bis = Date.now() + SNP_ZUG_MS;
+            zeigeSnp(); broadcastControlState(); playSound('up');
+            snp.takt = setInterval(() => { if (snp) zeigeSnp(); }, 1000);
+            snp.uhren.push(setTimeout(() => {
+                if (!snp) return;
+                clearInterval(snp.takt);
+                snpRechnerZiehen();
+                // Ergebnis dieses Duells festhalten, bevor das naechste die Zuege ueberschreibt
+                snp.verlauf.push(snp.paare.map((pp, i) => [snpZugVon(i, 0), snpZugVon(i, 1)]));
+                snp.phase = 'aufdeckung';
+                zeigeSnp(); broadcastControlState(); playSound('up');
+                snp.uhren.push(setTimeout(() => {
+                    if (!snp) return;
+                    if (snp.runde < snp.runden) { snpDuellStarten(); return; }
+                    snp.phase = 'ende';
+                    zeigeSnp(); broadcastControlState();
+                }, 1600 + snp.paare.length * 700));
+            }, SNP_ZUG_MS));
+        }
+
+        /* Wie steht es im Match? Gibt je Paar die Zahl der gewonnenen Duelle. */
+        function snpStand(paarNr) {
+            let links = 0, rechts = 0;
+            snp.verlauf.forEach(runde => {
+                const zug = runde[paarNr];
+                if (!zug) return;
+                const u = snpUrteil(zug[0], zug[1]);
+                if (u === 1) links++; else if (u === -1) rechts++;
+            });
+            return { links: links, rechts: rechts };
         }
 
         function beendeSchereNote() {
@@ -3044,12 +3098,14 @@
             zeigeSnp();
         }
 
+        /* Gewertet wird das Match, nicht das einzelne Duell: Wer mehr Duelle
+           gewinnt, bekommt die Punkte, bei Gleichstand bekommen beide den kleinen
+           Trostpunkt. Der Rechner bekommt natuerlich nichts. */
         function snpPunkteVergeben() {
             if (!snp) return;
             let vergeben = 0;
             snp.paare.forEach(([a, b], i) => {
-                const links = snpZugVon(i, 0), rechts = snpZugVon(i, 1);
-                const urteil = snpUrteil(links, rechts);
+                const stand = snpStand(i);
                 const gib = (name, punkte) => {
                     if (name === null || !punkte) return;
                     const team = teams.find(t => teamName(t).toLowerCase() === String(name).toLowerCase());
@@ -3057,9 +3113,9 @@
                     team.score = Math.max(0, team.score + punkte);
                     vergeben++;
                 };
-                if (urteil === 0) { gib(a, SNP_REMIS); gib(b, SNP_REMIS); }
-                else if (urteil === 1) gib(a, SNP_SIEG);
-                else gib(b, SNP_SIEG);
+                if (stand.links === stand.rechts) { gib(a, SNP_MATCH_REMIS); gib(b, SNP_MATCH_REMIS); }
+                else if (stand.links > stand.rechts) gib(a, SNP_MATCH_SIEG);
+                else gib(b, SNP_MATCH_SIEG);
             });
             if (!vergeben) { showToast("Es gibt niemanden, der Punkte bekommen könnte.", "info"); return; }
             saveState(); renderScoreboard(); playSound('up');
@@ -3076,7 +3132,7 @@
                 regel('📜', 'Notenpapier wickelt die Note ein', 1.1) +
                 regel('🎵', 'Note verbiegt die Schere', 2.0) +
                 regel('!', 'Erst Gegner suchen, dann Zeichen wählen', 2.9, 'warnung') +
-                `<div class="klein">Sieg ${SNP_SIEG} Punkte · Unentschieden ${SNP_REMIS}</div>` +
+                `<div class="klein">Wer mehr Duelle gewinnt, bekommt ${SNP_MATCH_SIEG} Punkte · Gleichstand ${SNP_MATCH_REMIS}</div>` +
                 countdownHtml(Math.round(SAMMEL_REGELN_MS / 1000));
         }
 
@@ -3124,26 +3180,31 @@
                         `<div class="snp-paar"><span>${escapeHtml(a)}</span><span class="gegen">gegen</span>` +
                         `<span>${bb === null ? '🤖 Rechner' : escapeHtml(bb)}</span></div>`).join('') + `</div>`;
             } else {
+                const fertig = snp.phase === 'ende';
                 const zeilen = snp.paare.map(([a, bb], i) => {
-                    const links = snpZugVon(i, 0), rechts = snpZugVon(i, 1);
-                    const urteil = snpUrteil(links, rechts);
-                    const zeichen = (w) => w ? `<span class="snp-zeichen">${SNP_ZEICHEN[w].bild}</span>` : `<span class="snp-zeichen">❔</span>`;
+                    const stand = snpStand(i);
+                    const letzte = snp.verlauf[snp.verlauf.length - 1];
+                    const zug = letzte ? letzte[i] : [null, null];
+                    const urteil = snpUrteil(zug[0], zug[1]);
+                    const gewinntMatch = stand.links > stand.rechts ? 1 : stand.rechts > stand.links ? -1 : 0;
+                    const hervor = fertig ? gewinntMatch : urteil;
+                    const zeichen = (w) => `<span class="snp-zeichen">${w ? SNP_ZEICHEN[w].bild : '❔'}</span>`;
                     const name = (n, gewinnt) => `<span class="snp-name${gewinnt ? ' sieger' : ''}">${n === null ? '🤖 Rechner' : escapeHtml(n)}</span>`;
-                    return `<div class="snp-duell" style="animation-delay:${(i * 0.5).toFixed(1)}s">
-                            ${name(a, urteil === 1)} ${zeichen(links)}
-                            <span class="snp-mitte">${urteil === 0 ? '=' : '·'}</span>
-                            ${zeichen(rechts)} ${name(bb, urteil === -1)}
+                    return `<div class="snp-duell" style="animation-delay:${(i * 0.4).toFixed(1)}s">
+                            ${name(a, hervor === 1)} ${fertig ? '' : zeichen(zug[0])}
+                            <span class="snp-stand">${stand.links} : ${stand.rechts}</span>
+                            ${fertig ? '' : zeichen(zug[1])} ${name(bb, hervor === -1)}
                         </div>`;
                 }).join('');
-                const knoepfe = snp.phase === 'ende'
+                const knoepfe = fertig
                     ? `<div class="minispiel-knopfreihe">
                            <button type="button" onclick="event.stopPropagation(); snpPunkteVergeben();"
-                                   class="minispiel-knopf gruen-knopf">Punkte vergeben (Sieg ${SNP_SIEG} · Remis ${SNP_REMIS})</button>
+                                   class="minispiel-knopf gruen-knopf">Punkte vergeben (Sieg ${SNP_MATCH_SIEG} · Gleichstand ${SNP_MATCH_REMIS})</button>
                            <button type="button" onclick="event.stopPropagation(); beendeSchereNote();"
                                    class="minispiel-knopf">Schließen ohne Punkte</button>
                        </div>` : '';
-                b.innerHTML = (snp.phase === 'ende' ? '' : abbruch) +
-                    `<div class="minispiel-titel">✂️ Aufgedeckt</div>${zeilen}${knoepfe}`;
+                b.innerHTML = (fertig ? '' : abbruch) +
+                    `<div class="minispiel-titel">✂️ ${fertig ? 'Endstand' : 'Duell ' + snp.runde + ' von ' + snp.runden}</div>${zeilen}${knoepfe}`;
             }
             updateSpielKnopf();
         }
@@ -3157,7 +3218,13 @@
                 return;
             }
             const name = localStorage.getItem('student_team_name') || '';
-            if (!snpSchueler || snpSchueler.id !== zustand.id) snpSchueler = { id: zustand.id, phase: '', gewaehlt: '', zug: '' };
+            if (!snpSchueler || snpSchueler.id !== zustand.id) snpSchueler = { id: zustand.id, phase: '', gewaehlt: '', zug: '', runde: 0 };
+            /* Jedes Duell faengt mit leerer Hand an - sonst stuende ab dem zweiten
+               Durchgang fuer immer "Abgeschickt" auf dem Geraet. */
+            if (zustand.runde && zustand.runde !== snpSchueler.runde) {
+                snpSchueler.runde = zustand.runde;
+                snpSchueler.zug = '';
+            }
             const neu = snpSchueler.phase !== zustand.phase;
             snpSchueler.phase = zustand.phase;
             b.className = 'minispiel-buehne sichtbar';
@@ -3188,13 +3255,14 @@
             if (zustand.phase === 'zug') {
                 const paar = (zustand.paare || []).find(pp => pp[0] === name || pp[1] === name);
                 const gegner = !paar ? null : (paar[0] === name ? paar[1] : paar[0]);
+                const duell = zustand.runden > 1 ? `<div class="klein">Duell ${zustand.runde} von ${zustand.runden}</div>` : '';
                 if (snpSchueler.zug) {
                     b.innerHTML = `<div class="minispiel-titel">✂️ Abgeschickt</div>
                         <div class="gross">${SNP_ZEICHEN[snpSchueler.zug].bild}</div>
-                        <div class="klein">Gleich wird aufgedeckt</div>`;
+                        ${duell}<div class="klein">Gleich wird aufgedeckt</div>`;
                     return;
                 }
-                b.innerHTML = `<div class="minispiel-titel">Gegen ${gegner === null || gegner === undefined ? '🤖 den Rechner' : escapeHtml(gegner)}</div>
+                b.innerHTML = `<div class="minispiel-titel">Gegen ${gegner === null || gegner === undefined ? '🤖 den Rechner' : escapeHtml(gegner)}</div>${duell}
                     <div class="snp-wahlreihe">` +
                     Object.keys(SNP_ZEICHEN).map(k => `<button type="button" class="snp-knopf"
                         onclick="event.stopPropagation(); snpWaehleZug('${k}')">
@@ -3227,7 +3295,9 @@
             if (!snpSchueler || snpSchueler.zug) return;
             snpSchueler.zug = wert;
             snpSenden('zug', wert);
-            snpSchuelerZeigen({ id: snpSchueler.id, phase: 'zug', paare: [] });
+            snpSchueler.phase = '';   // Anzeige erzwingen
+            snpSchuelerZeigen({ id: snpSchueler.id, phase: 'zug', paare: [],
+                                runde: snpSchueler.runde, runden: snpSchueler.runden || 1 });
         }
 
         /* ============================================================ */
@@ -3371,7 +3441,7 @@
                     <button type="button" class="minispiel-knopf"
                             onclick="event.stopPropagation(); starteSammelspiel('taktfueller');"><i class="fa-solid fa-ruler-horizontal"></i> Taktfüller</button>
                     <button type="button" class="minispiel-knopf"
-                            onclick="event.stopPropagation(); starteSchereNote();"><i class="fa-solid fa-hand-scissors"></i> Schere, Note, Papier</button>
+                            onclick="event.stopPropagation(); schereNoteVorbereiten();"><i class="fa-solid fa-hand-scissors"></i> Schere, Note, Papier</button>
                 </div>
                 <div class="klein">Die drei besten bekommen 3 · 2 · 1 Punkte</div>`;
             updateSpielKnopf();
