@@ -501,13 +501,6 @@
         @media (max-width: 640px) {
             .katapult-feld { width: 100%; aspect-ratio: 3 / 4; max-height: 72vh; }
         }
-        /* Der Huegellauf laeuft seitwaerts - er braucht ein breites Feld, auch auf
-           dem hochkant gehaltenen Schuelergeraet. Steht nach der Regel oben, damit
-           das Seitenverhaeltnis gewinnt. */
-        .lauf-feld { aspect-ratio: 16 / 9; }
-        @media (max-width: 640px) {
-            .lauf-feld { aspect-ratio: 4 / 3; max-height: 48vh; }
-        }
         /* Liveliste am Beamer: Sie wird jede Sekunde neu gezeichnet - deshalb
            bewusst ohne Einflug-Animation, sonst zappelt die ganze Liste. */
         .katapult-zeile {
@@ -1510,7 +1503,7 @@
                     id="spiel-waehlen-btn"
                     onclick="spielAuswahl()"
                     class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
-                    title="Minispiel starten: sechs Spiele zur Auswahl"
+                    title="Minispiel starten: fünf Spiele zur Auswahl"
                     aria-label="Minispiel starten"
                 >
                     <i class="fa-solid fa-gamepad"></i>
@@ -2605,20 +2598,6 @@
                 ],
                 feld: (behaelter, dauer, senden) => farbfalleFeldAufbauen(behaelter, dauer, senden)
             },
-            huegel: {
-                titel: '&#127939; Hügellauf',
-                dauer: 45000,
-                einheit: ['Hügel', 'Hügel'],
-                name: 'Hügellauf',
-                hinweis: 'Tippe irgendwo - so oft, wie der Hügel hoch ist',
-                regeln: [
-                    ['1', 'Der Läufer kommt an Hügel', ''],
-                    ['2', 'So oft tippen, wie der Hügel hoch ist', ''],
-                    ['3', 'Kleiner Hügel einmal, großer dreimal', ''],
-                    ['!', 'Zu oft oder zu selten: ein Punkt Abzug', 'warnung']
-                ],
-                feld: (behaelter, dauer, senden) => huegelFeldAufbauen(behaelter, dauer, senden)
-            },
             sortierer: {
                 titel: '&#127925; Notensortierer',
                 dauer: 50000,
@@ -2665,8 +2644,6 @@
                             onclick="event.stopPropagation(); starteSammelspiel('notenlesen');"><i class="fa-solid fa-book-open"></i> Notenlesen</button>
                     <button type="button" class="minispiel-knopf"
                             onclick="event.stopPropagation(); starteSammelspiel('farbfalle');"><i class="fa-solid fa-palette"></i> Farbfalle</button>
-                    <button type="button" class="minispiel-knopf"
-                            onclick="event.stopPropagation(); starteSammelspiel('huegel');"><i class="fa-solid fa-person-running"></i> Hügellauf</button>
                 </div>
                 <div class="klein">Die drei besten bekommen 3 · 2 · 1 Punkte</div>`;
             updateSpielKnopf();
@@ -3367,217 +3344,6 @@
 
             messen();
             naechsteFrage();
-            requestAnimationFrame(schritt);
-            return S;
-        }
-
-        /* ============================================================ */
-        /* HUEGELLAUF                                                    */
-        /* Ein Laeufer kommt an Huegel in drei Hoehen. Vor jedem Huegel  */
-        /* muss genau so oft getippt werden, wie er hoch ist: einmal,    */
-        /* zweimal, dreimal. Stimmt die Zahl, springt er hinueber und es */
-        /* gibt einen Punkt; zu oft oder zu selten kostet einen. Getippt */
-        /* wird irgendwo auf dem Feld - auf einem Handy in Bewegung will */
-        /* niemand ein kleines Ziel treffen muessen.                     */
-        /* ============================================================ */
-        function huegelFeldAufbauen(behaelter, dauer, senden) {
-            const leinwand = document.createElement('canvas');
-            leinwand.className = 'katapult-feld lauf-feld';
-            behaelter.appendChild(leinwand);
-            const ctx = leinwand.getContext('2d');
-
-            const S = {
-                w: 0, h: 0, boden: 0, lx: 0, tempo: 0,
-                huegel: [], blitze: [], schritt0: 0,
-                sprung: null, stolpert: 0,
-                punkte: 0, extra: 0, lauf: true, letzterSend: 0, folge: 0,
-                ende: performance.now() + dauer, zuletzt: performance.now()
-            };
-
-            function messen() {
-                const r = leinwand.getBoundingClientRect();
-                const dpr = window.devicePixelRatio || 1;
-                S.w = r.width; S.h = r.height;
-                leinwand.width = Math.round(r.width * dpr);
-                leinwand.height = Math.round(r.height * dpr);
-                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-                S.boden = S.h * 0.78;
-                S.lx = S.w * 0.26;          // der Laeufer bleibt stehen, die Welt zieht vorbei
-                S.tempo = S.w * 0.32;       // Grundgeschwindigkeit je Sekunde
-            }
-
-            /* Der Huegel, um den es gerade geht: der naechste vor dem Laeufer, der
-               noch nicht abgerechnet ist. Alle Tipper gehen auf sein Konto. */
-            function aktuellerHuegel() {
-                return S.huegel.find(h => !h.erledigt && h.x > S.lx - h.b * 0.5);
-            }
-
-            function neuerHuegel() {
-                const letzte = S.huegel.length ? S.huegel[S.huegel.length - 1] : null;
-                const luecke = S.w * (0.5 + Math.random() * 0.25);
-                const x = letzte ? letzte.x + luecke : S.w * 1.1;
-                const groesse = 1 + Math.floor(Math.random() * 3);
-                S.huegel.push({ x: x, groesse: groesse, b: S.w * 0.1, tipper: 0, erledigt: false });
-            }
-
-            function abrechnen(h) {
-                h.erledigt = true;
-                S.extra++;
-                const passt = h.tipper === h.groesse;
-                S.punkte += passt ? 1 : -1;
-                S.blitze.push({
-                    x: S.lx, y: S.boden - S.h * 0.3, t: 0.9,
-                    text: passt ? '+1' : '-1',
-                    farbe: passt ? '#34d399' : '#f87171'
-                });
-                if (passt) {
-                    // Sprunghoehe nach Huegelgroesse - der grosse Huegel braucht den grossen Satz
-                    S.sprung = { t: 0, dauer: 0.62 + h.groesse * 0.06, hoehe: S.h * (0.16 + h.groesse * 0.09) };
-                } else {
-                    S.stolpert = 0.5;
-                }
-                senden(S, false);
-            }
-
-            leinwand.addEventListener('pointerdown', (e) => {
-                if (!S.lauf) return;
-                e.preventDefault();
-                const h = aktuellerHuegel();
-                if (!h) return;
-                h.tipper++;
-                /* Jeder Tipper ist sofort zu sehen: Er huepft, und mit jedem
-                   weiteren Tipper hoeher. Ohne diese Antwort tippt man ins Leere
-                   und weiss bis zum Huegel nicht, ob das Geraet mitbekommen hat. */
-                S.sprung = { t: 0, dauer: 0.4, hoehe: S.h * (0.06 + 0.05 * Math.min(h.tipper, 3)) };
-            });
-            window.addEventListener('resize', messen);
-            function aufraeumen() { S.lauf = false; window.removeEventListener('resize', messen); }
-
-            function schritt(jetzt) {
-                if (!S.lauf) { aufraeumen(); return; }
-                const dt = Math.min(0.05, (jetzt - S.zuletzt) / 1000);
-                S.zuletzt = jetzt;
-                if (!S.w) messen();
-                const rest = Math.max(0, S.ende - jetzt);
-                if (!rest) { aufraeumen(); senden(S, true); zeichnen(0); return; }
-
-                // Gegen Ende laeuft er etwas schneller
-                const tempo = S.tempo * (1 + 0.35 * (1 - rest / dauer));
-                S.schritt0 += dt * tempo / (S.h * 0.1);
-                while (S.huegel.length < 4) neuerHuegel();
-                S.huegel.forEach(h => {
-                    h.x -= tempo * dt;
-                    // Sobald er den Huegel erreicht, zaehlt was getippt wurde
-                    if (!h.erledigt && h.x <= S.lx) abrechnen(h);
-                });
-                S.huegel = S.huegel.filter(h => h.x > -S.w * 0.2);
-                if (S.sprung) { S.sprung.t += dt; if (S.sprung.t >= S.sprung.dauer) S.sprung = null; }
-                if (S.stolpert > 0) S.stolpert = Math.max(0, S.stolpert - dt);
-                S.blitze = S.blitze.filter(b => (b.t -= dt) > 0);
-                zeichnen(rest);
-                requestAnimationFrame(schritt);
-            }
-
-            function huegelHoehe(groesse) { return S.h * 0.07 * groesse; }
-
-            function zeichneLaeufer(x, y, gross, stolpert) {
-                const kopf = gross * 0.17;
-                ctx.save();
-                ctx.translate(x, y);
-                if (stolpert > 0) ctx.rotate(-0.5 * stolpert);   // er kippt nach vorn
-                ctx.strokeStyle = stolpert > 0 ? '#f87171' : '#f8fafc';
-                ctx.fillStyle = ctx.strokeStyle;
-                ctx.lineWidth = Math.max(2, gross * 0.08);
-                ctx.lineCap = 'round';
-                ctx.beginPath(); ctx.arc(0, -gross + kopf, kopf, 0, Math.PI * 2); ctx.fill();
-                ctx.beginPath(); ctx.moveTo(0, -gross + kopf * 2); ctx.lineTo(0, -gross * 0.42); ctx.stroke();
-                const takt = Math.sin(S.schritt0 * 2.2), gegentakt = Math.sin(S.schritt0 * 2.2 + Math.PI);
-                ctx.beginPath();   // Beine
-                ctx.moveTo(0, -gross * 0.42); ctx.lineTo(takt * gross * 0.3, 0);
-                ctx.moveTo(0, -gross * 0.42); ctx.lineTo(gegentakt * gross * 0.3, 0);
-                ctx.stroke();
-                ctx.beginPath();   // Arme
-                ctx.moveTo(0, -gross * 0.72); ctx.lineTo(gegentakt * gross * 0.26, -gross * 0.45);
-                ctx.moveTo(0, -gross * 0.72); ctx.lineTo(takt * gross * 0.26, -gross * 0.45);
-                ctx.stroke();
-                ctx.restore();
-            }
-
-            function zeichnen(rest) {
-                ctx.clearRect(0, 0, S.w, S.h);
-
-                // Boden
-                ctx.strokeStyle = 'rgba(125,211,252,.5)'; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.moveTo(0, S.boden); ctx.lineTo(S.w, S.boden); ctx.stroke();
-
-                S.huegel.forEach(h => {
-                    const hoehe = huegelHoehe(h.groesse);
-                    ctx.beginPath();
-                    ctx.moveTo(h.x - h.b / 2, S.boden);
-                    ctx.quadraticCurveTo(h.x, S.boden - hoehe * 1.5, h.x + h.b / 2, S.boden);
-                    ctx.closePath();
-                    ctx.fillStyle = h.erledigt ? 'rgba(125,211,252,.25)' : 'rgba(125,211,252,.55)';
-                    ctx.fill();
-                    if (!h.erledigt && h.x < S.w) {
-                        const spitze = S.boden - hoehe * 1.5;
-                        // Die Ziffer sagt, wie gross der Huegel ist - also wie oft zu tippen ist
-                        ctx.beginPath();
-                        ctx.arc(h.x, spitze - S.h * 0.13, S.h * 0.055, 0, Math.PI * 2);
-                        ctx.fillStyle = 'rgba(5,6,15,.6)'; ctx.fill();
-                        ctx.strokeStyle = 'rgba(125,211,252,.7)'; ctx.lineWidth = 2; ctx.stroke();
-                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                        ctx.font = `900 ${Math.max(16, S.h * 0.075)}px 'DM Sans', sans-serif`;
-                        ctx.fillStyle = '#7dd3fc';
-                        ctx.fillText(h.groesse, h.x, spitze - S.h * 0.13);
-                        // Darunter je ein Punkt fuer jeden Tipper, damit man nicht mitzaehlen muss
-                        const zahl = Math.min(h.tipper, 5);
-                        for (let i = 0; i < zahl; i++) {
-                            const px = h.x - (zahl - 1) * S.h * 0.028 + i * S.h * 0.056;
-                            ctx.beginPath();
-                            ctx.arc(px, spitze - S.h * 0.055, S.h * 0.018, 0, Math.PI * 2);
-                            ctx.fillStyle = h.tipper > h.groesse ? '#f87171' : '#fbbf24';
-                            ctx.fill();
-                        }
-                    }
-                });
-
-                // Laeufer - im Sprung hebt ihn ein Bogen an
-                let hoch = 0;
-                if (S.sprung) hoch = Math.sin(Math.PI * (S.sprung.t / S.sprung.dauer)) * S.sprung.hoehe;
-                zeichneLaeufer(S.lx, S.boden - hoch, S.h * 0.19, S.stolpert);
-
-                S.blitze.forEach(b => {
-                    ctx.globalAlpha = Math.min(1, b.t / 0.5);
-                    ctx.fillStyle = b.farbe;
-                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.font = `900 ${Math.max(20, S.h * 0.09)}px 'DM Sans', sans-serif`;
-                    ctx.fillText(b.text, b.x, b.y - (0.9 - b.t) * S.h * 0.15);
-                    ctx.globalAlpha = 1;
-                });
-
-                ctx.font = `800 ${Math.max(13, S.h * 0.045)}px 'DM Sans', sans-serif`;
-                ctx.textBaseline = 'top'; ctx.textAlign = 'left';
-                ctx.fillStyle = S.punkte < 0 ? '#fca5a5' : '#7dd3fc';
-                ctx.fillText(punkteWort(S.punkte), 14, 12);
-                ctx.textAlign = 'right';
-                const sek = Math.ceil(rest / 1000);
-                ctx.fillStyle = sek <= 10 ? '#fca5a5' : 'rgba(248,250,252,.8)';
-                ctx.fillText(`${sek} s`, S.w - 14, 12);
-
-                if (!S.lauf) {
-                    ctx.fillStyle = 'rgba(5,6,15,.75)';
-                    ctx.fillRect(0, 0, S.w, S.h);
-                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.fillStyle = '#f8fafc';
-                    ctx.font = `900 ${Math.max(26, S.h * 0.12)}px 'DM Sans', sans-serif`;
-                    ctx.fillText('ZEIT UM', S.w / 2, S.h / 2 - S.h * 0.05);
-                    ctx.font = `800 ${Math.max(16, S.h * 0.055)}px 'DM Sans', sans-serif`;
-                    ctx.fillStyle = '#7dd3fc';
-                    ctx.fillText(`${punkteWort(S.punkte)} · ${zahlWort(S.extra, 'Hügel', 'Hügel')}`, S.w / 2, S.h / 2 + S.h * 0.06);
-                }
-            }
-
-            messen();
             requestAnimationFrame(schritt);
             return S;
         }
