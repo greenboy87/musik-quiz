@@ -3443,7 +3443,12 @@
                 if (!S.lauf) return;
                 e.preventDefault();
                 const h = aktuellerHuegel();
-                if (h) h.tipper++;
+                if (!h) return;
+                h.tipper++;
+                /* Jeder Tipper ist sofort zu sehen: Er huepft, und mit jedem
+                   weiteren Tipper hoeher. Ohne diese Antwort tippt man ins Leere
+                   und weiss bis zum Huegel nicht, ob das Geraet mitbekommen hat. */
+                S.sprung = { t: 0, dauer: 0.4, hoehe: S.h * (0.06 + 0.05 * Math.min(h.tipper, 3)) };
             });
             window.addEventListener('resize', messen);
             function aufraeumen() { S.lauf = false; window.removeEventListener('resize', messen); }
@@ -3513,15 +3518,23 @@
                     ctx.closePath();
                     ctx.fillStyle = h.erledigt ? 'rgba(125,211,252,.25)' : 'rgba(125,211,252,.55)';
                     ctx.fill();
-                    /* Ueber dem Huegel steht, wie oft man schon getippt hat - nicht,
-                       wie oft noetig waere. Die Hoehe zu lesen ist die Aufgabe; nur
-                       das eigene Mitzaehlen nimmt die Reihe einem ab. */
-                    if (!h.erledigt && h.x < S.w && h.tipper > 0) {
+                    if (!h.erledigt && h.x < S.w) {
+                        const spitze = S.boden - hoehe * 1.5;
+                        // Die Ziffer sagt, wie gross der Huegel ist - also wie oft zu tippen ist
+                        ctx.beginPath();
+                        ctx.arc(h.x, spitze - S.h * 0.13, S.h * 0.055, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(5,6,15,.6)'; ctx.fill();
+                        ctx.strokeStyle = 'rgba(125,211,252,.7)'; ctx.lineWidth = 2; ctx.stroke();
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.font = `900 ${Math.max(16, S.h * 0.075)}px 'DM Sans', sans-serif`;
+                        ctx.fillStyle = '#7dd3fc';
+                        ctx.fillText(h.groesse, h.x, spitze - S.h * 0.13);
+                        // Darunter je ein Punkt fuer jeden Tipper, damit man nicht mitzaehlen muss
                         const zahl = Math.min(h.tipper, 5);
                         for (let i = 0; i < zahl; i++) {
                             const px = h.x - (zahl - 1) * S.h * 0.028 + i * S.h * 0.056;
                             ctx.beginPath();
-                            ctx.arc(px, S.boden - hoehe * 1.5 - S.h * 0.06, S.h * 0.018, 0, Math.PI * 2);
+                            ctx.arc(px, spitze - S.h * 0.055, S.h * 0.018, 0, Math.PI * 2);
                             ctx.fillStyle = h.tipper > h.groesse ? '#f87171' : '#fbbf24';
                             ctx.fill();
                         }
