@@ -4924,13 +4924,10 @@
                 const isLeader = hasLeader && team.score === highestScore;
                 const isSelected = team.activeThisRound;
                 
-                /* Haken, sobald die Songs da sind. Grau derselbe Haken statt gar
-                   nichts: So sieht man auf einen Blick, wer noch fehlt, und die
-                   Karten bleiben gleich hoch. */
+                /* Ob die Songs da sind, sagt in der Wartehalle die ganze Karte. Ein
+                   zusaetzlicher Haken auf jeder Karte war nur Unruhe - waehrend des
+                   Spiels steht die Antwort ohnehin in der Spickzettel-Liste. */
                 const songsDa = hatSongsAbgegeben(team);
-                const songBadge = songsDa
-                    ? `<span class="text-emerald-400" title="Songs abgegeben"><i class="fa-solid fa-circle-check text-[11px]"></i></span>`
-                    : `<span class="text-slate-600" title="Noch keine Songs abgegeben"><i class="fa-solid fa-circle-check text-[11px]"></i></span>`;
 
                 const card = document.createElement('div');
                 card.setAttribute('data-team-id', team.id); // Wichtig für den FLIP-Effekt!
@@ -5038,7 +5035,6 @@
                         <span class="text-[10px] text-slate-500 font-bold tracking-wider flex items-center gap-1"><span class="${verdeckt ? 'punkte-verdeckt' : ''}">PLATZ ${index + 1}</span> ${rankChangeBadge}</span>
                         ${streakBadge}
                         <div class="flex items-center gap-0.5">
-                            ${songBadge}
                             <button
                                 onclick="event.stopPropagation(); toggleTeamPresenter('${team.id}')"
                                 class="${team.presenting ? 'bg-violet-600 text-white shadow' : 'text-slate-500 hover:text-violet-400'} p-1 rounded transition-all font-sans"
