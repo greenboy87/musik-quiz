@@ -353,6 +353,29 @@
             .noten-taste.falsch { animation: none; }
         }
 
+        /* Pizzabäckerei: Vorlage und eigene Pizza auf der Leinwand, Belag darunter */
+        .pizza-tasten { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; align-items: center; }
+        .pizza-taste {
+            font-family: inherit; font-weight: 800; cursor: pointer;
+            font-size: min(2.4vw, 17px); padding: .55rem .9rem; border-radius: 12px;
+            display: flex; align-items: center; gap: .5rem;
+            background: rgba(255,255,255,.12); color: #f8fafc;
+            border: 2px solid rgba(255,255,255,.3);
+            box-shadow: 0 4px 0 rgba(0,0,0,.4);
+            transition: transform .08s ease, background .15s ease;
+        }
+        .pizza-taste:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+        /* Der gewaehlte Belag muss ins Auge springen - er entscheidet jeden Tipper. */
+        .pizza-taste.gewaehlt { background: rgba(251,191,36,.25); border-color: #fbbf24; }
+        .pizza-taste .klecks {
+            width: 1.1em; height: 1.1em; border-radius: 999px;
+            border: 2px solid rgba(255,255,255,.5);
+        }
+        .pizza-taste.fertig { background: #059669; border-color: #34d399; box-shadow: 0 4px 0 #064e3b; }
+        @media (max-width: 640px) {
+            .pizza-taste { font-size: min(3.6vw, 17px); padding: .5rem .7rem; }
+        }
+
         /* Farbfalle: das Wort auf hellem Grund, darunter die Farbfelder */
         .farb-blatt {
             width: min(92vw, 820px); max-width: 100%; box-sizing: border-box;
@@ -1503,7 +1526,7 @@
                     id="spiel-waehlen-btn"
                     onclick="spielAuswahl()"
                     class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
-                    title="Minispiel starten: Reaktionsspiel, Notenschleuder, Notensortierer, Notenlesen oder Farbfalle"
+                    title="Minispiel starten: sechs Spiele zur Auswahl"
                     aria-label="Minispiel starten"
                 >
                     <i class="fa-solid fa-gamepad"></i>
@@ -2558,7 +2581,7 @@
             katapult: {
                 titel: '&#127919; Notenschleuder',
                 dauer: 45000,
-                einheit: 'Treffer',
+                einheit: ['Treffer', 'Treffer'],
                 knopf: 'fa-bullseye',
                 name: 'Notenschleuder',
                 hinweis: 'Ziehen zum Zielen - loslassen schießt',
@@ -2573,7 +2596,7 @@
             notenlesen: {
                 titel: '&#127932; Notenlesen',
                 dauer: 45000,
-                einheit: 'Noten',
+                einheit: ['Note', 'Noten'],
                 name: 'Notenlesen',
                 hinweis: 'Welcher Buchstabe ist das?',
                 regeln: [
@@ -2587,7 +2610,7 @@
             farbfalle: {
                 titel: '&#127912; Farbfalle',
                 dauer: 45000,
-                einheit: 'Wörter',
+                einheit: ['Wort', 'Wörter'],
                 name: 'Farbfalle',
                 hinweis: 'Welche Farbe steht da?',
                 regeln: [
@@ -2598,10 +2621,24 @@
                 ],
                 feld: (behaelter, dauer, senden) => farbfalleFeldAufbauen(behaelter, dauer, senden)
             },
+            pizza: {
+                titel: '&#127829; Pizzabäckerei',
+                dauer: 50000,
+                einheit: ['Pizza', 'Pizzen'],
+                name: 'Pizzabäckerei',
+                hinweis: 'Belag wählen, dann auf dein Stück tippen',
+                regeln: [
+                    ['1', 'Links die Vorlage, rechts deine Pizza', ''],
+                    ['2', 'Belag wählen, dann auf ein Stück tippen', ''],
+                    ['3', 'Fertig drücken: jedes gleiche Stück 1 Punkt', ''],
+                    ['50', 'Sekunden lang - so viele Pizzen wie möglich', 'warnung']
+                ],
+                feld: (behaelter, dauer, senden) => pizzaFeldAufbauen(behaelter, dauer, senden)
+            },
             sortierer: {
                 titel: '&#127925; Notensortierer',
                 dauer: 50000,
-                einheit: 'Noten',
+                einheit: ['Note', 'Noten'],
                 knopf: 'fa-music',
                 name: 'Notensortierer',
                 hinweis: 'Noten in die passende Ecke ziehen',
@@ -2644,6 +2681,8 @@
                             onclick="event.stopPropagation(); starteSammelspiel('notenlesen');"><i class="fa-solid fa-book-open"></i> Notenlesen</button>
                     <button type="button" class="minispiel-knopf"
                             onclick="event.stopPropagation(); starteSammelspiel('farbfalle');"><i class="fa-solid fa-palette"></i> Farbfalle</button>
+                    <button type="button" class="minispiel-knopf"
+                            onclick="event.stopPropagation(); starteSammelspiel('pizza');"><i class="fa-solid fa-pizza-slice"></i> Pizzabäckerei</button>
                 </div>
                 <div class="klein">Die drei besten bekommen 3 · 2 · 1 Punkte</div>`;
             updateSpielKnopf();
@@ -2751,7 +2790,7 @@
                 const zeilen = liste.map(e => `<div class="katapult-zeile${e.punkte > 0 && e.punkte === beste ? ' fuehrt' : ''}">
                         <span class="summe">${e.punkte}</span>
                         <span>${escapeHtml(e.team)}</span>
-                        <span class="treffer">${e.extra} ${spiel.einheit}</span>
+                        <span class="treffer">${zahlWort(e.extra, spiel.einheit[0], spiel.einheit[1])}</span>
                     </div>`).join('') || `<div class="klein">Noch kein Punkt</div>`;
                 /* Dieses Bild wird jede Sekunde und bei jedem eingehenden Stand neu
                    gezeichnet. Wuerde dabei alles neu gebaut, sprangen Titel und
@@ -2781,7 +2820,7 @@
                         return `<div class="minispiel-rang${art}" style="animation-delay: ${(i * 0.18).toFixed(2)}s">
                             <span class="platz">${zeichen}</span>
                             <span>${escapeHtml(e.team)}</span>
-                            <span class="zeit">${e.punkte} Pkt · ${e.extra} ${spiel.einheit}</span>
+                            <span class="zeit">${e.punkte} Pkt · ${zahlWort(e.extra, spiel.einheit[0], spiel.einheit[1])}</span>
                             ${punkte ? `<span class="punkte">+${punkte}</span>` : ''}
                         </div>`;
                     }).join('')
@@ -3141,7 +3180,7 @@
                     ctx.fillText('ZEIT UM', S.w / 2, S.h / 2 - S.h * 0.05);
                     ctx.font = `800 ${Math.max(16, S.h * 0.06)}px 'DM Sans', sans-serif`;
                     ctx.fillStyle = '#7dd3fc';
-                    ctx.fillText(`${punkteWort(S.punkte)} · ${S.extra} Treffer`, S.w / 2, S.h / 2 + S.h * 0.06);
+                    ctx.fillText(`${punkteWort(S.punkte)} · ${zahlWort(S.extra, 'Treffer', 'Treffer')}`, S.w / 2, S.h / 2 + S.h * 0.06);
                 }
             }
 
@@ -3174,6 +3213,8 @@
         /* "1 Punkt", nicht "1 Punkte" - die Anzeige steht den Kindern die ganze
            Spielzeit vor der Nase. */
         function punkteWort(n) { return n + (Math.abs(n) === 1 ? ' Punkt' : ' Punkte'); }
+        /* "1 Pizza", nicht "1 Pizzen" - die Zahlen stehen am Beamer vor der Klasse. */
+        function zahlWort(n, einzahl, mehrzahl) { return n + ' ' + (Math.abs(n) === 1 ? einzahl : mehrzahl); }
 
         /* Violinschluessel aus einem Zug: Schwanz unter dem System, Hals nach oben,
            Schleife oben herum, weite Kurve rechts und zuletzt die Spirale um die
@@ -3336,12 +3377,254 @@
                     ctx.fillText('ZEIT UM', S.w / 2, S.h / 2 - S.h * 0.08);
                     ctx.font = `800 ${Math.max(15, S.h * 0.09)}px 'DM Sans', sans-serif`;
                     ctx.fillStyle = '#7dd3fc';
-                    ctx.fillText(`${punkteWort(S.punkte)} · ${S.extra} Noten`, S.w / 2, S.h / 2 + S.h * 0.09);
+                    ctx.fillText(`${punkteWort(S.punkte)} · ${zahlWort(S.extra, 'Note', 'Noten')}`, S.w / 2, S.h / 2 + S.h * 0.09);
                 }
             }
 
             messen();
             naechsteFrage();
+            requestAnimationFrame(schritt);
+            return S;
+        }
+
+        /* ============================================================ */
+        /* PIZZABAECKEREI                                                */
+        /* Links liegt eine fertige Pizza, rechts die eigene: sechs      */
+        /* Stuecke, vier Belaege. Wer auf "Fertig" drueckt, bekommt fuer */
+        /* jedes Stueck einen Punkt, das zur Vorlage passt - danach      */
+        /* kommt die naechste Pizza. Die Vorlage bleibt die ganze Zeit   */
+        /* sichtbar; die Spannung kommt aus der Uhr, nicht aus dem       */
+        /* Gedaechtnis.                                                  */
+        /* ============================================================ */
+        const PIZZA_STUECKE = 6;
+        const PIZZA_BELAEGE = [
+            { id: 'salami',  wort: 'Salami',  ton: '#b91c1c', rand: '#7f1d1d' },
+            { id: 'pilz',    wort: 'Pilze',   ton: '#e8d5b5', rand: '#a98b63' },
+            { id: 'paprika', wort: 'Paprika', ton: '#16a34a', rand: '#14532d' },
+            { id: 'olive',   wort: 'Oliven',  ton: '#334155', rand: '#0f172a' }
+        ];
+
+        function pizzaFeldAufbauen(behaelter, dauer, senden) {
+            const leinwand = document.createElement('canvas');
+            leinwand.className = 'katapult-feld';
+            const reihe = document.createElement('div');
+            reihe.className = 'pizza-tasten';
+            behaelter.appendChild(leinwand);
+            behaelter.appendChild(reihe);
+            const ctx = leinwand.getContext('2d');
+
+            const S = {
+                w: 0, h: 0, r: 0, vorlageM: null, eigeneM: null, nebeneinander: true,
+                vorlage: [], eigene: [], belag: 0,
+                zeigen: 0, treffer: [],          // kurze Rueckmeldung nach dem Fertig
+                pizzaNr: 0, punkte: 0, extra: 0,
+                lauf: true, letzterSend: 0, folge: 0,
+                ende: performance.now() + dauer, zuletzt: performance.now()
+            };
+
+            const tasten = PIZZA_BELAEGE.map((b, i) => {
+                const t = document.createElement('button');
+                t.type = 'button';
+                t.className = 'pizza-taste' + (i === 0 ? ' gewaehlt' : '');
+                t.innerHTML = `<span class="klecks" style="background:${b.ton}"></span>${b.wort}`;
+                t.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    S.belag = i;
+                    tasten.forEach((x, j) => x.classList.toggle('gewaehlt', i === j));
+                });
+                reihe.appendChild(t);
+                return t;
+            });
+            const fertigKnopf = document.createElement('button');
+            fertigKnopf.type = 'button';
+            fertigKnopf.className = 'pizza-taste fertig';
+            fertigKnopf.textContent = 'Fertig';
+            fertigKnopf.addEventListener('click', (e) => { e.stopPropagation(); abgeben(); });
+            reihe.appendChild(fertigKnopf);
+
+            function messen() {
+                const r = leinwand.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                S.w = r.width; S.h = r.height;
+                leinwand.width = Math.round(r.width * dpr);
+                leinwand.height = Math.round(r.height * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                /* Auf dem Beamer liegen beide Pizzen nebeneinander, auf dem hohen
+                   Schuelergeraet uebereinander - sonst wird jede winzig. */
+                S.nebeneinander = S.w > S.h * 1.25;
+                if (S.nebeneinander) {
+                    S.r = Math.min(S.h * 0.33, S.w * 0.2);
+                    S.vorlageM = { x: S.w * 0.27, y: S.h * 0.56 };
+                    S.eigeneM = { x: S.w * 0.73, y: S.h * 0.56 };
+                } else {
+                    S.r = Math.min(S.w * 0.33, S.h * 0.195);
+                    S.vorlageM = { x: S.w * 0.5, y: S.h * 0.32 };
+                    S.eigeneM = { x: S.w * 0.5, y: S.h * 0.76 };
+                }
+            }
+
+            function neuePizza() {
+                S.vorlage = [];
+                for (let i = 0; i < PIZZA_STUECKE; i++) {
+                    S.vorlage.push(Math.floor(Math.random() * PIZZA_BELAEGE.length));
+                }
+                S.eigene = new Array(PIZZA_STUECKE).fill(-1);
+                S.treffer = [];
+                S.zeigen = 0;
+                S.pizzaNr++;
+            }
+
+            function abgeben() {
+                if (!S.lauf || S.zeigen) return;
+                S.treffer = S.vorlage.map((b, i) => S.eigene[i] === b);
+                const richtig = S.treffer.filter(Boolean).length;
+                S.punkte += richtig;
+                S.extra++;
+                S.zeigen = performance.now() + 1200;   // Rueckmeldung stehen lassen
+                senden(S, false);
+            }
+
+            /* Welches Stueck wurde getroffen? Oben in der Mitte faengt Stueck 0 an
+               und es geht im Uhrzeigersinn weiter - so, wie man eine Pizza teilt. */
+            function stueckAn(x, y) {
+                if (!S.eigeneM) return -1;
+                const dx = x - S.eigeneM.x, dy = y - S.eigeneM.y;
+                if (Math.hypot(dx, dy) > S.r) return -1;
+                let w = Math.atan2(dy, dx) + Math.PI / 2;
+                if (w < 0) w += Math.PI * 2;
+                return Math.floor(w / (Math.PI * 2 / PIZZA_STUECKE)) % PIZZA_STUECKE;
+            }
+
+            leinwand.addEventListener('pointerdown', (e) => {
+                if (!S.lauf || S.zeigen) return;
+                e.preventDefault();
+                const r = leinwand.getBoundingClientRect();
+                const nr = stueckAn(e.clientX - r.left, e.clientY - r.top);
+                if (nr < 0) return;
+                // Noch einmal derselbe Belag nimmt ihn wieder herunter
+                S.eigene[nr] = S.eigene[nr] === S.belag ? -1 : S.belag;
+            });
+            window.addEventListener('resize', messen);
+            function aufraeumen() { S.lauf = false; window.removeEventListener('resize', messen); }
+
+            function schritt(jetzt) {
+                if (!S.lauf) { aufraeumen(); return; }
+                S.zuletzt = jetzt;
+                if (!S.w) messen();
+                const rest = Math.max(0, S.ende - jetzt);
+                if (!rest) {
+                    /* Angefangene Pizza zaehlt mit - sonst waere es Pech, wenn die
+                       Uhr mitten im Belegen ablaeuft. */
+                    if (!S.zeigen) abgeben();
+                    aufraeumen(); senden(S, true); zeichnen(0); return;
+                }
+                if (S.zeigen && jetzt > S.zeigen) neuePizza();
+                zeichnen(rest);
+                requestAnimationFrame(schritt);
+            }
+
+            function zeichnePizza(m, belege, marken) {
+                const teil = Math.PI * 2 / PIZZA_STUECKE;
+                // Teig und Rand
+                ctx.beginPath(); ctx.arc(m.x, m.y, S.r, 0, Math.PI * 2);
+                ctx.fillStyle = '#d9a441'; ctx.fill();
+                ctx.lineWidth = Math.max(3, S.r * 0.1); ctx.strokeStyle = '#b57a2b'; ctx.stroke();
+                ctx.beginPath(); ctx.arc(m.x, m.y, S.r * 0.86, 0, Math.PI * 2);
+                ctx.fillStyle = '#f2c14e'; ctx.fill();
+
+                belege.forEach((b, i) => {
+                    const von = -Math.PI / 2 + i * teil, bis = von + teil;
+                    if (marken && marken.length) {
+                        ctx.beginPath();
+                        ctx.moveTo(m.x, m.y); ctx.arc(m.x, m.y, S.r * 0.86, von, bis); ctx.closePath();
+                        ctx.fillStyle = marken[i] ? 'rgba(22,163,74,.45)' : 'rgba(244,63,94,.4)';
+                        ctx.fill();
+                    }
+                    if (b >= 0) {
+                        const belag = PIZZA_BELAEGE[b];
+                        // drei Haeufchen je Stueck, damit es nach Pizza aussieht
+                        [[0.45, 0.3], [0.68, 0.5], [0.5, 0.72]].forEach(([weite, anteil]) => {
+                            const w = von + teil * anteil;
+                            const x = m.x + Math.cos(w) * S.r * weite;
+                            const y = m.y + Math.sin(w) * S.r * weite;
+                            ctx.beginPath(); ctx.arc(x, y, S.r * 0.13, 0, Math.PI * 2);
+                            ctx.fillStyle = belag.ton; ctx.fill();
+                            ctx.lineWidth = Math.max(1, S.r * 0.02); ctx.strokeStyle = belag.rand; ctx.stroke();
+                            if (belag.id === 'olive') {   // Oliven sind Ringe
+                                ctx.beginPath(); ctx.arc(x, y, S.r * 0.055, 0, Math.PI * 2);
+                                ctx.fillStyle = '#cbd5e1'; ctx.fill();
+                            }
+                        });
+                    }
+                    // Schnittkanten
+                    ctx.beginPath();
+                    ctx.moveTo(m.x, m.y);
+                    ctx.lineTo(m.x + Math.cos(von) * S.r * 0.86, m.y + Math.sin(von) * S.r * 0.86);
+                    ctx.strokeStyle = 'rgba(180,120,40,.55)'; ctx.lineWidth = Math.max(1, S.r * 0.02);
+                    ctx.stroke();
+                });
+            }
+
+            function zeichnen(rest) {
+                ctx.clearRect(0, 0, S.w, S.h);
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                const schrift = Math.max(12, S.r * 0.26);
+
+                zeichnePizza(S.vorlageM, S.vorlage, null);
+                zeichnePizza(S.eigeneM, S.eigene, S.zeigen ? S.treffer : null);
+
+                ctx.font = `800 ${schrift}px 'DM Sans', sans-serif`;
+                ctx.fillStyle = 'rgba(248,250,252,.75)';
+                ctx.fillText('Vorlage', S.vorlageM.x, S.vorlageM.y - S.r - schrift * 0.9);
+                ctx.fillStyle = '#7dd3fc';
+                ctx.fillText('Deine Pizza', S.eigeneM.x, S.eigeneM.y - S.r - schrift * 0.9);
+
+                if (S.zeigen) {
+                    /* Das Ergebnis steht mitten auf der eigenen Pizza: Unter ihr ist
+                       auf dem hohen Schuelergeraet kein Platz mehr, dort geriete die
+                       Zahl aus dem Bild. */
+                    const richtig = S.treffer.filter(Boolean).length;
+                    const text = `${richtig} von ${PIZZA_STUECKE}`;
+                    ctx.font = `900 ${Math.max(16, S.r * 0.34)}px 'DM Sans', sans-serif`;
+                    const breite = ctx.measureText(text).width + S.r * 0.3;
+                    const hoehe = S.r * 0.5;
+                    ctx.fillStyle = 'rgba(5,6,15,.78)';
+                    ctx.beginPath();
+                    const rr = hoehe / 2, bx = S.eigeneM.x - breite / 2, by = S.eigeneM.y - hoehe / 2;
+                    ctx.moveTo(bx + rr, by);
+                    ctx.arcTo(bx + breite, by, bx + breite, by + hoehe, rr);
+                    ctx.arcTo(bx + breite, by + hoehe, bx, by + hoehe, rr);
+                    ctx.arcTo(bx, by + hoehe, bx, by, rr);
+                    ctx.arcTo(bx, by, bx + breite, by, rr);
+                    ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = richtig === PIZZA_STUECKE ? '#34d399' : '#fbbf24';
+                    ctx.fillText(text, S.eigeneM.x, S.eigeneM.y);
+                }
+
+                ctx.font = `800 ${Math.max(13, S.h * 0.045)}px 'DM Sans', sans-serif`;
+                ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+                ctx.fillStyle = '#7dd3fc';
+                ctx.fillText(punkteWort(S.punkte), 14, 12);
+                ctx.textAlign = 'right';
+                const sek = Math.ceil(rest / 1000);
+                ctx.fillStyle = sek <= 10 ? '#fca5a5' : 'rgba(248,250,252,.8)';
+                ctx.fillText(`${sek} s`, S.w - 14, 12);
+
+                if (!S.lauf) {
+                    ctx.fillStyle = 'rgba(5,6,15,.75)';
+                    ctx.fillRect(0, 0, S.w, S.h);
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.font = `900 ${Math.max(26, S.h * 0.12)}px 'DM Sans', sans-serif`;
+                    ctx.fillText('ZEIT UM', S.w / 2, S.h / 2 - S.h * 0.05);
+                    ctx.font = `800 ${Math.max(16, S.h * 0.055)}px 'DM Sans', sans-serif`;
+                    ctx.fillStyle = '#7dd3fc';
+                    ctx.fillText(`${punkteWort(S.punkte)} · ${zahlWort(S.extra, 'Pizza', 'Pizzen')}`, S.w / 2, S.h / 2 + S.h * 0.06);
+                }
+            }
+
+            messen();
+            neuePizza();
             requestAnimationFrame(schritt);
             return S;
         }
@@ -3455,7 +3738,7 @@
                     wortfeld.style.color = '#0f172a';
                     tastenfeld.innerHTML = '';
                     anzeigeZeit.textContent = '0 s';
-                    anzeigePunkte.textContent = `${punkteWort(S.punkte)} · ${S.extra} Wörter`;
+                    anzeigePunkte.textContent = `${punkteWort(S.punkte)} · ${zahlWort(S.extra, 'Wort', 'Wörter')}`;
                     return;
                 }
                 const sek = Math.ceil(rest / 1000);
@@ -3856,7 +4139,7 @@
                     ctx.fillText('ZEIT UM', S.w / 2, S.h / 2 - S.h * 0.05);
                     ctx.font = `800 ${Math.max(16, S.h * 0.055)}px 'DM Sans', sans-serif`;
                     ctx.fillStyle = '#7dd3fc';
-                    ctx.fillText(`${punkteWort(S.punkte)} · ${S.extra} Noten`, S.w / 2, S.h / 2 + S.h * 0.06);
+                    ctx.fillText(`${punkteWort(S.punkte)} · ${zahlWort(S.extra, 'Note', 'Noten')}`, S.w / 2, S.h / 2 + S.h * 0.06);
                 }
             }
 
