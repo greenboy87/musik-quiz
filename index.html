@@ -353,6 +353,48 @@
             .noten-taste.falsch { animation: none; }
         }
 
+        /* Farbfalle: das Wort auf hellem Grund, darunter die Farbfelder */
+        .farb-blatt {
+            width: min(92vw, 820px); max-width: 100%; box-sizing: border-box;
+            border-radius: 18px; border: 2px solid rgba(125,211,252,.4);
+            background: linear-gradient(180deg, rgba(248,250,252,.96), rgba(226,232,240,.92));
+            box-shadow: 0 10px 40px rgba(0,0,0,.5);
+            padding: 1rem 1.2rem 1.6rem;
+            display: flex; flex-direction: column; align-items: center; gap: .6rem;
+        }
+        .farb-kopf {
+            display: flex; justify-content: space-between; width: 100%;
+            font-size: min(2.6vw, 20px); font-weight: 800;
+        }
+        .farb-kopf .punkte { color: #0369a1; }
+        .farb-kopf .zeit { color: #475569; }
+        .farb-kopf .zeit.knapp { color: #be123c; }
+        .farb-wort {
+            font-size: min(13vw, 110px); font-weight: 900; line-height: 1.1;
+            letter-spacing: .04em; text-transform: uppercase;
+            padding: .3rem 0 .5rem;
+        }
+        .farb-tasten { display: flex; flex-wrap: wrap; gap: .7rem; justify-content: center; }
+        .farb-taste {
+            width: min(13vw, 100px); height: min(8vw, 62px);
+            border-radius: 14px; cursor: pointer; position: relative;
+            border: 3px solid rgba(255,255,255,.55);
+            box-shadow: 0 5px 0 rgba(0,0,0,.4);
+            transition: transform .08s ease;
+            font-size: min(5vw, 34px); font-weight: 900; color: #0f172a;
+            font-family: inherit;
+        }
+        .farb-taste:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+        .farb-taste.treffer { border-color: #f8fafc; box-shadow: 0 0 0 4px #34d399, 0 5px 0 rgba(0,0,0,.4); }
+        .farb-taste.daneben { animation: tasteZittern .3s ease-in-out; opacity: .6; }
+        @media (max-width: 640px) {
+            .farb-wort { font-size: min(17vw, 110px); }
+            .farb-taste { width: 27vw; height: 16vw; font-size: 7vw; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .farb-taste.daneben { animation: none; }
+        }
+
         /* Liveliste: eigener Block, damit die Zeilen untereinander stehen - die
            Buehne selbst ist eine Flex-Spalte, der Block erbt das. */
         .sammel-liste { display: flex; flex-direction: column; align-items: center; gap: .5rem; width: 100%; }
@@ -1461,7 +1503,7 @@
                     id="spiel-waehlen-btn"
                     onclick="spielAuswahl()"
                     class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
-                    title="Minispiel starten: Reaktionsspiel, Notenschleuder, Notensortierer oder Notenlesen"
+                    title="Minispiel starten: Reaktionsspiel, Notenschleuder, Notensortierer, Notenlesen oder Farbfalle"
                     aria-label="Minispiel starten"
                 >
                     <i class="fa-solid fa-gamepad"></i>
@@ -2542,6 +2584,20 @@
                 ],
                 feld: (behaelter, dauer, senden) => notenlesenFeldAufbauen(behaelter, dauer, senden)
             },
+            farbfalle: {
+                titel: '&#127912; Farbfalle',
+                dauer: 45000,
+                einheit: 'Wörter',
+                name: 'Farbfalle',
+                hinweis: 'Welche Farbe steht da?',
+                regeln: [
+                    ['1', 'Ein Farbwort erscheint', ''],
+                    ['2', 'Geschrieben in einer anderen Farbe', ''],
+                    ['3', 'Tippe die Farbe, die dasteht', ''],
+                    ['!', 'Nicht die Schriftfarbe!', 'warnung']
+                ],
+                feld: (behaelter, dauer, senden) => farbfalleFeldAufbauen(behaelter, dauer, senden)
+            },
             sortierer: {
                 titel: '&#127925; Notensortierer',
                 dauer: 50000,
@@ -2586,6 +2642,8 @@
                             onclick="event.stopPropagation(); starteSammelspiel('sortierer');"><i class="fa-solid fa-music"></i> Notensortierer</button>
                     <button type="button" class="minispiel-knopf"
                             onclick="event.stopPropagation(); starteSammelspiel('notenlesen');"><i class="fa-solid fa-book-open"></i> Notenlesen</button>
+                    <button type="button" class="minispiel-knopf"
+                            onclick="event.stopPropagation(); starteSammelspiel('farbfalle');"><i class="fa-solid fa-palette"></i> Farbfalle</button>
                 </div>
                 <div class="klein">Die drei besten bekommen 3 · 2 · 1 Punkte</div>`;
             updateSpielKnopf();
@@ -2771,7 +2829,7 @@
             btn.title = fertig
                 ? 'Punkte vergeben: 3 · 2 · 1 an die drei besten'
                 : laeuft ? 'Minispiel abbrechen'
-                         : 'Minispiel starten: Reaktionsspiel, Notenschleuder, Notensortierer oder Notenlesen';
+                         : 'Minispiel starten: fünf zur Auswahl';
             btn.setAttribute('aria-label', btn.title);
             btn.onclick = sammelFertig ? sammelspielPunkteVergeben
                         : reaktionFertig ? minispielPunkteVergeben : spielAuswahl;
@@ -3283,6 +3341,132 @@
             }
 
             messen();
+            naechsteFrage();
+            requestAnimationFrame(schritt);
+            return S;
+        }
+
+        /* ============================================================ */
+        /* FARBFALLE                                                     */
+        /* Ein Farbwort steht da, geschrieben in einer anderen Farbe.    */
+        /* Gefragt ist das Wort, nicht die Schrift - und genau das faellt*/
+        /* schwer, weil Lesen schneller geht als Hinsehen. Die Schrift-  */
+        /* farbe steht immer als Antwort mit zur Auswahl, sonst gaebe es */
+        /* die Falle gar nicht.                                          */
+        /* ============================================================ */
+        const FARBWOERTER = [
+            { name: 'Rot',    ton: '#dc2626' },
+            { name: 'Blau',   ton: '#2563eb' },
+            { name: 'Gelb',   ton: '#eab308' },
+            { name: 'Grün',   ton: '#16a34a' },
+            { name: 'Lila',   ton: '#9333ea' },
+            { name: 'Orange', ton: '#ea580c' }
+        ];
+
+        function farbfalleFeldAufbauen(behaelter, dauer, senden) {
+            const blatt = document.createElement('div');
+            blatt.className = 'farb-blatt';
+            blatt.innerHTML = `<div class="farb-kopf"><span class="punkte">0 Punkte</span><span class="zeit">0 s</span></div>
+                <div class="farb-wort">&nbsp;</div>
+                <div class="farb-tasten"></div>`;
+            behaelter.appendChild(blatt);
+            const anzeigePunkte = blatt.querySelector('.punkte');
+            const anzeigeZeit = blatt.querySelector('.zeit');
+            const wortfeld = blatt.querySelector('.farb-wort');
+            const tastenfeld = blatt.querySelector('.farb-tasten');
+
+            const S = {
+                frage: null, vorige: -1, antwort: 0, richtig: false,
+                punkte: 0, extra: 0, lauf: true, letzterSend: 0, folge: 0,
+                ende: performance.now() + dauer, zuletzt: performance.now(), uhrstand: -1
+            };
+
+            function mischen(liste) {
+                const k = liste.slice();
+                for (let i = k.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [k[i], k[j]] = [k[j], k[i]];
+                }
+                return k;
+            }
+
+            function naechsteFrage() {
+                let wortNr = Math.floor(Math.random() * FARBWOERTER.length);
+                if (wortNr === S.vorige) wortNr = (wortNr + 1 + Math.floor(Math.random() * (FARBWOERTER.length - 1))) % FARBWOERTER.length;
+                S.vorige = wortNr;
+                const wort = FARBWOERTER[wortNr];
+                // Die Schriftfarbe ist nie die genannte - sonst waere es keine Falle
+                const andere = FARBWOERTER.filter(f => f.name !== wort.name);
+                const tinte = andere[Math.floor(Math.random() * andere.length)];
+                /* Alle sechs Farben stehen zur Wahl, jedes Mal neu gemischt. Die
+                   Schriftfarbe ist damit immer dabei - ohne sie in der Reihe waere
+                   die Aufgabe geschenkt. */
+                S.frage = { wort: wort, tinte: tinte, auswahl: mischen(FARBWOERTER) };
+                S.antwort = 0;
+                S.richtig = false;
+
+                wortfeld.textContent = wort.name;
+                wortfeld.style.color = tinte.ton;
+                tastenfeld.innerHTML = '';
+                S.frage.auswahl.forEach(farbe => {
+                    const t = document.createElement('button');
+                    t.type = 'button';
+                    t.className = 'farb-taste';
+                    t.style.background = farbe.ton;
+                    t.setAttribute('aria-label', farbe.name);
+                    t.addEventListener('click', (e) => { e.stopPropagation(); raten(farbe, t); });
+                    tastenfeld.appendChild(t);
+                });
+            }
+
+            function raten(farbe, taste) {
+                if (!S.lauf || !S.frage || S.antwort) return;
+                S.richtig = farbe.name === S.frage.wort.name;
+                S.antwort = performance.now();
+                S.extra++;
+                if (S.richtig) {
+                    S.punkte++;
+                    taste.classList.add('treffer');
+                    taste.textContent = '✓';
+                } else {
+                    taste.classList.add('daneben');
+                    taste.textContent = '✗';
+                    /* Die richtige Farbe zeigen - sonst raet man beim naechsten Mal
+                       genauso, und das Spiel bringt niemandem etwas. */
+                    const stelle = S.frage.auswahl.findIndex(f => f.name === S.frage.wort.name);
+                    const loesung = tastenfeld.children[stelle];
+                    if (loesung) { loesung.classList.add('treffer'); loesung.textContent = '✓'; }
+                }
+                anzeigePunkte.textContent = punkteWort(S.punkte);
+                senden(S, false);
+                setTimeout(() => { if (S.lauf) naechsteFrage(); }, S.richtig ? 400 : 1000);
+            }
+
+            function aufraeumen() { S.lauf = false; }
+
+            function schritt(jetzt) {
+                if (!S.lauf) { aufraeumen(); return; }
+                S.zuletzt = jetzt;
+                const rest = Math.max(0, S.ende - jetzt);
+                if (!rest) {
+                    aufraeumen();
+                    senden(S, true);
+                    wortfeld.textContent = 'ZEIT UM';
+                    wortfeld.style.color = '#0f172a';
+                    tastenfeld.innerHTML = '';
+                    anzeigeZeit.textContent = '0 s';
+                    anzeigePunkte.textContent = `${punkteWort(S.punkte)} · ${S.extra} Wörter`;
+                    return;
+                }
+                const sek = Math.ceil(rest / 1000);
+                if (sek !== S.uhrstand) {
+                    S.uhrstand = sek;
+                    anzeigeZeit.textContent = sek + ' s';
+                    anzeigeZeit.classList.toggle('knapp', sek <= 10);
+                }
+                requestAnimationFrame(schritt);
+            }
+
             naechsteFrage();
             requestAnimationFrame(schritt);
             return S;
