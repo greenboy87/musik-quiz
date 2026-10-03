@@ -340,8 +340,6 @@
             background: #9f1239; border-color: #fb7185; box-shadow: 0 5px 0 #4c0519;
             animation: tasteZittern .3s ease-in-out;
         }
-        /* Schon einmal falsch geraten: Die Taste bleibt blass, der Punkt ist weg. */
-        .noten-taste.raus { opacity: .35; }
         @keyframes tasteZittern {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
@@ -2539,7 +2537,7 @@
                 regeln: [
                     ['1', 'Eine Note steht im Violinschlüssel', ''],
                     ['2', 'Tippe ihren Buchstaben: C D E F G A H', ''],
-                    ['3', 'Gleich richtig = 1 Punkt', ''],
+                    ['3', 'Richtig = 1 Punkt, falsch = nächste Note', ''],
                     ['45', 'Sekunden lang - so viele Noten wie möglich', 'warnung']
                 ],
                 feld: (behaelter, dauer, senden) => notenlesenFeldAufbauen(behaelter, dauer, senden)
@@ -3070,7 +3068,7 @@
                 ctx.textBaseline = 'top';
                 ctx.textAlign = 'left';
                 ctx.fillStyle = '#7dd3fc';
-                ctx.fillText(`${S.punkte} Punkte`, 14, 12);
+                ctx.fillText(punkteWort(S.punkte), 14, 12);
                 ctx.textAlign = 'right';
                 const sek = Math.ceil(rest / 1000);
                 ctx.fillStyle = sek <= 10 ? '#fca5a5' : 'rgba(248,250,252,.8)';
@@ -3085,7 +3083,7 @@
                     ctx.fillText('ZEIT UM', S.w / 2, S.h / 2 - S.h * 0.05);
                     ctx.font = `800 ${Math.max(16, S.h * 0.06)}px 'DM Sans', sans-serif`;
                     ctx.fillStyle = '#7dd3fc';
-                    ctx.fillText(`${S.punkte} Punkte · ${S.extra} Treffer`, S.w / 2, S.h / 2 + S.h * 0.06);
+                    ctx.fillText(`${punkteWort(S.punkte)} · ${S.extra} Treffer`, S.w / 2, S.h / 2 + S.h * 0.06);
                 }
             }
 
@@ -3114,6 +3112,10 @@
             { name: 'C', stufe: 5 }     // c'' - dritter Zwischenraum
         ];
         const NOTENTASTEN = ['C', 'D', 'E', 'F', 'G', 'A', 'H'];
+
+        /* "1 Punkt", nicht "1 Punkte" - die Anzeige steht den Kindern die ganze
+           Spielzeit vor der Nase. */
+        function punkteWort(n) { return n + (Math.abs(n) === 1 ? ' Punkt' : ' Punkte'); }
 
         /* Violinschluessel aus einem Zug: Schwanz unter dem System, Hals nach oben,
            Schleife oben herum, weite Kurve rechts und zuletzt die Spirale um die
@@ -3151,7 +3153,7 @@
 
             const S = {
                 w: 0, h: 0, a: 0, gy: 0, grundlinie: 0,
-                frage: null, vorige: -1, sauber: true, antwort: 0,
+                frage: null, vorige: -1, antwort: 0, richtig: false,
                 punkte: 0, extra: 0, lauf: true, letzterSend: 0, folge: 0,
                 ende: performance.now() + dauer, zuletzt: performance.now()
             };
@@ -3187,28 +3189,32 @@
                 if (i === S.vorige) i = (i + 1 + Math.floor(Math.random() * (NOTENSTUFEN.length - 1))) % NOTENSTUFEN.length;
                 S.vorige = i;
                 S.frage = NOTENSTUFEN[i];
-                S.sauber = true;
                 S.antwort = 0;
-                tasten.forEach(t => t.classList.remove('richtig', 'falsch', 'raus'));
+                S.richtig = false;
+                tasten.forEach(t => t.classList.remove('richtig', 'falsch'));
             }
 
+            /* Ein Tipper entscheidet die Note - danach kommt die naechste. Punkte
+               gibt es nur fuer die richtige, Abzug fuer die falsche aber nicht:
+               Wer sich nicht sicher ist, soll trotzdem tippen und nicht warten. */
             function raten(name, taste) {
                 if (!S.lauf || !S.frage || S.antwort) return;
-                if (name === S.frage.name) {
-                    if (S.sauber) S.punkte++;
-                    S.extra++;
+                S.richtig = name === S.frage.name;
+                S.antwort = performance.now();
+                S.extra++;
+                if (S.richtig) {
+                    S.punkte++;
                     taste.classList.add('richtig');
-                    S.antwort = performance.now();
-                    senden(S, false);
-                    // Kurz stehen lassen, damit man die gruene Taste noch sieht
-                    setTimeout(() => { if (S.lauf) naechsteFrage(); }, 450);
                 } else {
-                    S.sauber = false;
-                    taste.classList.remove('falsch');
-                    void taste.offsetWidth;        // Animation neu ausloesen
                     taste.classList.add('falsch');
-                    setTimeout(() => { taste.classList.remove('falsch'); taste.classList.add('raus'); }, 300);
+                    /* Die richtige Taste leuchtet mit auf - sonst zieht niemand
+                       etwas aus dem Fehler, und genau darum geht es hier. */
+                    const loesung = tasten.find(t => t.textContent === S.frage.name);
+                    if (loesung) loesung.classList.add('richtig');
                 }
+                senden(S, false);
+                // Bei einem Fehler etwas laenger stehen lassen: Die Loesung will gelesen werden
+                setTimeout(() => { if (S.lauf) naechsteFrage(); }, S.richtig ? 450 : 1100);
             }
 
             window.addEventListener('resize', messen);
@@ -3250,14 +3256,14 @@
                     const abwaerts = S.frage.stufe >= 4;
                     const gross = S.a * 2;
                     zeichneNote(ctx, x, y - gross * 0.32, gross, { flaggen: 0, hohl: false },
-                                S.antwort ? '#047857' : tinte, abwaerts);
+                                S.antwort ? (S.richtig ? '#047857' : '#be123c') : tinte, abwaerts);
                 }
 
                 ctx.font = `800 ${Math.max(13, S.h * 0.075)}px 'DM Sans', sans-serif`;
                 ctx.textBaseline = 'top';
                 ctx.textAlign = 'left';
                 ctx.fillStyle = '#0369a1';
-                ctx.fillText(`${S.punkte} Punkte`, 14, 10);
+                ctx.fillText(punkteWort(S.punkte), 14, 10);
                 ctx.textAlign = 'right';
                 const sek = Math.ceil(rest / 1000);
                 ctx.fillStyle = sek <= 10 ? '#be123c' : '#475569';
@@ -3272,7 +3278,7 @@
                     ctx.fillText('ZEIT UM', S.w / 2, S.h / 2 - S.h * 0.08);
                     ctx.font = `800 ${Math.max(15, S.h * 0.09)}px 'DM Sans', sans-serif`;
                     ctx.fillStyle = '#7dd3fc';
-                    ctx.fillText(`${S.punkte} Punkte · ${S.extra} Noten`, S.w / 2, S.h / 2 + S.h * 0.09);
+                    ctx.fillText(`${punkteWort(S.punkte)} · ${S.extra} Noten`, S.w / 2, S.h / 2 + S.h * 0.09);
                 }
             }
 
@@ -3652,7 +3658,7 @@
                 ctx.font = `800 ${Math.max(13, S.h * 0.042)}px 'DM Sans', sans-serif`;
                 ctx.textBaseline = 'top'; ctx.textAlign = 'center';
                 ctx.fillStyle = S.punkte < 0 ? '#fca5a5' : '#7dd3fc';
-                ctx.fillText(`${S.punkte} Punkte`, S.w / 2, 10);
+                ctx.fillText(punkteWort(S.punkte), S.w / 2, 10);
                 const sek = Math.ceil(rest / 1000);
                 ctx.fillStyle = sek <= 10 ? '#fca5a5' : 'rgba(248,250,252,.8)';
                 ctx.fillText(`${sek} s`, S.w / 2, 10 + Math.max(16, S.h * 0.05));
@@ -3666,7 +3672,7 @@
                     ctx.fillText('ZEIT UM', S.w / 2, S.h / 2 - S.h * 0.05);
                     ctx.font = `800 ${Math.max(16, S.h * 0.055)}px 'DM Sans', sans-serif`;
                     ctx.fillStyle = '#7dd3fc';
-                    ctx.fillText(`${S.punkte} Punkte · ${S.extra} Noten`, S.w / 2, S.h / 2 + S.h * 0.06);
+                    ctx.fillText(`${punkteWort(S.punkte)} · ${S.extra} Noten`, S.w / 2, S.h / 2 + S.h * 0.06);
                 }
             }
 
