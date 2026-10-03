@@ -3451,10 +3451,17 @@
                     avocado: istAvocado,
                     loesung: loesung,
                     paar: paar,
-                    groesse: 0.3 + Math.random() * 0.7,          // von winzig bis fast bildfuellend
-                    neigung: (Math.random() - 0.5) * 0.9,         // schief gestellt
+                    groesse: 0.12 + Math.pow(Math.random(), 1.4) * 1.1,   // von fast nichts bis bildfuellend
+                    /* Meistens nur leicht gekippt, in jedem vierten Fall voellig
+                       beliebig - auf dem Kopf stehend ist beides noch schwerer
+                       auseinanderzuhalten, und darum geht es hier. */
+                    neigung: Math.random() < 0.25
+                        ? Math.random() * Math.PI * 2
+                        : (Math.random() - 0.5) * 1.1,
+                    // Die Form steht irgendwo auf dem Blatt, nicht brav in der Mitte
+                    px: Math.random(), py: Math.random(),
                     tinte: AVO_TINTEN[Math.floor(Math.random() * AVO_TINTEN.length)],
-                    schlank: 0.8 + Math.random() * 0.45,          // mal gedrungen, mal lang
+                    schlank: 0.7 + Math.random() * 0.65,          // mal gedrungen, mal lang
                     /* Die beiden Zufallszahlen machen die Grenzfaelle: eine Avocado
                        fast ohne Taille sieht aus wie ein dicker Notenkopf, und ein
                        Notenkopf mit kurzem Hals wie eine Avocado. */
@@ -3543,8 +3550,15 @@
                 ctx.clearRect(0, 0, S.w, S.h);
                 if (S.frage) {
                     const r = Math.min(S.w, S.h) * 0.42 * S.frage.groesse;
+                    /* Der Platz wird erst beim Zeichnen ausgerechnet: So steht die
+                       Form auch nach dem Drehen des Geraets noch im Bild, und ganz
+                       grosse Formen rutschen von selbst in die Mitte. */
+                    const randX = Math.min(r * 0.55, S.w * 0.42);
+                    const randY = Math.min(r * 0.5, S.h * 0.34);
+                    const x = randX + S.frage.px * Math.max(0, S.w - 2 * randX);
+                    const y = S.h * 0.16 + randY + S.frage.py * Math.max(0, S.h * 0.84 - 2 * randY);
                     ctx.save();
-                    ctx.translate(S.w / 2, S.h * 0.54);
+                    ctx.translate(x, y);
                     ctx.rotate(S.frage.neigung);
                     ctx.fillStyle = S.frage.tinte;
                     ctx.strokeStyle = S.frage.tinte;
@@ -3552,10 +3566,13 @@
                     else zeichneNotenform(r, S.frage);
                     ctx.restore();
                     if (S.antwort) {
-                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                        ctx.font = `900 ${Math.max(18, S.h * 0.12)}px 'DM Sans', sans-serif`;
+                        /* Rueckmeldung oben in der Mitte zwischen Punkten und Uhr:
+                           Die Form kann inzwischen ueberall stehen, unten waere sie
+                           ihr frueher oder spaeter im Weg. */
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                        ctx.font = `900 ${Math.max(16, S.h * 0.09)}px 'DM Sans', sans-serif`;
                         ctx.fillStyle = S.richtig ? '#047857' : '#be123c';
-                        ctx.fillText(S.richtig ? 'Ja!' : 'War ' + S.frage.loesung, S.w / 2, S.h * 0.9);
+                        ctx.fillText(S.richtig ? 'Ja!' : 'War ' + S.frage.loesung, S.w / 2, 10);
                     }
                 }
 
