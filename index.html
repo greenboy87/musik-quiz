@@ -358,6 +358,7 @@
         .minispiel-rang .zeit {
             margin-left: auto; font-variant-numeric: tabular-nums;
             font-size: .8em; opacity: .85; letter-spacing: .04em;
+            white-space: nowrap;   /* sonst rutscht der Teamname in zwei Zeilen */
         }
         .minispiel-rang .punkte {
             font-size: .8em; padding: .15em .7em; border-radius: 999px;
@@ -377,6 +378,44 @@
             .minispiel-buehne::before, .minispiel-buehne .gross, .minispiel-titel { animation: none; }
             .minispiel-regel, .minispiel-rang { animation: none; opacity: 1; transform: none; }
         }
+
+        /* ============================================================ */
+        /* NOTENSCHLEUDER - Spielfeld und Liveliste                      */
+        /* Die Buehne selbst ist dieselbe wie beim Reaktionsspiel, hier  */
+        /* kommt nur dazu, was das Katapultspiel zusaetzlich braucht.    */
+        /* ============================================================ */
+        .katapult-feld {
+            display: block; width: min(94vw, 1080px); aspect-ratio: 16 / 10; max-height: 64vh;
+            border-radius: 18px; border: 2px solid rgba(125,211,252,.4);
+            background: linear-gradient(180deg, rgba(8,12,32,.55), rgba(12,20,54,.8));
+            box-shadow: inset 0 0 50px rgba(56,189,248,.18), 0 10px 40px rgba(0,0,0,.5);
+            /* Ohne das scrollt das Schuelergeraet beim Zielen die Seite weg */
+            touch-action: none; cursor: crosshair;
+        }
+        @media (max-width: 640px) {
+            .katapult-feld { width: 100%; aspect-ratio: 3 / 4; max-height: 72vh; }
+        }
+        /* Liveliste am Beamer: Sie wird jede Sekunde neu gezeichnet - deshalb
+           bewusst ohne Einflug-Animation, sonst zappelt die ganze Liste. */
+        .katapult-zeile {
+            display: flex; align-items: center; gap: 1rem; text-align: left;
+            font-size: min(2.8vw, 25px); font-weight: 800;
+            background: linear-gradient(90deg, rgba(255,255,255,.12), rgba(255,255,255,.03));
+            border-left: 5px solid rgba(125,211,252,.5);
+            border-radius: 0 12px 12px 0; padding: .4rem 1.1rem;
+            width: min(66vw, 540px); max-width: 100%; box-sizing: border-box;
+        }
+        .katapult-zeile .treffer { margin-left: auto; font-size: .8em; opacity: .75; letter-spacing: .04em; }
+        .katapult-zeile .summe {
+            font-variant-numeric: tabular-nums; font-size: 1.1em;
+            min-width: 2.2em; text-align: right; color: #7dd3fc;
+            text-shadow: 0 0 14px rgba(56,189,248,.7);
+        }
+        .katapult-zeile.fuehrt { border-left-color: #fbbf24; }
+        .katapult-zeile.fuehrt .summe { color: #fbbf24; text-shadow: 0 0 14px rgba(251,191,36,.7); }
+        /* Restzeit ueber der Liste */
+        .katapult-uhr { font-variant-numeric: tabular-nums; }
+        .katapult-uhr.knapp { color: #fca5a5; animation: rotPuls .8s ease-in-out infinite; }
 
         /* Einrichtungsbereich: zwei Karten, ein Raster. Jede Zeile gleich hoch, die
            Beschriftungen gleich breit - dadurch stehen die Bedienelemente in beiden
@@ -686,6 +725,10 @@
     <!-- Reaktionsspiel: dieselbe Buehne auf dem Beamer wie auf dem Schuelergeraet.
          Dort ist sie zugleich der Buzzer - ein Tipper irgendwo auf ihr zaehlt. -->
     <div id="minispiel-buehne" class="minispiel-buehne" onclick="minispielTipp()"></div>
+
+    <!-- Notenschleuder: eigene Buehne, gleiche Optik. Hier wird nicht getippt,
+         sondern gezielt - deshalb kein onclick auf der ganzen Flaeche. -->
+    <div id="katapult-buehne" class="minispiel-buehne"></div>
 
     <div id="timer-countdown-overlay" class="fixed inset-0 flex items-center justify-center pointer-events-none z-40 hidden">
         <span id="timer-countdown-number" class="font-black text-amber-400" style="font-size: min(35vw, 320px); line-height: 1; text-shadow: 0 0 60px rgba(245, 158, 11, 0.6), 0 8px 24px rgba(0,0,0,0.6);"></span>
@@ -1348,6 +1391,15 @@
                 </div>
             </div>
             <div class="flex items-center gap-2 justify-end">
+                <button
+                    id="katapult-btn"
+                    onclick="starteKatapult()"
+                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
+                    title="Notenschleuder: 45 Sekunden auf die Zielscheibe schießen - wer am meisten trifft, gewinnt"
+                    aria-label="Notenschleuder starten"
+                >
+                    <i class="fa-solid fa-bullseye"></i>
+                </button>
                 <button
                     id="minispiel-btn"
                     onclick="starteReaktionsspiel()"
@@ -2094,7 +2146,8 @@
                     jokerStand: jokerStand,
                     locked: roundLocked,
                     gestartet: spielLaeuft,
-                    minispiel: minispiel ? { id: minispiel.id, phase: minispiel.phase } : null
+                    minispiel: minispiel ? { id: minispiel.id, phase: minispiel.phase } : null,
+                    katapult: katapult ? { id: katapult.id, phase: katapult.phase } : null
                 });
             } catch(e) {
                 console.error("Fehler beim Senden des Updates:", e);
@@ -2137,6 +2190,7 @@
                 showToast("Erst einen Raum starten - ohne Live-Empfang kommt kein Tipper an.", "danger");
                 return;
             }
+            if (katapult) beendeKatapult();   // nie zwei Buehnen gleichzeitig
             minispiel = { id: 'r' + Date.now(), phase: 'regeln', zeiten: {}, uhren: [] };
             zeigeMinispiel();
             broadcastControlState();
@@ -2167,7 +2221,9 @@
 
         /* Esc ist der Notausgang - wer im Vollbild steckt, sucht ihn zuerst. */
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && minispiel) beendeMinispiel();
+            if (e.key !== 'Escape') return;
+            if (minispiel) beendeMinispiel();
+            if (katapult) beendeKatapult();
         });
 
         function beendeMinispiel() {
@@ -2265,21 +2321,31 @@
                 `<div class="klein">Die schnellsten drei bekommen 3 · 2 · 1 Punkte</div>`;
         }
 
-        /* Punkte verteilen: 3 - 2 - 1 an die schnellsten drei ohne Fehlstart */
-        function minispielPunkteVergeben() {
-            if (!minispiel) return;
-            const liste = minispielRangliste().filter(e => e.ms >= 0).slice(0, MINISPIEL_PUNKTE.length);
-            if (!liste.length) { showToast("Es gibt niemanden, der Punkte bekommen könnte.", "info"); return; }
+        /* Bonuspunkte fuer die ersten drei einer Siegerliste. Beide Minispiele
+           belohnen gleich, deshalb steht die Vergabe nur einmal hier: Reihenfolge
+           rein, Punkte raus. Teams, die inzwischen geloescht wurden, werden
+           uebersprungen - ohne dass die dahinter leer ausgehen. */
+        function vergebeBonusPunkte(namen) {
             let vergeben = 0;
-            liste.forEach((e, i) => {
-                const team = teams.find(t => teamName(t).toLowerCase() === String(e.team).toLowerCase());
+            namen.slice(0, MINISPIEL_PUNKTE.length).forEach((name, i) => {
+                const team = teams.find(t => teamName(t).toLowerCase() === String(name).toLowerCase());
                 if (!team) return;
                 team.score = Math.max(0, team.score + MINISPIEL_PUNKTE[i]);
                 vergeben++;
             });
+            if (!vergeben) return 0;
             saveState();
             renderScoreboard();
             playSound('up');
+            return vergeben;
+        }
+
+        /* Punkte verteilen: 3 - 2 - 1 an die schnellsten drei ohne Fehlstart */
+        function minispielPunkteVergeben() {
+            if (!minispiel) return;
+            const liste = minispielRangliste().filter(e => e.ms >= 0);
+            if (!liste.length) { showToast("Es gibt niemanden, der Punkte bekommen könnte.", "info"); return; }
+            const vergeben = vergebeBonusPunkte(liste.map(e => e.team));
             showToast(`${vergeben} ${vergeben === 1 ? 'Team hat' : 'Teams haben'} Bonuspunkte bekommen.`, "success");
             beendeMinispiel();
         }
@@ -2356,6 +2422,489 @@
             } catch (e) {
                 console.error("Reaktion konnte nicht gesendet werden:", e);
             }
+        }
+
+        /* ============================================================ */
+        /* NOTENSCHLEUDER                                                */
+        /* Jedes Team schiesst auf dem eigenen Geraet 45 Sekunden lang   */
+        /* Noten auf eine wandernde Zielscheibe. Gespielt wird also auf  */
+        /* dem Geraet, der Beamer fuehrt nur die Liste - anders ginge es */
+        /* auch nicht: Zielen ueber das Schulnetz waere ein Gluecksspiel.*/
+        /* Am Ende bekommen die drei besten wie beim Reaktionsspiel      */
+        /* 3 - 2 - 1 Bonuspunkte.                                        */
+        /* ============================================================ */
+        const KATAPULT_REGELN_MS = 11000;
+        const KATAPULT_DAUER_MS  = 45000;
+
+        let katapult = null;          // Lehrergeraet: { id, phase, stand, bis, uhren, takt }
+        let katapultSchueler = null;  // Schuelergeraet: { id, phase, spiel }
+
+        function starteKatapult() {
+            if (katapult && katapult.phase !== 'ende') { beendeKatapult(); return; }
+            if (!liveRoomCode) {
+                showToast("Erst einen Raum starten - ohne Live-Empfang kommt kein Treffer an.", "danger");
+                return;
+            }
+            /* Nie zwei Buehnen gleichzeitig: Beide legen sich ueber die ganze Seite,
+               und auf dem Schuelergeraet gewaenne sonst die zufaellig spaetere. */
+            if (minispiel) beendeMinispiel();
+
+            const stand = {};
+            // Alle bekannten Teams vorbelegen, damit die Liste von Anfang an vollstaendig ist
+            teams.forEach(t => {
+                const name = teamName(t);
+                if (name) stand[name] = { punkte: 0, treffer: 0 };
+            });
+            katapult = { id: 'k' + Date.now(), phase: 'regeln', stand: stand, bis: 0, uhren: [], takt: null };
+            zeigeKatapult();
+            broadcastControlState();
+            playSound('up');
+
+            katapult.uhren.push(setTimeout(() => {
+                if (!katapult) return;
+                katapult.phase = 'spiel';
+                katapult.bis = Date.now() + KATAPULT_DAUER_MS;
+                zeigeKatapult();
+                broadcastControlState();
+                playSound('up');
+                // Die Restzeit laeuft am Beamer sichtbar mit
+                katapult.takt = setInterval(() => { if (katapult) zeigeKatapult(); }, 1000);
+                katapult.uhren.push(setTimeout(() => {
+                    if (!katapult) return;
+                    clearInterval(katapult.takt); katapult.takt = null;
+                    katapult.phase = 'ende';
+                    katapult.endeZeit = Date.now();
+                    zeigeKatapult();
+                    broadcastControlState();
+                    updateKatapultKnopf();
+                }, KATAPULT_DAUER_MS));
+            }, KATAPULT_REGELN_MS));
+        }
+
+        function beendeKatapult() {
+            if (katapult) {
+                katapult.uhren.forEach(clearTimeout);
+                if (katapult.takt) clearInterval(katapult.takt);
+            }
+            katapult = null;
+            const b = getEl('katapult-buehne');
+            if (b) { b.className = 'minispiel-buehne'; b.innerHTML = ''; }
+            broadcastControlState();
+            updateKatapultKnopf();
+        }
+
+        /* Ein Treffer-Stand vom Schuelergeraet. Es meldet immer den Gesamtstand,
+           nie einen Zuwachs - deshalb zaehlt der hoechste gemeldete Wert. Geht
+           eine Meldung im Schulnetz verloren oder kommt sie zu spaet, stimmt der
+           Stand trotzdem, und nichts kann durch Doppelmeldungen wachsen. */
+        function nimmKatapult(team, punkte, treffer, id) {
+            if (!katapult || katapult.id !== id || !team) return;
+            /* Nach dem Pfiff zaehlt nur noch, was unterwegs war. Die kurze Schonfrist
+               laesst den Schlussstand jedes Geraets durch - ein Geraet, das die
+               Endmeldung verpasst hat und munter weiterschiesst, aber nicht. */
+            if (katapult.phase === 'ende' && Date.now() - (katapult.endeZeit || 0) > 4000) return;
+            const alt = katapult.stand[team] || { punkte: 0, treffer: 0 };
+            katapult.stand[team] = {
+                punkte: Math.max(alt.punkte, Number(punkte) || 0),
+                treffer: Math.max(alt.treffer, Number(treffer) || 0)
+            };
+            if (katapult.phase !== 'regeln') zeigeKatapult();
+        }
+
+        function katapultRangliste() {
+            if (!katapult) return [];
+            return Object.entries(katapult.stand)
+                .map(([team, e]) => ({ team, punkte: e.punkte, treffer: e.treffer }))
+                .sort((a, b) => b.punkte - a.punkte || b.treffer - a.treffer);
+        }
+
+        function zeigeKatapult() {
+            const b = getEl('katapult-buehne');
+            if (!b || !katapult) return;
+            b.className = 'minispiel-buehne sichtbar';
+            const abbruch = `<button type="button" onclick="event.stopPropagation(); beendeKatapult();"
+                    class="minispiel-abbruch" title="Notenschleuder abbrechen (oder Esc)">&#10005;</button>`;
+
+            if (katapult.phase === 'regeln') {
+                b.innerHTML = abbruch + katapultRegelnHtml();
+            } else if (katapult.phase === 'spiel') {
+                const rest = Math.max(0, Math.ceil((katapult.bis - Date.now()) / 1000));
+                const liste = katapultRangliste();
+                const beste = liste.length ? liste[0].punkte : 0;
+                const zeilen = liste.map(e => `<div class="katapult-zeile${e.punkte > 0 && e.punkte === beste ? ' fuehrt' : ''}">
+                        <span class="summe">${e.punkte}</span>
+                        <span>${escapeHtml(e.team)}</span>
+                        <span class="treffer">${e.treffer} ${e.treffer === 1 ? 'Treffer' : 'Treffer'}</span>
+                    </div>`).join('');
+                b.innerHTML = abbruch +
+                    `<div class="minispiel-titel">&#127919; Notenschleuder</div>
+                     <div class="gross katapult-uhr${rest <= 10 ? ' knapp' : ''}">${rest}</div>
+                     <div class="klein">Sekunden - schießt auf euren Geräten!</div>` +
+                    (zeilen || `<div class="klein">Noch kein Treffer</div>`);
+            } else {
+                const liste = katapultRangliste().filter(e => e.punkte > 0);
+                const zeilen = liste.length
+                    ? liste.map((e, i) => {
+                        const punkte = i < MINISPIEL_PUNKTE.length ? MINISPIEL_PUNKTE[i] : 0;
+                        const art = punkte ? ' platz' + (i + 1) : '';
+                        const zeichen = ['🥇', '🥈', '🥉'][i] || (i + 1) + '.';
+                        return `<div class="minispiel-rang${art}" style="animation-delay: ${(i * 0.18).toFixed(2)}s">
+                            <span class="platz">${zeichen}</span>
+                            <span>${escapeHtml(e.team)}</span>
+                            <span class="zeit">${e.punkte} Pkt · ${e.treffer} Treffer</span>
+                            ${punkte ? `<span class="punkte">+${punkte}</span>` : ''}
+                        </div>`;
+                    }).join('')
+                    : `<div class="mittel">Niemand hat getroffen.</div>`;
+                b.innerHTML = `<div class="minispiel-titel">&#127942; Ergebnis</div>${zeilen}
+                    <div class="minispiel-knopfreihe">
+                        <button type="button" onclick="event.stopPropagation(); katapultPunkteVergeben();"
+                                class="minispiel-knopf gruen-knopf">Punkte vergeben (3 · 2 · 1)</button>
+                        <button type="button" onclick="event.stopPropagation(); beendeKatapult();"
+                                class="minispiel-knopf">Schließen ohne Punkte</button>
+                    </div>`;
+            }
+            updateKatapultKnopf();
+        }
+
+        function katapultRegelnHtml() {
+            const regel = (nr, text, verzug, art = '') =>
+                `<div class="minispiel-regel ${art}" style="animation-delay: ${verzug}s">` +
+                `<span class="nummer">${nr}</span> ${text}</div>`;
+            return `<div class="minispiel-titel">&#127919; Notenschleuder</div>` +
+                regel('1', 'Ziehen zum Zielen, loslassen schießt', 0.2) +
+                regel('2', 'Die Zielscheibe wandert', 1.1) +
+                regel('3', 'Mitte zählt 3, Rand nur 1', 2.0) +
+                regel('45', 'Sekunden lang - so oft treffen wie möglich', 2.9, 'warnung') +
+                `<div class="klein">Die drei besten bekommen 3 · 2 · 1 Punkte</div>`;
+        }
+
+        function katapultPunkteVergeben() {
+            if (!katapult) return;
+            const liste = katapultRangliste().filter(e => e.punkte > 0);
+            if (!liste.length) { showToast("Es gibt niemanden, der Punkte bekommen könnte.", "info"); return; }
+            const vergeben = vergebeBonusPunkte(liste.map(e => e.team));
+            showToast(`${vergeben} ${vergeben === 1 ? 'Team hat' : 'Teams haben'} Bonuspunkte bekommen.`, "success");
+            beendeKatapult();
+        }
+
+        function updateKatapultKnopf() {
+            const btn = getEl('katapult-btn');
+            if (!btn) return;
+            const laeuft = !!katapult && katapult.phase !== 'ende';
+            const fertig = !!katapult && katapult.phase === 'ende';
+            btn.innerHTML = fertig ? `<i class="fa-solid fa-award"></i>` : `<i class="fa-solid fa-bullseye"></i>`;
+            btn.title = fertig
+                ? 'Punkte vergeben: 3 · 2 · 1 an die drei besten Schützen'
+                : laeuft ? 'Notenschleuder abbrechen'
+                         : 'Notenschleuder: 45 Sekunden auf die Zielscheibe schießen';
+            btn.setAttribute('aria-label', btn.title);
+            btn.onclick = fertig ? katapultPunkteVergeben : starteKatapult;
+        }
+
+        /* ---------- Schuelergeraet: die Notenschleuder selbst ---------- */
+        function katapultSchuelerZeigen(zustand) {
+            const b = getEl('katapult-buehne');
+            if (!b) return;
+            if (!zustand) {
+                if (katapultSchueler && katapultSchueler.spiel) katapultSchueler.spiel.lauf = false;
+                katapultSchueler = null;
+                b.className = 'minispiel-buehne';
+                b.innerHTML = '';
+                return;
+            }
+            if (!katapultSchueler || katapultSchueler.id !== zustand.id) {
+                if (katapultSchueler && katapultSchueler.spiel) katapultSchueler.spiel.lauf = false;
+                katapultSchueler = { id: zustand.id, phase: '', spiel: null };
+            }
+            const vorher = katapultSchueler.phase;
+            katapultSchueler.phase = zustand.phase;
+            if (vorher === zustand.phase) return;   // nichts Neues - laufendes Spiel nicht anfassen
+            b.className = 'minispiel-buehne sichtbar';
+
+            if (zustand.phase === 'regeln') {
+                if (katapultSchueler.spiel) { katapultSchueler.spiel.lauf = false; katapultSchueler.spiel = null; }
+                b.innerHTML = katapultRegelnHtml();
+            } else if (zustand.phase === 'spiel') {
+                /* Ohne Teamnamen kommt kein Treffer beim Lehrergeraet an. Mitspielen
+                   darf man trotzdem - nur wissen sollte man es. */
+                const name = localStorage.getItem('student_team_name');
+                b.innerHTML = `<canvas class="katapult-feld"></canvas>
+                    <div class="klein">${name ? 'Ziehen zum Zielen - loslassen schießt'
+                                              : 'Nur zum Üben - du bist keinem Team beigetreten'}</div>`;
+                const leinwand = b.querySelector('canvas');
+                katapultSchueler.spiel = katapultSpielAufbauen(leinwand);
+            } else {
+                const punkte = katapultSchueler.spiel ? katapultSchueler.spiel.punkte : 0;
+                if (katapultSchueler.spiel) {
+                    katapultSchueler.spiel.lauf = false;
+                    katapultSenden(katapultSchueler.spiel, true);   // letzter Stand, auch wenn der Takt ihn verpasst hat
+                    katapultSchueler.spiel = null;
+                }
+                b.innerHTML = `<div class="minispiel-titel">&#127919; Zeit um</div>
+                    <div class="gross">${punkte}</div>
+                    <div class="klein">Punkte - schau auf die Leinwand</div>`;
+            }
+        }
+
+        /* Der Stand geht gedrosselt an das Lehrergeraet: Bei jedem Treffer zu
+           senden hiesse bei sechs Teams gut hundert Nachrichten in 45 Sekunden. */
+        function katapultSenden(S, sofort) {
+            const jetzt = performance.now();
+            if (!sofort && jetzt - S.letzterSend < 700) return;
+            S.letzterSend = jetzt;
+            const room = localStorage.getItem('student_room_code');
+            const name = localStorage.getItem('student_team_name');
+            if (!room || !name || !katapultSchueler) return;
+            try {
+                window.fbPush(window.fbRef(window.fbDb, `rooms/${room}/messages`), {
+                    action: 'katapult',
+                    team: name,
+                    punkte: S.punkte,
+                    treffer: S.treffer,
+                    spielId: katapultSchueler.id,
+                    timestamp: window.fbServerTimestamp()
+                });
+            } catch (e) {
+                console.error("Treffer konnte nicht gesendet werden:", e);
+            }
+        }
+
+        /* Das Spielfeld. Alles in CSS-Pixeln gerechnet und erst beim Zeichnen auf
+           die Geraeteaufloesung skaliert - sonst ist das Bild auf Retina unscharf. */
+        function katapultSpielAufbauen(leinwand) {
+            const ctx = leinwand.getContext('2d');
+            const S = {
+                w: 0, h: 0, boden: 0, kx: 0, ky: 0, g: 0,
+                wurf: null, zug: null,
+                ziel: { x: 0, y: 0, r: 0, vx: 0, vy: 0, blitz: 0 },
+                punkte: 0, treffer: 0, schuesse: 0,
+                blitze: [], lauf: true, letzterSend: 0,
+                ende: performance.now() + KATAPULT_DAUER_MS, zuletzt: performance.now()
+            };
+
+            function messen() {
+                const r = leinwand.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                S.w = r.width; S.h = r.height;
+                leinwand.width = Math.round(r.width * dpr);
+                leinwand.height = Math.round(r.height * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                S.boden = S.h * 0.88;
+                S.kx = S.w * 0.13; S.ky = S.boden;
+                S.g = S.h * 1.5;
+                S.ziel.r = Math.max(26, Math.min(S.w, S.h) * 0.13);
+                if (!S.ziel.x) zielVersetzen();
+            }
+
+            function zielVersetzen() {
+                const z = S.ziel;
+                z.x = S.w * (0.42 + Math.random() * 0.48);
+                z.y = S.h * (0.12 + Math.random() * 0.42);
+                const schnell = S.w * (0.12 + Math.random() * 0.1);
+                z.vx = Math.random() < 0.5 ? -schnell : schnell;
+                z.vy = (Math.random() < 0.5 ? -1 : 1) * S.h * (0.05 + Math.random() * 0.07);
+            }
+
+            /* Abstand Punkt zu Strecke: Die Note fliegt schnell: Prueft man nur die
+               Position pro Bild, rutscht sie bei 60 Bildern je Sekunde durch die
+               Scheibe hindurch, ohne sie je zu beruehren. */
+            function abstandZurStrecke(px, py, ax, ay, bx, by) {
+                const dx = bx - ax, dy = by - ay;
+                const laenge = dx * dx + dy * dy;
+                let t = laenge ? ((px - ax) * dx + (py - ay) * dy) / laenge : 0;
+                t = Math.max(0, Math.min(1, t));
+                return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+            }
+
+            function zeigerPunkt(e) {
+                const r = leinwand.getBoundingClientRect();
+                return { x: e.clientX - r.left, y: e.clientY - r.top };
+            }
+            /* Richtung und Kraft stecken beide im Zug: Der Finger zeigt, wohin es
+               gehen soll, und je weiter er von der Schleuder weg ist, desto
+               kraeftiger der Schuss - bei einer Feldbreite ab der Schleuder ist
+               das Maximum erreicht. */
+            function flugWerte(punkt) {
+                const dx = punkt.x - S.kx, dy = punkt.y - S.ky;
+                const voll = S.h * 0.55;
+                const stark = Math.min(Math.hypot(dx, dy), voll);
+                const winkel = Math.atan2(dy, dx);
+                const tempo = (stark / voll) * S.h * 2.3;
+                return { vx: Math.cos(winkel) * tempo, vy: Math.sin(winkel) * tempo };
+            }
+            function abschuss() {
+                if (!S.zug) return;
+                const v = flugWerte(S.zug);
+                const x0 = S.kx, y0 = S.ky - S.h * 0.05;
+                S.wurf = { x0: x0, y0: y0, vx: v.vx, vy: v.vy, t: 0, x: x0, y: y0 };
+                S.schuesse++;
+                S.zug = null;
+            }
+            /* Ort der Note t Sekunden nach dem Abschuss. Geschlossen gerechnet und
+               nicht Bild fuer Bild aufsummiert: Nur so zeigt die gepunktete
+               Vorschau genau den Bogen, den die Note dann auch fliegt - mit zwei
+               verschieden grossen Rechenschritten liefen beide gegen Ende des
+               Bogens sichtbar auseinander. */
+            function bahnOrt(w, t) {
+                return { x: w.x0 + w.vx * t, y: w.y0 + w.vy * t + 0.5 * S.g * t * t };
+            }
+            const runter = (e) => { if (!S.lauf || S.wurf) return; e.preventDefault(); S.zug = zeigerPunkt(e); };
+            const bewegen = (e) => { if (!S.zug) return; e.preventDefault(); S.zug = zeigerPunkt(e); };
+            const hoch    = (e) => { if (!S.zug) return; e.preventDefault(); abschuss(); };
+            leinwand.addEventListener('pointerdown', runter);
+            leinwand.addEventListener('pointermove', bewegen);
+            leinwand.addEventListener('pointerup', hoch);
+            leinwand.addEventListener('pointercancel', () => { S.zug = null; });
+            window.addEventListener('resize', messen);
+            /* Das Spielfeld verschwindet mit dem naechsten innerHTML - der Horcher am
+               window aber nicht. Also ueberall ueber dieselbe Stelle aufhoeren. */
+            function aufraeumen() { S.lauf = false; window.removeEventListener('resize', messen); }
+
+            function schritt(jetzt) {
+                if (!S.lauf) { aufraeumen(); return; }
+                const dt = Math.min(0.05, (jetzt - S.zuletzt) / 1000);
+                S.zuletzt = jetzt;
+                if (!S.w) messen();
+                const rest = Math.max(0, S.ende - jetzt);
+                if (!rest) { aufraeumen(); katapultSenden(S, true); zeichnen(0); return; }
+
+                // Zielscheibe: wandert und wird zum Ende hin schneller
+                const z = S.ziel;
+                const schnelligkeit = 1 + 0.6 * (1 - rest / KATAPULT_DAUER_MS);
+                z.x += z.vx * dt * schnelligkeit;
+                z.y += z.vy * dt * schnelligkeit;
+                if (z.x < S.w * 0.35 + z.r) { z.x = S.w * 0.35 + z.r; z.vx *= -1; }
+                if (z.x > S.w - z.r - 6)    { z.x = S.w - z.r - 6;    z.vx *= -1; }
+                if (z.y < z.r + 6)          { z.y = z.r + 6;          z.vy *= -1; }
+                if (z.y > S.h * 0.66)       { z.y = S.h * 0.66;       z.vy *= -1; }
+                if (z.blitz > 0) z.blitz = Math.max(0, z.blitz - dt);
+
+                // Note fliegt
+                if (S.wurf) {
+                    const altX = S.wurf.x, altY = S.wurf.y;
+                    S.wurf.t += dt;
+                    const ort = bahnOrt(S.wurf, S.wurf.t);
+                    S.wurf.x = ort.x; S.wurf.y = ort.y;
+                    const d = abstandZurStrecke(z.x, z.y, altX, altY, S.wurf.x, S.wurf.y);
+                    if (d <= z.r) {
+                        /* Wie nah kommt die Note der Mitte wirklich? Der erste
+                           Beruehrpunkt liegt immer am Rand - danach zu werten hiesse,
+                           dass auch ein Schuss mitten durch die Scheibe nur den
+                           Randwert bekommt. Also den ganzen Durchflug absuchen. */
+                        let naehe = d;
+                        for (let i = 0; i <= 24; i++) {
+                            const o = bahnOrt(S.wurf, S.wurf.t - dt + (dt + 0.25) * (i / 24));
+                            naehe = Math.min(naehe, Math.hypot(o.x - z.x, o.y - z.y));
+                        }
+                        const wert = naehe <= z.r * 0.32 ? 3 : naehe <= z.r * 0.66 ? 2 : 1;
+                        S.punkte += wert; S.treffer++;
+                        S.blitze.push({ x: z.x, y: z.y, text: '+' + wert, t: 0.9 });
+                        z.blitz = 0.35;
+                        S.wurf = null;
+                        zielVersetzen();
+                        katapultSenden(S, false);
+                    } else if (S.wurf.y > S.boden || S.wurf.x > S.w + 60 || S.wurf.x < -60 || S.wurf.y > S.h + 60) {
+                        S.wurf = null;
+                    }
+                }
+                S.blitze = S.blitze.filter(b => (b.t -= dt) > 0);
+                zeichnen(rest);
+                requestAnimationFrame(schritt);
+            }
+
+            function zeichnen(rest) {
+                ctx.clearRect(0, 0, S.w, S.h);
+
+                // Boden
+                ctx.strokeStyle = 'rgba(125,211,252,.45)'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(0, S.boden); ctx.lineTo(S.w, S.boden); ctx.stroke();
+
+                // Zielscheibe
+                const z = S.ziel;
+                const ringe = [[1, '#f43f5e'], [0.66, '#f8fafc'], [0.32, '#f43f5e']];
+                ctx.save();
+                if (z.blitz > 0) { ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 40 * (z.blitz / 0.35); }
+                ringe.forEach(([teil, farbe]) => {
+                    ctx.beginPath(); ctx.arc(z.x, z.y, z.r * teil, 0, Math.PI * 2);
+                    ctx.fillStyle = farbe; ctx.fill();
+                });
+                ctx.restore();
+
+                // Flugbahn-Vorschau, solange gezogen wird
+                if (S.zug) {
+                    const v = flugWerte(S.zug);
+                    const bahn = { x0: S.kx, y0: S.ky - S.h * 0.05, vx: v.vx, vy: v.vy };
+                    ctx.fillStyle = 'rgba(248,250,252,.55)';
+                    for (let i = 1; i <= 34; i++) {
+                        const o = bahnOrt(bahn, i * 0.04);
+                        if (o.y > S.boden || o.x > S.w) break;
+                        ctx.beginPath(); ctx.arc(o.x, o.y, 3, 0, Math.PI * 2); ctx.fill();
+                    }
+                    // Gummi
+                    ctx.strokeStyle = 'rgba(251,191,36,.8)'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.moveTo(S.kx, S.ky - S.h * 0.08);
+                    ctx.lineTo(S.zug.x, S.zug.y); ctx.stroke();
+                }
+
+                // Katapult
+                ctx.fillStyle = '#7dd3fc';
+                ctx.fillRect(S.kx - S.w * 0.035, S.ky - S.h * 0.06, S.w * 0.07, S.h * 0.06);
+                ctx.fillStyle = 'rgba(125,211,252,.55)';
+                ctx.beginPath();
+                ctx.moveTo(S.kx - S.w * 0.05, S.ky);
+                ctx.lineTo(S.kx + S.w * 0.05, S.ky);
+                ctx.lineTo(S.kx, S.ky - S.h * 0.1);
+                ctx.closePath(); ctx.fill();
+
+                // Note
+                const notenGroesse = Math.max(18, S.h * 0.075);
+                ctx.font = `700 ${notenGroesse}px 'DM Sans', sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                if (S.wurf) {
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.fillText('♪', S.wurf.x, S.wurf.y);
+                } else if (!S.zug && S.lauf) {
+                    ctx.fillStyle = 'rgba(251,191,36,.9)';
+                    ctx.fillText('♪', S.kx, S.ky - S.h * 0.1);
+                }
+
+                // Trefferzahlen steigen auf
+                S.blitze.forEach(b => {
+                    ctx.globalAlpha = Math.min(1, b.t / 0.5);
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.font = `900 ${Math.max(20, S.h * 0.07)}px 'DM Sans', sans-serif`;
+                    ctx.fillText(b.text, b.x, b.y - (0.9 - b.t) * S.h * 0.12);
+                    ctx.globalAlpha = 1;
+                });
+
+                // Anzeige oben
+                ctx.font = `800 ${Math.max(13, S.h * 0.042)}px 'DM Sans', sans-serif`;
+                ctx.textBaseline = 'top';
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#7dd3fc';
+                ctx.fillText(`${S.punkte} Punkte`, 14, 12);
+                ctx.textAlign = 'right';
+                const sek = Math.ceil(rest / 1000);
+                ctx.fillStyle = sek <= 10 ? '#fca5a5' : 'rgba(248,250,252,.8)';
+                ctx.fillText(`${sek} s`, S.w - 14, 12);
+
+                if (!S.lauf) {
+                    ctx.fillStyle = 'rgba(5,6,15,.72)';
+                    ctx.fillRect(0, 0, S.w, S.h);
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.font = `900 ${Math.max(26, S.h * 0.12)}px 'DM Sans', sans-serif`;
+                    ctx.fillText('ZEIT UM', S.w / 2, S.h / 2 - S.h * 0.05);
+                    ctx.font = `800 ${Math.max(16, S.h * 0.06)}px 'DM Sans', sans-serif`;
+                    ctx.fillStyle = '#7dd3fc';
+                    ctx.fillText(`${S.punkte} Punkte · ${S.treffer} Treffer`, S.w / 2, S.h / 2 + S.h * 0.06);
+                }
+            }
+
+            messen();
+            requestAnimationFrame(schritt);
+            return S;
         }
 
         /* Wartehalle auf / zu. Das Spiel laesst sich auch wieder anhalten – etwa wenn
@@ -2796,8 +3345,9 @@
                     /* Ganz zuletzt: Solange nicht gestartet ist, hat die Wartehalle das
                        letzte Wort – fehlt das Feld (aeltere Sitzung), gilt gestartet. */
                     updateStudentStartState(payload.gestartet !== false);
-                    // Das Reaktionsspiel legt sich als eigene Buehne ueber alles
+                    // Die Minispiele legen sich als eigene Buehne ueber alles
                     minispielSchuelerZeigen(payload.minispiel || null);
+                    katapultSchuelerZeigen(payload.katapult || null);
                 }
             }, (fehler) => {
                 // Ohne diesen Zweig verschwand ein abgebrochener Listener stillschweigend:
@@ -3427,6 +3977,8 @@
                         showToast(`🤫 Spickzettel von Team "${quizPayload.team}" erhalten!`, "success");
                     } else if (quizPayload.action === "reaktion") {
                         nimmReaktion(quizPayload.team, Number(quizPayload.ms), quizPayload.spielId);
+                    } else if (quizPayload.action === "katapult") {
+                        nimmKatapult(quizPayload.team, quizPayload.punkte, quizPayload.treffer, quizPayload.spielId);
                     } else if (quizPayload.action === "reaction") {
                         spawnFloatingReaction(quizPayload.emoji || "❓");
                     } else if (quizPayload.answer) {
