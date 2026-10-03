@@ -1383,7 +1383,7 @@
         let beamerProtectionActive = true; 
         
         let classes = {
-            "Standard-Sitzung": { teams: [], currentRound: 1 }
+            "Standard-Sitzung": { teams: [], currentRound: 1, spielLaeuft: false }
         };
         let teams = [];
         let currentRound = 1;
@@ -1448,7 +1448,7 @@
         /* LocalStorage Speicher-Funktionen */
         function saveState() {
             try {
-                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [], spielLaeuft: false };
 
                 if (activeClass !== "Standard-Sitzung") {
                     classes[activeClass] = {
@@ -2016,7 +2016,7 @@
                 if (savedData) {
                     const parsed = JSON.parse(savedData);
                     if (parsed) {
-                        classes = parsed.classes || { "Standard-Sitzung": { teams: [], currentRound: 1, teamSongs: {} } };
+                        classes = parsed.classes || { "Standard-Sitzung": { teams: [], currentRound: 1, teamSongs: {}, spielLaeuft: false } };
                         // Immer mit einer sauberen, leeren Oberfläche starten - frühere Räume bleiben im Dropdown erhalten und können bei Bedarf ausgewählt werden.
                         activeClass = "Standard-Sitzung";
                         answerHistory = [];
@@ -2035,16 +2035,16 @@
                     }
                 } else {
                     classes = {
-                        "Standard-Sitzung": { teams: [], currentRound: 1, teamSongs: {} }
+                        "Standard-Sitzung": { teams: [], currentRound: 1, teamSongs: {}, spielLaeuft: false }
                     };
                     activeClass = "Standard-Sitzung";
                     answerHistory = [];
                 }
 
-                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [], spielLaeuft: false };
 
                 if (!classes[activeClass]) {
-                    classes[activeClass] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
+                    classes[activeClass] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [], spielLaeuft: false };
                 }
 
                 const currentData = classes[activeClass];
@@ -4028,14 +4028,14 @@
                 // Das ist im Dropdown der Eintrag "Neue Sitzung". Voller Reset, damit auch
                 // die iPads Bescheid bekommen (Joker und Antwortfeld wieder frei) und alte
                 // Nachrichten des Raums verschwinden.
-                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
+                classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [], spielLaeuft: false };
                 executeReset();
                 updateClassDropdown();
                 updateActiveBadge();
                 return;
             }
 
-            const targetData = classes[activeClass] || { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
+            const targetData = classes[activeClass] || { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [], spielLaeuft: false };
             teams = targetData.teams || [];
             currentRound = targetData.currentRound || 1;
             spielLaeuft = targetData.spielLaeuft !== false;
@@ -4133,6 +4133,10 @@
                 classes[className] = {
                     teams: activeClass === 'Standard-Sitzung' ? [...teams] : [],
                     currentRound: activeClass === 'Standard-Sitzung' ? currentRound : 1,
+                    /* Ein frisch angelegter Raum faengt in der Wartehalle an. Wird dagegen
+                       eine schon laufende Standard-Sitzung nur benannt, bleibt sie laufend -
+                       sonst stuenden mitten im Spiel alle iPads wieder auf "warten". */
+                    spielLaeuft: activeClass === 'Standard-Sitzung' ? spielLaeuft : false,
                     teamSongs: activeClass === 'Standard-Sitzung' ? { ...teamSongs } : {},
                     answerHistory: activeClass === 'Standard-Sitzung' ? [...answerHistory] : []
                 };
@@ -4181,7 +4185,7 @@
                 function() {
                     delete classes[activeClass];
                     activeClass = 'Standard-Sitzung';
-                    classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [] };
+                    classes["Standard-Sitzung"] = { teams: [], currentRound: 1, teamSongs: {}, answerHistory: [], spielLaeuft: false };
 
                     const targetData = classes[activeClass];
                     teams = targetData.teams;
