@@ -997,6 +997,23 @@
             <!-- Einzaehler: erst das Metronom, dann klatschen -->
             <div id="metro-im-fenster" class="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5"></div>
 
+            <!-- Fernbedienung aufs Handy holen: Der Code bleibt verwischt, bis man
+                 ihn braucht - am Beamer soll ihn nicht die halbe Klasse abfotografieren. -->
+            <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-3">
+                <div id="fern-qr" class="w-24 h-24 bg-white rounded-lg flex items-center justify-center shrink-0 transition-all" style="filter: blur(7px)"></div>
+                <div class="flex-1">
+                    <div class="text-[11px] font-bold text-slate-300">Fernbedienung fürs Handy</div>
+                    <div class="text-[10px] text-slate-500 leading-normal mt-0.5">
+                        Scannen, und du hast Takt, Bausteine, Metronom und Vorklatschen in der Hand.
+                        Der Ton kommt weiter aus dem Gerät am Beamer.
+                    </div>
+                    <button type="button" id="fern-qr-knopf" onclick="fernQrUmschalten()"
+                            class="mt-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[10px] font-bold rounded-lg px-2 py-1">
+                        <i class="fa-solid fa-eye"></i> Kurz zeigen
+                    </button>
+                </div>
+            </div>
+
             <div>
                 <div class="text-[11px] font-bold text-slate-300 mb-1">Diese Bausteine stehen der Klasse zur Verfügung:</div>
                 <div id="rhythmus-wahl" class="rhy-wahl"></div>
@@ -1064,6 +1081,67 @@
     <!-- ========================================== -->
     <!-- SCHÜLER-ANSICHT (DEFAULT VIEW)             -->
     <!-- ========================================== -->
+    <!-- Fernbedienung fuers Lehrerhandy: Sie zeigt nur den Rhythmusteil und
+         schickt Befehle an das Geraet am Beamer - dort stehen die Lautsprecher
+         und dort liegt der Spielstand. -->
+    <div id="fern-view" class="hidden container mx-auto px-3 py-4 max-w-lg flex-grow font-sans">
+        <div class="flex items-center justify-between mb-3">
+            <h1 class="text-base font-black text-violet-300"><i class="fa-solid fa-drum mr-1"></i> Rhythmus-Fernbedienung</h1>
+            <span id="fern-raum" class="text-[11px] font-bold text-slate-400"></span>
+        </div>
+        <div id="fern-hinweis" class="text-[11px] text-slate-400 mb-3 leading-normal">
+            Was du hier einstellst, führt das Gerät am Beamer aus.
+        </div>
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-3 space-y-3">
+            <div class="flex items-center gap-2 flex-wrap text-[11px] font-bold text-slate-300">
+                <span>Taktart:</span>
+                <span id="fern-taktwahl" class="flex gap-1"></span>
+                <label class="flex items-center gap-1.5 cursor-pointer ml-auto">
+                    <input type="checkbox" id="fern-klatsch" checked class="sr-only peer">
+                    <div class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600 relative"></div>
+                    <span>Klatschmodus</span>
+                </label>
+            </div>
+            <div>
+                <div class="text-[11px] font-bold text-slate-300 mb-1">Bausteine für die Klasse:</div>
+                <div id="fern-wahl" class="rhy-wahl"></div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold text-slate-300">Dein Rhythmus:</span>
+                <button type="button" id="fern-zufall" class="ml-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] rounded-lg px-3 py-1 active:scale-95">
+                    <i class="fa-solid fa-dice"></i> Zufall
+                </button>
+            </div>
+            <div id="fern-editor"></div>
+            <div class="flex gap-2">
+                <button type="button" id="fern-senden" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs active:scale-95">
+                    <i class="fa-solid fa-paper-plane mr-1"></i> An die Klasse geben
+                </button>
+                <button type="button" id="fern-beenden" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold py-2 px-3 rounded-xl text-xs active:scale-95">
+                    Beenden
+                </button>
+            </div>
+        </div>
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-3 mt-3 space-y-2">
+            <div class="text-[11px] font-bold text-slate-300"><i class="fa-solid fa-stopwatch mr-1"></i> Am Beamer abspielen</div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" id="fern-tempo-minus" class="rhy-knopf">−</button>
+                <span id="fern-tempo" class="text-sm font-black text-violet-300 w-16 text-center">90 bpm</span>
+                <button type="button" id="fern-tempo-plus" class="rhy-knopf">+</button>
+                <span class="text-[11px] font-bold text-slate-400">Takte</span>
+                <span id="fern-takte" class="flex gap-1"></span>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" id="fern-metronom" class="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-bold py-2 rounded-xl text-xs active:scale-95">
+                    <i class="fa-solid fa-play mr-1"></i> Metronom
+                </button>
+                <button type="button" id="fern-vorklatsch" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded-xl text-xs active:scale-95">
+                    <i class="fa-solid fa-hands-clapping mr-1"></i> Vorklatschen
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="student-view" class="container mx-auto px-4 py-8 max-w-md flex-grow flex flex-col justify-center animate-fadeIn">
         
         <div class="text-center mb-6">
@@ -3918,8 +3996,8 @@
            Alles im Voraus auf die Audiouhr gelegt - nachtraeglich getaktet wuerde es
            hoerbar schwanken. */
         let vorklatschUhren = [];
-        function rhythmusVorklatschen() {
-            const code = rhythmusZumVorklatschen();
+        function rhythmusVorklatschen(vorgabe) {
+            const code = vorgabe || rhythmusZumVorklatschen();
             const noten = rhythmusLesen(code);
             if (!noten.length) { showToast("Trage erst einen Rhythmus ein, der vorgeklatscht werden soll.", "danger"); return; }
             const ctx = ensureAudioContext();
@@ -4034,6 +4112,7 @@
             rhythmusEditorNeu();
             rhythmusKnoepfeAktualisieren();
             metronomBauen(getEl('metro-im-fenster'), false);
+            fernQrZeichnen();
         }
         function rhythmusFensterSchliessen() {
             /* Nur stoppen, wenn danach keine Bedienung mehr sichtbar ist: Laeuft eine
@@ -4115,6 +4194,222 @@
         /* Klatschmodus an heisst: Es zaehlt, wann geklatscht wird, nicht wie lang
            der Ton steht. Aus heisst: Die Schreibweise muss genau stimmen - dann ist
            eine Halbe etwas anderes als eine Viertel mit Pause. */
+        /* ============================================================ */
+        /* FERNBEDIENUNG                                                 */
+        /* Das Lehrerhandy stellt ein, das Geraet am Beamer fuehrt aus:  */
+        /* Dort stehen die Lautsprecher, dort liegt der Spielstand, und  */
+        /* dort werden die Antworten bewertet. Das Handy schickt also    */
+        /* nur Befehle durch denselben Nachrichtenkanal wie die          */
+        /* Schuelergeraete.                                              */
+        /* Der Schluessel im QR-Code gilt nur fuer diese Sitzung: Er     */
+        /* entsteht beim Oeffnen des Fensters neu und steht nirgends     */
+        /* gespeichert. Wer den Code abfotografiert, kann mitsteuern -   */
+        /* deshalb ist er verwischt, bis man ihn braucht.                */
+        /* ============================================================ */
+        let fernSchluessel = '';
+
+        function fernSchluesselHolen() {
+            if (!fernSchluessel) {
+                const zufall = new Uint8Array(8);
+                (window.crypto || {}).getRandomValues ? window.crypto.getRandomValues(zufall)
+                    : zufall.forEach((_, i) => zufall[i] = Math.floor(Math.random() * 256));
+                fernSchluessel = Array.from(zufall).map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+            return fernSchluessel;
+        }
+
+        function fernQrZeichnen() {
+            const ziel = getEl('fern-qr');
+            if (!ziel || typeof QRCode === 'undefined') return;
+            const raum = liveRoomCode || (getEl('room-code-input') ? normalisiereRaumCode(getEl('room-code-input').value) : '');
+            ziel.innerHTML = '';
+            if (!raum) {
+                ziel.innerHTML = '<span style="font-size:9px;color:#64748b;text-align:center;padding:4px">Erst einen Raum starten</span>';
+                return;
+            }
+            const adresse = window.location.href.split('?')[0];
+            new QRCode(ziel, {
+                text: `${adresse}?fern=${encodeURIComponent(raum)}&s=${fernSchluesselHolen()}`,
+                width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M
+            });
+        }
+
+        function fernQrUmschalten() {
+            const ziel = getEl('fern-qr'), knopf = getEl('fern-qr-knopf');
+            if (!ziel) return;
+            const verwischt = ziel.style.filter !== 'none';
+            ziel.style.filter = verwischt ? 'none' : 'blur(7px)';
+            if (knopf) knopf.innerHTML = verwischt
+                ? '<i class="fa-solid fa-eye-slash"></i> Wieder verstecken'
+                : '<i class="fa-solid fa-eye"></i> Kurz zeigen';
+        }
+
+        /* Am Beamer: Befehl vom Handy ausfuehren. Der Schluessel muss stimmen,
+           sonst passiert nichts - kommentarlos, damit Herumprobieren nichts
+           verraet. */
+        function fernBefehlAusfuehren(p) {
+            if (!fernSchluessel || p.schluessel !== fernSchluessel) return;
+            if (p.befehl === 'uebernehmen') {
+                rhythmusEntwurf = {
+                    soll: Number(p.soll) || 4,
+                    zeichen: p.zeichen || '4/4',
+                    klatsch: p.klatsch !== false,
+                    werte: Array.isArray(p.werte) && p.werte.length ? p.werte.slice() : rhythmusEntwurf.werte,
+                    loesung: String(p.loesung || '')
+                };
+                if (!rhythmusEntwurf.loesung) { showToast("Vom Handy kam ein leerer Rhythmus.", "danger"); return; }
+                rhythmusRunde = {
+                    soll: rhythmusEntwurf.soll, zeichen: rhythmusEntwurf.zeichen,
+                    klatsch: rhythmusEntwurf.klatsch, werte: rhythmusEntwurf.werte.slice(),
+                    loesung: rhythmusEntwurf.loesung
+                };
+                metronomLeisteZeigen(true);
+                broadcastControlState();
+                renderIncomingAnswersList();
+                rhythmusKnoepfeAktualisieren();
+                showToast("📱 Rhythmus vom Handy übernommen - die Teams sehen die Notenwerte.", "success");
+                playSound('up');
+            } else if (p.befehl === 'beenden') {
+                rhythmusRundeBeenden();
+            } else if (p.befehl === 'metronom') {
+                if (p.bpm) metronomTempoSetzen(p.bpm);
+                if (p.takte !== undefined) { metronom.takte = Number(p.takte); metronomTakteZeichnen(); }
+                metronomUmschalten();
+            } else if (p.befehl === 'vorklatsch') {
+                if (p.bpm) metronomTempoSetzen(p.bpm);
+                /* Der Rhythmus kommt mit: So kann man vom Handy vorhoeren, bevor man
+                   ihn der Klasse gibt. Kommt keiner mit, gilt der der laufenden Runde. */
+                if (p.zeichen) rhythmusEntwurf.zeichen = p.zeichen;
+                rhythmusVorklatschen(p.loesung || '');
+            }
+        }
+
+        /* ---------- Auf dem Handy ---------- */
+        let fernRaum = '', fernEditor = null;
+        let fernEntwurf = { soll: 4, zeichen: '4/4', klatsch: true, werte: ['V', 'AA', 'Vp', 'H'], loesung: '' };
+        let fernMetronom = { bpm: 90, takte: 1 };
+
+        function fernSenden(befehl, daten) {
+            if (!fernRaum) return;
+            try {
+                window.fbPush(window.fbRef(window.fbDb, `rooms/${fernRaum}/messages`), Object.assign({
+                    action: 'fern', befehl: befehl, schluessel: fernSchluessel,
+                    team: 'Fernbedienung', timestamp: window.fbServerTimestamp()
+                }, daten || {}));
+                showToast("An den Beamer geschickt.", "success");
+            } catch (e) {
+                console.error("Befehl konnte nicht gesendet werden:", e);
+                showToast("Der Befehl kam nicht durch - steht das Gerät am Beamer noch im Raum?", "danger");
+            }
+        }
+
+        function fernModusStarten(raum, schluessel) {
+            fernRaum = normalisiereRaumCode(raum);
+            fernSchluessel = schluessel;
+            document.querySelectorAll('#student-view, #teacher-view').forEach(el => el.classList.add('hidden'));
+            const sicht = getEl('fern-view');
+            if (sicht) sicht.classList.remove('hidden');
+            const raumAnzeige = getEl('fern-raum');
+            if (raumAnzeige) raumAnzeige.textContent = 'Raum ' + fernRaum.toUpperCase();
+
+            fernTaktwahlZeichnen();
+            fernWahlZeichnen();
+            fernEditorNeu();
+            fernTakteZeichnen();
+            fernTempoAnzeigen();
+
+            getEl('fern-zufall').addEventListener('click', () => {
+                const alt = rhythmusEntwurf;
+                rhythmusEntwurf = fernEntwurf;              // der Wuerfel liest diesen Entwurf
+                const alterEditor = rhythmusLoesungsEditor;
+                rhythmusLoesungsEditor = fernEditor;
+                rhythmusZufall();
+                rhythmusLoesungsEditor = alterEditor;
+                rhythmusEntwurf = alt;
+            });
+            getEl('fern-senden').addEventListener('click', () => {
+                fernEntwurf.loesung = fernEditor ? fernEditor.lesen() : '';
+                if (!fernEntwurf.loesung) { showToast("Trage erst einen Rhythmus ein.", "danger"); return; }
+                fernEntwurf.klatsch = getEl('fern-klatsch').checked;
+                fernSenden('uebernehmen', {
+                    soll: fernEntwurf.soll, zeichen: fernEntwurf.zeichen, klatsch: fernEntwurf.klatsch,
+                    werte: fernEntwurf.werte, loesung: fernEntwurf.loesung
+                });
+            });
+            getEl('fern-beenden').addEventListener('click', () => fernSenden('beenden'));
+            getEl('fern-metronom').addEventListener('click', () => fernSenden('metronom', { bpm: fernMetronom.bpm, takte: fernMetronom.takte }));
+            getEl('fern-vorklatsch').addEventListener('click', () => {
+                fernEntwurf.loesung = fernEditor ? fernEditor.lesen() : '';
+                if (!fernEntwurf.loesung) { showToast("Trage erst einen Rhythmus ein.", "danger"); return; }
+                fernSenden('vorklatsch', { bpm: fernMetronom.bpm, loesung: fernEntwurf.loesung, zeichen: fernEntwurf.zeichen });
+            });
+            getEl('fern-tempo-minus').addEventListener('click', () => { fernMetronom.bpm = Math.max(40, fernMetronom.bpm - 5); fernTempoAnzeigen(); });
+            getEl('fern-tempo-plus').addEventListener('click', () => { fernMetronom.bpm = Math.min(200, fernMetronom.bpm + 5); fernTempoAnzeigen(); });
+        }
+
+        function fernTempoAnzeigen() {
+            const a = getEl('fern-tempo');
+            if (a) a.textContent = fernMetronom.bpm + ' bpm';
+        }
+        function fernTakteZeichnen() {
+            const ziel = getEl('fern-takte');
+            if (!ziel) return;
+            ziel.innerHTML = '';
+            [['1', 1], ['2', 2], ['3', 3], ['4', 4], ['∞', 0]].forEach(([wort, n]) => {
+                const b = document.createElement('button');
+                b.type = 'button'; b.className = 'rhy-knopf'; b.textContent = wort;
+                if (fernMetronom.takte === n) b.style.cssText = 'background:rgba(139,92,246,.3); border-color:#a78bfa; color:#ede9fe';
+                b.addEventListener('click', () => { fernMetronom.takte = n; fernTakteZeichnen(); });
+                ziel.appendChild(b);
+            });
+        }
+        function fernTaktwahlZeichnen() {
+            const ziel = getEl('fern-taktwahl');
+            if (!ziel) return;
+            ziel.innerHTML = '';
+            [['2/4', 2], ['3/4', 3], ['4/4', 4], ['6/8', 3]].forEach(([wort, viertel]) => {
+                const b = document.createElement('button');
+                b.type = 'button'; b.className = 'rhy-knopf'; b.textContent = wort;
+                if (fernEntwurf.zeichen === wort) b.style.cssText = 'background:rgba(139,92,246,.3); border-color:#a78bfa; color:#ede9fe';
+                b.addEventListener('click', () => {
+                    fernEntwurf.soll = viertel; fernEntwurf.zeichen = wort;
+                    fernTaktwahlZeichnen(); fernEditorNeu();
+                });
+                ziel.appendChild(b);
+            });
+        }
+        function fernWahlZeichnen() {
+            const ziel = getEl('fern-wahl');
+            if (!ziel) return;
+            ziel.innerHTML = '';
+            [['Noten', false], ['Pausen', true]].forEach(([titel, pausen]) => {
+                const zeile = document.createElement('div');
+                zeile.className = 'rhy-wahl-zeile';
+                zeile.innerHTML = `<span class="rhy-wahl-titel">${titel}</span>`;
+                RHYTHMUS_BAUSTEINE.filter(w => !!w.pausenreihe === pausen).forEach(w => {
+                    const an = fernEntwurf.werte.includes(w.code);
+                    const b = document.createElement('button');
+                    b.type = 'button'; b.className = 'rhy-chip' + (an ? ' an' : ''); b.title = w.wort;
+                    b.innerHTML = rhythmusSvg([w], null, true);
+                    b.addEventListener('click', () => {
+                        const i = fernEntwurf.werte.indexOf(w.code);
+                        if (i >= 0) fernEntwurf.werte.splice(i, 1); else fernEntwurf.werte.push(w.code);
+                        fernWahlZeichnen(); fernEditorNeu();
+                    });
+                    zeile.appendChild(b);
+                });
+                ziel.appendChild(zeile);
+            });
+        }
+        function fernEditorNeu() {
+            const feld = getEl('fern-editor');
+            if (!feld) return;
+            const alt = fernEditor ? fernEditor.lesen() : '';
+            fernEditor = rhythmusEditor(feld, fernEntwurf.soll, fernEntwurf.werte);
+            const gerettet = rhythmusLesen(alt).filter(w => fernEntwurf.werte.includes(w.code));
+            if (gerettet.length) fernEditor.setzen(rhythmusSchreiben(gerettet));
+        }
+
         /* Wuerfelt aus den gewaehlten Bausteinen einen Takt, der genau aufgeht.
            Gesucht wird durch Probieren: Ein Baustein, der noch hineinpasst, wird
            angehaengt; geht es nicht mehr auf, faengt der Versuch von vorn an. Das
@@ -5845,7 +6140,10 @@
                 renderTeamSongsList();
                 
                 const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get('k')) {
+                if (urlParams.get('fern') && urlParams.get('s')) {
+                    // Fernbedienung: nur der Rhythmusteil, alles andere bleibt aus
+                    fernModusStarten(urlParams.get('fern'), urlParams.get('s'));
+                } else if (urlParams.get('k')) {
                     // Geheimer Direktlink: Prüfung passiert asynchron, daher erst
                     // die Schüleransicht zeigen und bei Erfolg umschalten.
                     switchView('student');
@@ -6739,6 +7037,8 @@
                         showToast(`🤫 Spickzettel von Team "${quizPayload.team}" erhalten!`, "success");
                     } else if (quizPayload.action === "reaktion") {
                         nimmReaktion(quizPayload.team, Number(quizPayload.ms), quizPayload.spielId);
+                    } else if (quizPayload.action === "fern") {
+                        fernBefehlAusfuehren(quizPayload);
                     } else if (quizPayload.action === "sammelstand") {
                         nimmSammelstand(quizPayload.team, quizPayload.punkte, quizPayload.extra,
                                         quizPayload.folge, quizPayload.spielId);
