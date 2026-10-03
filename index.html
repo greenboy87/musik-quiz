@@ -427,6 +427,17 @@
         html[data-theme="light"] .rhy-chip { background: #f8fafc; border-color: #cbd5e1; color: #94a3b8; }
         html[data-theme="light"] .rhy-chip.an { background: #ede9fe; border-color: #7c3aed; color: #0f172a; }
 
+        /* Metronom im Rhythmus-Fenster */
+        .metro-puls { display: flex; gap: .4rem; align-items: center; }
+        .metro-punkt {
+            width: .85rem; height: .85rem; border-radius: 999px;
+            background: rgba(148,163,184,.25); border: 1px solid rgba(148,163,184,.4);
+            transition: transform .06s ease, background .12s ease;
+        }
+        .metro-punkt.an { background: #a78bfa; transform: scale(1.45); }
+        .metro-punkt.eins.an { background: #fbbf24; }
+        html[data-theme="light"] .metro-punkt { background: #e2e8f0; border-color: #94a3b8; }
+
         /* Glücksrad für die Spielauswahl */
         .rad-feld { display: block; width: min(62vh, 86vw); aspect-ratio: 1; max-width: 560px; }
         .rad-text { min-height: 1.6em; }
@@ -964,6 +975,30 @@
                     <i class="fa-solid fa-eye-slash"></i> Verdecken
                 </button>
             </div>
+            <!-- Einzaehler: erst das Metronom, dann klatschen -->
+            <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-[11px] font-bold text-slate-300"><i class="fa-solid fa-stopwatch mr-1"></i> Metronom</span>
+                    <div class="metro-puls" id="metro-puls"></div>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-[11px] font-bold text-slate-400 w-14">Tempo</span>
+                    <button type="button" class="rhy-knopf" onclick="metronomTempo(-5)">−</button>
+                    <span id="metro-tempo" class="text-sm font-black text-violet-300 w-16 text-center">90 bpm</span>
+                    <button type="button" class="rhy-knopf" onclick="metronomTempo(5)">+</button>
+                    <input id="metro-regler" type="range" min="40" max="200" value="90" step="1"
+                           oninput="metronomTempoSetzen(this.value)" class="flex-1 min-w-[6rem] accent-violet-500">
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-[11px] font-bold text-slate-400 w-14">Takte</span>
+                    <span id="metro-takte" class="flex gap-1"></span>
+                    <button type="button" id="metro-knopf" onclick="metronomUmschalten()"
+                            class="ml-auto bg-violet-600 hover:bg-violet-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs transition-all active:scale-95">
+                        <i class="fa-solid fa-play mr-1"></i> Start
+                    </button>
+                </div>
+            </div>
+
             <div>
                 <div class="text-[11px] font-bold text-slate-300 mb-1">Diese Bausteine stehen der Klasse zur Verfügung:</div>
                 <div id="rhythmus-wahl" class="rhy-wahl"></div>
@@ -3683,6 +3718,121 @@
         let rhythmusSchuelerEditor = null;
         let rhythmusSchuelerSchluessel = '';
 
+        /* Metronom als Einzaehler. Die Taktart kommt aus der Wahl darueber - es
+           schlaegt also genau den Takt, den die Klasse gleich aufschreiben soll.
+           Geplant wird ueber die Uhr des AudioContext und nicht mit setInterval:
+           Ein Timer im Browser verrutscht um zig Millisekunden, und ausgerechnet
+           ein Metronom darf das nicht. */
+        const METRONOM_SCHLAEGE = { '2/4': 2, '3/4': 3, '4/4': 4, '6/8': 6 };
+        let metronom = { bpm: 90, takte: 1, laeuft: false, uhr: null, naechste: 0, schlag: 0, takt: 0, sichtbar: [] };
+
+        function metronomSchlaege() {
+            return METRONOM_SCHLAEGE[rhythmusEntwurf.zeichen] || rhythmusEntwurf.soll || 4;
+        }
+
+        function metronomPulsZeichnen(aktiv) {
+            const ziel = getEl('metro-puls');
+            if (!ziel) return;
+            const anzahl = metronomSchlaege();
+            if (ziel.children.length !== anzahl) {
+                ziel.innerHTML = '';
+                for (let i = 0; i < anzahl; i++) {
+                    const p = document.createElement('span');
+                    p.className = 'metro-punkt' + (i === 0 ? ' eins' : '');
+                    ziel.appendChild(p);
+                }
+            }
+            [...ziel.children].forEach((p, i) => p.classList.toggle('an', i === aktiv));
+        }
+
+        function metronomTakteZeichnen() {
+            const ziel = getEl('metro-takte');
+            if (!ziel) return;
+            ziel.innerHTML = '';
+            [['1', 1], ['2', 2], ['3', 3], ['4', 4], ['∞', 0]].forEach(([wort, n]) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'rhy-knopf';
+                b.textContent = wort;
+                if (metronom.takte === n) b.style.cssText = 'background:rgba(139,92,246,.3); border-color:#a78bfa; color:#ede9fe';
+                b.addEventListener('click', () => { metronom.takte = n; metronomTakteZeichnen(); });
+                ziel.appendChild(b);
+            });
+        }
+
+        function metronomTempoSetzen(wert) {
+            metronom.bpm = Math.max(40, Math.min(200, Math.round(Number(wert) || 90)));
+            const anzeige = getEl('metro-tempo'), regler = getEl('metro-regler');
+            if (anzeige) anzeige.textContent = metronom.bpm + ' bpm';
+            if (regler) regler.value = metronom.bpm;
+        }
+        function metronomTempo(schritt) { metronomTempoSetzen(metronom.bpm + schritt); }
+
+        function metronomKlick(ctx, zeit, betont) {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.type = 'square';
+            o.frequency.value = betont ? 1760 : 1100;
+            g.gain.setValueAtTime(0.0001, zeit);
+            g.gain.exponentialRampToValueAtTime(betont ? 0.5 : 0.28, zeit + 0.002);
+            g.gain.exponentialRampToValueAtTime(0.0001, zeit + 0.05);
+            o.connect(g); g.connect(ctx.destination);
+            o.start(zeit); o.stop(zeit + 0.07);
+        }
+
+        function metronomUmschalten() {
+            if (metronom.laeuft) metronomStoppen(); else metronomStarten();
+        }
+
+        function metronomStarten() {
+            const ctx = ensureAudioContext();
+            if (!ctx) { showToast("Dieses Gerät gibt keinen Ton aus.", "danger"); return; }
+            if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+            const proTakt = metronomSchlaege();
+            metronom.laeuft = true;
+            metronom.schlag = 0;
+            metronom.takt = 0;
+            metronom.naechste = ctx.currentTime + 0.12;
+            metronom.sichtbar = [];
+            metronomKnopf();
+            metronomPulsZeichnen(-1);
+            /* Vorausschauend planen: Alle 25 ms wird nachgesehen, was in den
+               naechsten 150 ms zu klingen hat, und genau auf die Audiouhr gelegt. */
+            metronom.uhr = setInterval(() => {
+                if (!metronom.laeuft) return;
+                while (metronom.naechste < ctx.currentTime + 0.15) {
+                    if (metronom.takte && metronom.takt >= metronom.takte) { metronomStoppen(); return; }
+                    const schlag = metronom.schlag, wann = metronom.naechste;
+                    metronomKlick(ctx, wann, schlag === 0);
+                    // Die Anzeige laeuft hinterher - sie haengt an derselben Uhr
+                    const verzug = Math.max(0, (wann - ctx.currentTime) * 1000);
+                    metronom.sichtbar.push(setTimeout(() => metronomPulsZeichnen(schlag), verzug));
+                    metronom.naechste += 60 / metronom.bpm;
+                    metronom.schlag++;
+                    if (metronom.schlag >= proTakt) { metronom.schlag = 0; metronom.takt++; }
+                }
+            }, 25);
+        }
+
+        function metronomStoppen() {
+            metronom.laeuft = false;
+            if (metronom.uhr) { clearInterval(metronom.uhr); metronom.uhr = null; }
+            metronom.sichtbar.forEach(clearTimeout);
+            metronom.sichtbar = [];
+            metronomKnopf();
+            setTimeout(() => { if (!metronom.laeuft) metronomPulsZeichnen(-1); }, 120);
+        }
+
+        function metronomKnopf() {
+            const b = getEl('metro-knopf');
+            if (!b) return;
+            b.innerHTML = metronom.laeuft ? '<i class="fa-solid fa-stop mr-1"></i> Stopp'
+                                          : '<i class="fa-solid fa-play mr-1"></i> Start';
+            b.className = (metronom.laeuft
+                ? "ml-auto bg-rose-600 hover:bg-rose-500"
+                : "ml-auto bg-violet-600 hover:bg-violet-500") +
+                " text-white font-bold py-1.5 px-4 rounded-lg text-xs transition-all active:scale-95";
+        }
+
         function rhythmusFensterZeigen() {
             const f = getEl('rhythmus-fenster');
             if (!f) return;
@@ -3695,8 +3845,12 @@
             rhythmusWahlZeichnen();
             rhythmusEditorNeu();
             rhythmusKnoepfeAktualisieren();
+            metronomTempoSetzen(metronom.bpm);
+            metronomTakteZeichnen();
+            metronomPulsZeichnen(-1);
         }
         function rhythmusFensterSchliessen() {
+            metronomStoppen();   // es soll nicht hinter einem geschlossenen Fenster weiterticken
             const f = getEl('rhythmus-fenster');
             if (!f) return;
             f.classList.add('hidden');
@@ -3719,6 +3873,7 @@
                     rhythmusEntwurf.zeichen = wort;
                     rhythmusTaktwahlZeichnen();
                     rhythmusEditorNeu();
+                    metronomPulsZeichnen(-1);
                 });
                 ziel.appendChild(b);
             });
