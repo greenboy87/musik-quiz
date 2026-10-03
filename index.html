@@ -415,7 +415,12 @@
         .rhy-stand.voll { color: #34d399; }
         .rhy-stand.zuviel { color: #fb7185; }
         /* Auswahl der Bausteine im Lehrerfenster */
-        .rhy-wahl { display: flex; flex-wrap: wrap; gap: .35rem; }
+        .rhy-wahl { display: flex; flex-direction: column; gap: .4rem; }
+        .rhy-wahl-zeile { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+        .rhy-wahl-titel {
+            width: 3.4rem; flex: 0 0 3.4rem; font-size: .62rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: .04em; color: #94a3b8;
+        }
         .rhy-chip {
             display: flex; align-items: center; justify-content: center; cursor: pointer;
             padding: .5rem .7rem; border-radius: 14px; flex: 0 0 auto;
@@ -3974,25 +3979,33 @@
             });
         }
 
+        /* Zwei Zeilen: oben die Noten, unten die Pausen - jeweils von lang nach
+           kurz. So findet man beim Zusammenstellen, was man sucht, ohne zu suchen. */
         function rhythmusWahlZeichnen() {
             const ziel = getEl('rhythmus-wahl');
             if (!ziel) return;
             ziel.innerHTML = '';
-            RHYTHMUS_BAUSTEINE.forEach(w => {
-                const an = rhythmusEntwurf.werte.includes(w.code);
-                const b = document.createElement('button');
-                b.type = 'button';
-                b.className = 'rhy-chip' + (an ? ' an' : '');
-                b.title = w.wort;
-                b.innerHTML = rhythmusSvg([w], null, true);
-                b.addEventListener('click', () => {
-                    const i = rhythmusEntwurf.werte.indexOf(w.code);
-                    if (i >= 0) rhythmusEntwurf.werte.splice(i, 1);
-                    else rhythmusEntwurf.werte.push(w.code);
-                    rhythmusWahlZeichnen();
-                    rhythmusEditorNeu();
+            [['Noten', false], ['Pausen', true]].forEach(([titel, pausen]) => {
+                const zeile = document.createElement('div');
+                zeile.className = 'rhy-wahl-zeile';
+                zeile.innerHTML = `<span class="rhy-wahl-titel">${titel}</span>`;
+                RHYTHMUS_BAUSTEINE.filter(w => !!w.pausenreihe === pausen).forEach(w => {
+                    const an = rhythmusEntwurf.werte.includes(w.code);
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'rhy-chip' + (an ? ' an' : '');
+                    b.title = w.wort;
+                    b.innerHTML = rhythmusSvg([w], null, true);
+                    b.addEventListener('click', () => {
+                        const i = rhythmusEntwurf.werte.indexOf(w.code);
+                        if (i >= 0) rhythmusEntwurf.werte.splice(i, 1);
+                        else rhythmusEntwurf.werte.push(w.code);
+                        rhythmusWahlZeichnen();
+                        rhythmusEditorNeu();
+                    });
+                    zeile.appendChild(b);
                 });
-                ziel.appendChild(b);
+                ziel.appendChild(zeile);
             });
         }
 
@@ -4124,23 +4137,28 @@
         /* eigenes Faehnchen - genau so, wie es im Heft steht.            */
         /* Ein Rhythmus ist die Folge der Kuerzel: "V-AA-Vp-SSSS".        */
         /* ============================================================ */
+        /* Reihenfolge wie an der Tafel: erst die Noten von lang nach kurz, bei
+           gleicher Laenge von wenig nach stark unterteilt - dann alles, was eine
+           Pause enthaelt, nach derselben Ordnung. Danach richten sich die Auswahl
+           auf dem Lehrergeraet und die Kartenreihe auf dem Schuelergeraet. */
         const RHYTHMUS_BAUSTEINE = [
+            { code: 'G',    dauer: 4,   wort: 'Ganze',          teile: [{ d: 4 }] },
+            { code: 'H',    dauer: 2,   wort: 'Halbe',          teile: [{ d: 2 }] },
             { code: 'V',    dauer: 1,   wort: 'Viertel',        teile: [{ d: 1 }] },
             { code: 'AA',   dauer: 1,   wort: 'Zwei Achtel',    teile: [{ d: .5 }, { d: .5 }] },
-            { code: 'Vp',   dauer: 1,   wort: 'Viertelpause',   teile: [{ d: 1, p: true }] },
-            { code: 'pA',   dauer: 1,   wort: 'Pause + Achtel', teile: [{ d: .5, p: true }, { d: .5 }] },
-            { code: 'Ap',   dauer: 1,   wort: 'Achtel + Pause', teile: [{ d: .5 }, { d: .5, p: true }] },
-            { code: 'SSSS', dauer: 1,   wort: 'Vier Sechzehntel',       teile: [{ d: .25 }, { d: .25 }, { d: .25 }, { d: .25 }] },
             { code: 'ASS',  dauer: 1,   wort: 'Achtel + 2 Sechzehntel', teile: [{ d: .5 }, { d: .25 }, { d: .25 }] },
             { code: 'SSA',  dauer: 1,   wort: '2 Sechzehntel + Achtel', teile: [{ d: .25 }, { d: .25 }, { d: .5 }] },
-            { code: 'H',    dauer: 2,   wort: 'Halbe',          teile: [{ d: 2 }] },
-            { code: 'Hp',   dauer: 2,   wort: 'Halbe Pause',    teile: [{ d: 2, p: true }] },
-            { code: 'G',    dauer: 4,   wort: 'Ganze',          teile: [{ d: 4 }] },
-            { code: 'Gp',   dauer: 4,   wort: 'Ganze Pause',    teile: [{ d: 4, p: true }] },
-            /* Die beiden Halben Zaehlzeiten gibt es einzeln, damit auch Synkopen
-               ueber die Zaehlzeit hinweg aufschreibbar sind: Achtel - Viertel - Achtel. */
+            { code: 'SSSS', dauer: 1,   wort: 'Vier Sechzehntel',       teile: [{ d: .25 }, { d: .25 }, { d: .25 }, { d: .25 }] },
+            /* Die einzelne Achtel gibt es, damit auch Synkopen ueber die Zaehlzeit
+               hinweg aufschreibbar sind: Achtel - Viertel - Achtel. */
             { code: 'A',    dauer: .5,  wort: 'Achtel einzeln', teile: [{ d: .5 }] },
-            { code: 'P',    dauer: .5,  wort: 'Achtelpause',    teile: [{ d: .5, p: true }] }
+
+            { code: 'Gp',   dauer: 4,   wort: 'Ganze Pause',    pausenreihe: true, teile: [{ d: 4, p: true }] },
+            { code: 'Hp',   dauer: 2,   wort: 'Halbe Pause',    pausenreihe: true, teile: [{ d: 2, p: true }] },
+            { code: 'Vp',   dauer: 1,   wort: 'Viertelpause',   pausenreihe: true, teile: [{ d: 1, p: true }] },
+            { code: 'pA',   dauer: 1,   wort: 'Pause + Achtel', pausenreihe: true, teile: [{ d: .5, p: true }, { d: .5 }] },
+            { code: 'Ap',   dauer: 1,   wort: 'Achtel + Pause', pausenreihe: true, teile: [{ d: .5 }, { d: .5, p: true }] },
+            { code: 'P',    dauer: .5,  wort: 'Achtelpause',    pausenreihe: true, teile: [{ d: .5, p: true }] }
         ];
         const RHYTHMUS_NACH_CODE = {};
         RHYTHMUS_BAUSTEINE.forEach(b => { RHYTHMUS_NACH_CODE[b.code] = b; });
