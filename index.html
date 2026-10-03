@@ -190,6 +190,16 @@
         /* Sichtbarkeit über eine eigene Klasse: Der ID-Selektor sticht Tailwinds .hidden. */
         #live-warning.sichtbar { display: inline-flex; }
 
+        /* Einrichtungsbereich: zwei Karten, ein Raster. Jede Zeile gleich hoch, die
+           Beschriftungen gleich breit - dadurch stehen die Bedienelemente in beiden
+           Karten untereinander. Bewusst ohne Farben: Die kommen weiter aus den
+           Tailwind-Klassen, sonst liefe das helle Theme hier ins Leere. */
+        .einrichtung-zeile { min-height: 2.35rem; padding-top: .35rem; padding-bottom: .35rem; }
+        .einrichtung-beschriftung { width: 6.5rem; flex: 0 0 6.5rem; }
+        @media (max-width: 520px) {
+            .einrichtung-beschriftung { width: 5rem; flex-basis: 5rem; }
+        }
+
         /* Rundenleiste: immer eine Zeile.
            Vorher brach sie bei knapper Fensterbreite um - erst rutschte der
            Antwortzähler in eine zweite Reihe, dann zerfielen die Knopfbeschriftungen
@@ -910,154 +920,147 @@
         <details id="setup-panel-details" class="mb-4 group" open>
             <summary class="list-none cursor-pointer flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-slate-200 transition-colors mb-2 select-none">
                 <i class="fa-solid fa-chevron-right transition-transform group-open:rotate-90"></i>
-                Einrichtung (Raum-Code, Sounds, Klasse) ein-/ausblenden
+                Einrichtung ein- und ausblenden (Raum &amp; Teams, Sitzung &amp; Einstellungen)
             </summary>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-            <!-- 1. LIVE-BUZZER & IPAD VERBINDUNG (LINKS) -->
-            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-2">
-                <h3 class="text-sm font-bold text-violet-400 flex items-center gap-2">
-                    <i class="fa-solid fa-wifi text-violet-400"></i> Raum-Manager
+            <!-- LINKS: alles, was mit dem Raum und den Teams zu tun hat -->
+            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 shadow-lg">
+                <h3 class="text-xs font-bold text-violet-400 flex items-center gap-2 mb-1">
+                    <i class="fa-solid fa-wifi"></i> Raum &amp; Teams
                 </h3>
-                
-                <div class="flex items-center gap-2">
-                    <div class="flex-grow">
-                        <div class="flex gap-1.5">
-                            <input 
-                                type="text" 
-                                id="room-code-input" oninput="this.value = normalisiereRaumCode(this.value)" 
-                                value="" 
-                                placeholder="Raum-Code (z.B. 7c oder greenboys)..." 
-                                maxlength="16"
-                                class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500 font-mono font-bold"
-                            >
-                            <button
-                                onclick="connectLiveRoom()"
-                                class="w-24 bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1 rounded-xl text-xs active:scale-95 transition-all flex items-center justify-center gap-1"
-                            >
-                                <i class="fa-solid fa-plug"></i> Starten
-                            </button>
-                        </div>
-                    </div>
+
+                <div class="einrichtung-zeile flex items-center gap-2">
+                    <span class="einrichtung-beschriftung text-[11px] text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-hashtag text-slate-400"></i> Raum-Code
+                    </span>
+                    <input
+                        type="text"
+                        id="room-code-input" oninput="this.value = normalisiereRaumCode(this.value)"
+                        value=""
+                        placeholder="z. B. 7c oder greenboys"
+                        maxlength="16"
+                        class="flex-grow bg-slate-900 border border-slate-700/60 text-slate-200 text-[11px] rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-violet-500 font-mono font-bold"
+                    >
+                    <button onclick="connectLiveRoom()"
+                            class="w-24 bg-violet-600 hover:bg-violet-500 text-white font-bold text-[11px] rounded-lg px-3 py-1 active:scale-95 transition-all">
+                        <i class="fa-solid fa-plug"></i> Starten
+                    </button>
                 </div>
 
-                <!-- Team manuell hinzufügen mit Enter-Taste -->
-                <div class="border-t border-slate-700/30 pt-1.5 mt-0.5">
-                    <form onsubmit="handleManualTeamAdd(event)" class="flex gap-1.5">
-                        <input
-                            type="text"
-                            id="manual-team-input"
-                            placeholder="Team hinzufügen (z.B. Kiwi)..."
-                            maxlength="12"
-                            class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
-                        >
-                        <button
-                            type="submit"
-                            class="w-24 bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1 rounded-xl text-xs active:scale-95 transition-all flex items-center justify-center"
-                        >
-                            <i class="fa-solid fa-plus"></i>
-                        </button>
-                    </form>
-                </div>
+                <form onsubmit="handleManualTeamAdd(event)" class="einrichtung-zeile flex items-center gap-2 border-t border-slate-700/40">
+                    <span class="einrichtung-beschriftung text-[11px] text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-plus text-slate-400"></i> Team
+                    </span>
+                    <input
+                        type="text"
+                        id="manual-team-input"
+                        placeholder="von Hand hinzufügen, z. B. Kiwi"
+                        maxlength="12"
+                        class="flex-grow bg-slate-900 border border-slate-700/60 text-slate-200 text-[11px] rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                    >
+                    <button type="submit"
+                            class="w-24 bg-violet-600 hover:bg-violet-500 text-white font-bold text-[11px] rounded-lg px-3 py-1 active:scale-95 transition-all">
+                        <i class="fa-solid fa-plus"></i> Eintragen
+                    </button>
+                </form>
 
-                <!-- Live Verbindung Status & QR Code Trigger -->
-                <div class="flex items-center justify-between gap-2 mt-1.5 pt-1.5 border-t border-slate-700/30">
-                    <div id="connection-status" class="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                <div class="einrichtung-zeile flex items-center gap-2 border-t border-slate-700/40">
+                    <span class="einrichtung-beschriftung text-[11px] text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-tower-broadcast text-slate-400"></i> Empfang
+                    </span>
+                    <div id="connection-status" class="flex-grow text-[10px] text-slate-400 font-semibold flex items-center gap-1.5">
                         <span class="h-2 w-2 rounded-full bg-rose-500"></span> Live-Empfang offline
                     </div>
-                    <button 
-                        onclick="toggleQRCodePanel()" 
-                        class="text-[10px] bg-slate-700/60 hover:bg-slate-700 text-slate-300 border border-slate-600/40 px-2 py-0.5 rounded-lg font-bold transition-all"
-                        id="qr-toggle-btn"
-                    >
-                        <i class="fa-solid fa-qrcode mr-1"></i> QR-Code zeigen 📱
+                    <button onclick="toggleQRCodePanel()" id="qr-toggle-btn"
+                            class="w-24 bg-slate-900 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold text-[11px] rounded-lg px-3 py-1 transition-all active:scale-95">
+                        <i class="fa-solid fa-qrcode"></i> QR-Code
                     </button>
                 </div>
             </div>
 
-            <!-- 2. EINSTELLUNGEN & KLASSEN-SPEICHER (RECHTS) -->
-            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 backdrop-blur-md shadow-lg flex flex-col justify-between gap-2 text-xs">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-slate-300 flex items-center gap-1">
+            <!-- RECHTS: alles, was die Sitzung und das Geraet betrifft -->
+            <div class="bg-slate-800/40 border border-slate-700/40 rounded-2xl p-4 shadow-lg">
+                <h3 class="text-xs font-bold text-violet-400 flex items-center gap-2 mb-1">
+                    <i class="fa-solid fa-sliders"></i> Sitzung &amp; Einstellungen
+                </h3>
+
+                <div class="einrichtung-zeile flex items-center gap-2">
+                    <span class="einrichtung-beschriftung text-[11px] text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk text-slate-400"></i> Sitzung
+                    </span>
+                    <select id="class-select" onchange="handleClassChange(event)"
+                            class="flex-grow bg-slate-900 border border-slate-700/60 text-slate-200 text-[11px] rounded-lg px-2 py-1 focus:outline-none">
+                        <option value="Standard-Sitzung">🔄 Neue Sitzung</option>
+                    </select>
+                    <button onclick="deleteCurrentClass()" title="Diese Sitzung mit allen Punkten löschen"
+                            class="w-24 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-900/40 text-rose-300 font-bold text-[11px] rounded-lg px-3 py-1 transition-all active:scale-95">
+                        <i class="fa-solid fa-trash-can"></i> Löschen
+                    </button>
+                </div>
+
+                <div class="einrichtung-zeile flex items-center gap-2 border-t border-slate-700/40">
+                    <span class="einrichtung-beschriftung text-[11px] text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-cloud text-slate-400"></i> Sicherung
+                    </span>
+                    <span id="cloud-sync-status" class="flex-grow text-[10px] text-slate-400 font-semibold">nicht verbunden</span>
+                    <button id="cloud-sync-btn" onclick="CloudTresor.menu()" title="Spielstände verschlüsselt in der Cloud sichern"
+                            class="w-24 bg-slate-900 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold text-[11px] rounded-lg px-3 py-1 transition-all active:scale-95">
+                        <i class="fa-solid fa-cloud"></i> Cloud
+                    </button>
+                </div>
+
+                <div class="einrichtung-zeile flex items-center gap-2 border-t border-slate-700/40">
+                    <span class="einrichtung-beschriftung text-[11px] text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-key text-slate-400"></i> Passwort
+                    </span>
+                    <div class="flex-grow relative flex items-center">
+                        <input
+                            type="password"
+                            id="change-password-input"
+                            placeholder="neues Lehrer-Passwort"
+                            class="w-full bg-slate-900 border border-slate-700/60 text-slate-200 text-[11px] rounded-lg px-2 py-1 pr-6 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        >
+                        <button type="button" onclick="togglePasswordVisibility('change-password-input', 'toggle-pw-icon')"
+                                title="Passwort anzeigen oder verbergen"
+                                class="absolute right-1 text-slate-400 hover:text-slate-200 text-[11px]">
+                            <i class="fa-solid fa-eye" id="toggle-pw-icon"></i>
+                        </button>
+                    </div>
+                    <button onclick="changeTeacherPassword()"
+                            class="w-24 bg-violet-600 hover:bg-violet-500 text-white font-bold text-[11px] rounded-lg px-3 py-1 active:scale-95 transition-all">
+                        <i class="fa-solid fa-check"></i> Sichern
+                    </button>
+                </div>
+
+                <div class="einrichtung-zeile flex items-center gap-2 border-t border-slate-700/40">
+                    <span class="einrichtung-beschriftung text-[11px] text-slate-300 flex items-center gap-1.5">
                         <i class="fa-solid fa-volume-high text-slate-400"></i> Sounds
                     </span>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="sound-toggle" checked class="sr-only peer" onchange="handleSoundToggle()">
                         <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
                     </label>
-                        <button onclick="testeTon()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded transition-all active:scale-95 ml-2" title="Ton neu aufbauen, abspielen und melden, woran es liegt">
-                            <i class="fa-solid fa-volume-high"></i> Ton testen
-                        </button>
+                    <span class="flex-grow"></span>
+                    <button onclick="testeTon()" title="Ton neu aufbauen, abspielen und melden, woran es liegt"
+                            class="w-24 bg-slate-900 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold text-[11px] rounded-lg px-3 py-1 transition-all active:scale-95">
+                        Ton testen
+                    </button>
                 </div>
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-slate-300 flex items-center gap-1">
-                        <i class="fa-solid fa-arrow-down-1-9 text-slate-400"></i> Auto-Sortierung
+
+                <div class="einrichtung-zeile flex items-center gap-2 border-t border-slate-700/40">
+                    <span class="einrichtung-beschriftung text-[11px] text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrow-down-1-9 text-slate-400"></i> Sortierung
                     </span>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="auto-sort-toggle" checked class="sr-only peer" onchange="handleAutoSortToggle()">
                         <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
                     </label>
-                </div>
-                
-                <!-- Klassen-Speicher (Dropdown, automatisch über Raum-Code) -->
-                <div class="border-t border-slate-700/40 pt-1.5 mt-0.5 space-y-1">
-                    <div class="flex items-center justify-between gap-1">
-                        <select id="class-select" onchange="handleClassChange(event)" class="bg-slate-900 border border-slate-700 text-slate-200 text-[11px] rounded-lg p-1 flex-grow focus:outline-none">
-                            <option value="Standard-Sitzung">🔄 Neue Sitzung</option>
-                        </select>
-                        <button onclick="deleteCurrentClass()" class="bg-rose-950/40 hover:bg-rose-900/60 border border-rose-900/40 text-rose-300 p-1 rounded-lg text-xs transition-all active:scale-95" title="Klasse löschen">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Cloud-Sicherung: verschlüsselte Kopie der Klassen, falls der Browser sie verliert -->
-                <div class="border-t border-slate-700/40 pt-1.5 space-y-1">
-                    <div class="grid grid-cols-2 gap-1.5 items-center">
-                        <button id="cloud-sync-btn" onclick="CloudTresor.menu()" class="bg-slate-900/60 hover:bg-slate-900 border border-slate-700/50 text-slate-300 font-bold py-1 rounded-lg text-[10px] transition-all font-sans" title="Spielstände verschlüsselt in der Cloud sichern">
-                            <i class="fa-solid fa-cloud"></i> Cloud-Sicherung
-                        </button>
-                        <span id="cloud-sync-status" class="text-slate-500 text-[10px] text-center font-sans">nicht verbunden</span>
-                    </div>
-                </div>
-
-                <!-- Passwort ändern Bereich -->
-                <div class="border-t border-slate-700/40 pt-1.5 space-y-1">
-                    <div class="flex gap-1.5 items-center justify-between font-medium">
-                        <span class="text-slate-400 text-[10px]"><i class="fa-solid fa-key text-violet-400"></i> Lehrer-Passwort:</span>
-                        <div class="flex gap-1">
-                            <div class="relative flex items-center">
-                                <input 
-                                    type="password" 
-                                    id="change-password-input"
-                                    placeholder="Neu..." 
-                                    class="w-24 bg-slate-900/60 border border-slate-700/50 text-slate-200 text-[10px] rounded pl-1.5 pr-6 py-0.5 focus:outline-none"
-                                >
-                                <button 
-                                    type="button" 
-                                    onclick="togglePasswordVisibility('change-password-input', 'toggle-pw-icon')" 
-                                    class="absolute right-1 text-slate-500 hover:text-slate-300 text-[10px] p-0.5"
-                                    title="Passwort anzeigen/verbergen"
-                                >
-                                    <i class="fa-solid fa-eye" id="toggle-pw-icon"></i>
-                                </button>
-                            </div>
-                            <button onclick="changeTeacherPassword()" class="bg-violet-600 hover:bg-violet-500 text-white font-bold px-2 py-0.5 rounded text-[10px] active:scale-95 transition-all">
-                                Sichern
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Reset, Finale & Export -->
-                <div class="flex flex-col gap-1 mt-1 pt-1 border-t border-slate-700/40 font-bold">
-                    <!-- "Neue Sitzung" steckt jetzt im Klassen-Dropdown - zwei Knöpfe für
-                         dieselbe Sache waren nur verwirrend. -->
-                    <div class="grid grid-cols-1 gap-1.5">
-                        <button onclick="triggerWinConfetti()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-1 rounded-lg text-[10px] transition-all shadow-md">
-                            <i class="fa-solid fa-crown"></i> Finale 🏆
-                        </button>
-                    </div>
+                    <span class="flex-grow text-[10px] text-slate-400">nach Punkten, sonst alphabetisch</span>
+                    <button onclick="triggerWinConfetti()" title="Konfetti für die Siegerehrung"
+                            class="w-24 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] rounded-lg px-3 py-1 transition-all active:scale-95">
+                        <i class="fa-solid fa-crown"></i> Finale
+                    </button>
                 </div>
             </div>
             </div>
