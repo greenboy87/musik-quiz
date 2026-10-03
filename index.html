@@ -17,10 +17,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Lokale QR-Code-Bibliothek (kein externer Dienst nötig - funktioniert auch bei striktem Schul-WLAN) -->
     <script src="qrcode.min.js"></script>
-    <!-- Google Fonts: Comfortaa & DM Sans -->
+    <!-- Google Fonts: Comfortaa & DM Sans, Russo One fuer die Spielbuehne -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=DM+Sans:wght@400;500;700&family=Russo+One&display=swap" rel="stylesheet">
 
     <style>
         body {
@@ -191,76 +191,192 @@
         #live-warning.sichtbar { display: inline-flex; }
 
         /* ============================================================ */
-        /* REAKTIONSSPIEL - Buehne fuer Beamer und iPad                  */
-        /* Rot und Gruen tragen hier die Spielregel, deshalb stehen die  */
-        /* Farben fest und kommen nicht aus den Theme-Klassen.           */
+        /* REAKTIONSSPIEL - Buehne fuer Beamer und Schuelergeraet         */
+        /* Bewusst laut: Neongitter, Leuchtschrift, harte Einfluege. Die   */
+        /* Buehne soll aussehen wie ein Spiel und nicht wie eine Folie.    */
+        /* Rot und Gruen tragen hier die Spielregel, deshalb stehen diese  */
+        /* beiden Farben fest und kommen nicht aus den Theme-Klassen -     */
+        /* im hellen Theme waere sonst die Regel selbst verfaelscht.       */
         /* ============================================================ */
         .minispiel-buehne {
             position: fixed; inset: 0; z-index: 60;
             display: none; flex-direction: column;
-            align-items: center; justify-content: center; gap: 1.2rem;
-            text-align: center; padding: 2rem;
-            font-family: inherit; color: #f8fafc;
-            background: #0b1120;
+            align-items: center; justify-content: center; gap: 1.1rem;
+            text-align: center; padding: 2rem; overflow: hidden;
+            color: #f8fafc;
+            /* Russo One traegt die Arcade-Anmutung; faellt sie aus (Schul-WLAN),
+               uebernimmt Comfortaa und es sieht nur ruhiger aus, nicht kaputt. */
+            font-family: 'Russo One', 'Comfortaa', sans-serif;
+            background: radial-gradient(circle at 50% 36%, #24315c 0%, #0e1230 52%, #05060f 100%);
         }
         .minispiel-buehne.sichtbar { display: flex; }
-        .minispiel-buehne.rot   { background: #7f1d1d; }
-        .minispiel-buehne.gruen { background: #047857; }
-        .minispiel-buehne .gross {
-            font-size: min(14vw, 150px); font-weight: 900; line-height: 1;
-            letter-spacing: -0.02em;
+        /* Auf dem Schuelergeraet ist der Schirm schmal - dort zaehlt jeder Punkt Breite. */
+        @media (max-width: 640px) {
+            .minispiel-buehne { padding: 1rem; gap: .8rem; }
+            .minispiel-buehne .gross { font-size: min(20vw, 165px); }
+            .minispiel-buehne .mittel { font-size: min(7vw, 42px); }
+            .minispiel-buehne .klein { font-size: min(3.6vw, 20px); }
+            .minispiel-titel { font-size: min(7.5vw, 46px); }
+            .minispiel-regel { font-size: min(4.6vw, 29px); width: 100%; }
+            .minispiel-rang { font-size: min(4.4vw, 28px); width: 100%; }
+            .minispiel-knopf { font-size: min(3.4vw, 17px); }
         }
-        .minispiel-buehne .mittel { font-size: min(5vw, 44px); font-weight: 800; }
-        .minispiel-buehne .klein  { font-size: min(2.6vw, 22px); font-weight: 600; opacity: .85; }
 
-        /* Regeln: Zeile fuer Zeile einblenden, damit man beim Vorlesen mitkommt */
+        /* Zwei Lagen hinter dem Inhalt, ohne zusaetzliches Markup:
+           ::before ist das wandernde Neongitter, ::after die dunkle Ecke. */
+        .minispiel-buehne::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background:
+                repeating-linear-gradient(0deg,  rgba(125,211,252,.10) 0 1px, transparent 1px 48px),
+                repeating-linear-gradient(90deg, rgba(125,211,252,.10) 0 1px, transparent 1px 48px);
+            animation: gitterZug 3s linear infinite;
+        }
+        .minispiel-buehne::after {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            box-shadow: inset 0 0 min(26vw, 280px) rgba(0,0,0,.7);
+        }
+        .minispiel-buehne > * { position: relative; z-index: 1; }
+        @keyframes gitterZug { to { background-position: 0 48px, 48px 0; } }
+
+        .minispiel-buehne.rot {
+            background: radial-gradient(circle at 50% 40%, #b91c1c 0%, #7f1d1d 45%, #350606 100%);
+            animation: rotPuls 1.3s ease-in-out infinite;
+        }
+        .minispiel-buehne.rot::before { background-image:
+            repeating-linear-gradient(0deg,  rgba(255,255,255,.07) 0 1px, transparent 1px 48px),
+            repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 1px, transparent 1px 48px); }
+        .minispiel-buehne.gruen {
+            background: radial-gradient(circle at 50% 40%, #22c55e 0%, #047857 45%, #022c22 100%);
+            animation: gruenKnall .55s ease-out;
+        }
+        /* Der Puls macht die Wartezeit spuerbar; der Knall ist der Startschuss. */
+        @keyframes rotPuls   { 0%, 100% { filter: brightness(.86); } 50% { filter: brightness(1.14); } }
+        @keyframes gruenKnall { 0% { filter: brightness(2.6) saturate(.4); } 100% { filter: none; } }
+
+        .minispiel-buehne .gross {
+            /* Kein text-transform: Die Sekundenzahl auf dem Schuelergeraet steht
+               auch hier drin, und aus "0,44 s" wurde dadurch "0,44 S". */
+            font-size: min(15vw, 165px); font-weight: 900; line-height: .95;
+            letter-spacing: .02em;
+            text-shadow: 0 0 20px rgba(255,255,255,.5), 0 0 70px rgba(255,255,255,.28),
+                         0 10px 30px rgba(0,0,0,.6);
+            animation: knall .45s cubic-bezier(.2, 1.5, .35, 1) both;
+        }
+        @keyframes knall {
+            0%   { transform: scale(.55); opacity: 0; }
+            60%  { transform: scale(1.09); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+        .minispiel-buehne .mittel {
+            font-size: min(5vw, 42px); font-weight: 800; letter-spacing: .04em;
+            text-shadow: 0 0 24px rgba(255,255,255,.35);
+        }
+        .minispiel-buehne .klein {
+            font-size: min(2.6vw, 20px); font-weight: 600; opacity: .8;
+            letter-spacing: .08em; text-transform: uppercase;
+        }
+        /* Titelzeile der Bühne: Leuchtschrift in Spielfarben */
+        .minispiel-titel {
+            font-size: min(5.4vw, 46px); letter-spacing: .1em; text-transform: uppercase;
+            color: #7dd3fc;
+            text-shadow: 0 0 14px rgba(56,189,248,.9), 0 0 48px rgba(56,189,248,.5);
+            animation: titelRein .5s ease-out both;
+        }
+        @keyframes titelRein { from { opacity: 0; transform: translateY(-14px); } }
+
+        /* Regeln: Zeile fuer Zeile einfliegen, damit man beim Vorlesen mitkommt */
         .minispiel-regel {
-            opacity: 0; transform: translateY(14px);
-            animation: regelRein .5s ease-out forwards;
-            display: flex; align-items: center; gap: .8rem;
-            font-size: min(3.6vw, 32px); font-weight: 700;
+            opacity: 0; transform: translateX(-34px);
+            animation: regelRein .5s cubic-bezier(.2, .9, .3, 1.25) forwards;
+            display: flex; align-items: center; gap: .9rem; text-align: left;
+            font-size: min(3.3vw, 29px); letter-spacing: .01em;
+            width: min(78vw, 700px); max-width: 100%; box-sizing: border-box;
+            padding: .6rem 1.4rem .6rem .8rem;
+            border-left: 5px solid #38bdf8;
+            border-radius: 0 14px 14px 0;
+            background: linear-gradient(90deg, rgba(56,189,248,.22), rgba(56,189,248,0));
         }
         .minispiel-regel .nummer {
-            width: 2.2em; height: 2.2em; flex: 0 0 auto;
+            width: 2.1em; height: 2.1em; flex: 0 0 auto;
             display: flex; align-items: center; justify-content: center;
-            border-radius: 999px; background: rgba(255,255,255,.12);
-            font-size: .62em; font-weight: 900;
+            border-radius: 10px; background: #38bdf8; color: #052f45;
+            font-size: .66em; font-weight: 900;
+            box-shadow: 0 0 20px rgba(56,189,248,.7);
         }
-        @keyframes regelRein {
-            to { opacity: 1; transform: translateY(0); }
+        /* Die Fehlstart-Regel ist eine Warnung und sieht auch so aus */
+        .minispiel-regel.warnung {
+            border-left-color: #f43f5e;
+            background: linear-gradient(90deg, rgba(244,63,94,.24), rgba(244,63,94,0));
         }
-        @media (prefers-reduced-motion: reduce) {
-            .minispiel-regel { animation: none; opacity: 1; transform: none; }
+        .minispiel-regel.warnung .nummer {
+            background: #f43f5e; color: #3f0713; box-shadow: 0 0 20px rgba(244,63,94,.75);
         }
+        @keyframes regelRein { to { opacity: 1; transform: translateX(0); } }
+        @keyframes rangRein  { to { opacity: 1; transform: translateY(0); } }
 
         /* Bedienung auf der Buehne: Sie deckt alles ab, also gehoeren die Knoepfe
-           hierher und nicht in die Leiste darunter. */
-        .minispiel-knopfreihe { display: flex; flex-wrap: wrap; gap: .8rem; justify-content: center; margin-top: 1rem; }
+           hierher und nicht in die Leiste darunter. Arcade-Knoepfe mit Sockel:
+           Der Druck ist sichtbar, das hilft am Beamer. */
+        .minispiel-knopfreihe { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-top: 1.2rem; }
         .minispiel-knopf {
-            font-size: min(2.2vw, 18px); font-weight: 800;
-            padding: .7rem 1.4rem; border-radius: 12px; cursor: pointer;
-            background: rgba(255,255,255,.14); color: #f8fafc; border: 1px solid rgba(255,255,255,.25);
+            font-family: inherit; font-size: min(2.1vw, 17px); font-weight: 800;
+            text-transform: uppercase; letter-spacing: .06em;
+            padding: .8rem 1.6rem; border-radius: 12px; cursor: pointer;
+            background: rgba(255,255,255,.12); color: #f8fafc;
+            border: 2px solid rgba(255,255,255,.32);
+            box-shadow: 0 5px 0 rgba(0,0,0,.4);
+            transition: transform .08s ease, background .15s ease;
         }
-        .minispiel-knopf:hover { background: rgba(255,255,255,.24); }
-        .minispiel-knopf.gruen-knopf { background: #059669; border-color: #10b981; }
+        .minispiel-knopf:hover { background: rgba(255,255,255,.22); }
+        .minispiel-knopf:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+        .minispiel-knopf.gruen-knopf {
+            background: #059669; border-color: #34d399;
+            box-shadow: 0 5px 0 #064e3b, 0 0 30px rgba(16,185,129,.45);
+        }
         .minispiel-knopf.gruen-knopf:hover { background: #10b981; }
+        .minispiel-knopf.gruen-knopf:active { box-shadow: 0 1px 0 #064e3b, 0 0 30px rgba(16,185,129,.45); }
         .minispiel-abbruch {
-            position: absolute; top: 1.2rem; right: 1.6rem;
+            position: absolute; top: 1.2rem; right: 1.6rem; z-index: 2;
             font-size: min(3vw, 26px); line-height: 1; cursor: pointer;
             background: none; border: none; color: rgba(255,255,255,.55);
         }
         .minispiel-abbruch:hover { color: #fff; }
 
-        /* Rangliste nach dem Spiel */
+        /* Rangliste nach dem Spiel: Siegerliste mit Medaillenfarben */
         .minispiel-rang {
-            display: flex; align-items: center; gap: 1rem;
-            font-size: min(3.4vw, 30px); font-weight: 800;
-            background: rgba(255,255,255,.08); border-radius: 14px;
-            padding: .5rem 1.2rem; min-width: min(60vw, 520px);
+            display: flex; align-items: center; gap: 1rem; text-align: left;
+            font-size: min(3.2vw, 28px); font-weight: 800;
+            background: linear-gradient(90deg, rgba(255,255,255,.14), rgba(255,255,255,.03));
+            border-left: 5px solid rgba(255,255,255,.3);
+            border-radius: 0 14px 14px 0;
+            padding: .55rem 1.3rem; box-sizing: border-box;
+            width: min(68vw, 560px); max-width: 100%;
+            opacity: 0; transform: translateY(18px);
+            animation: rangRein .45s ease-out forwards;
         }
-        .minispiel-rang .platz { font-size: 1.3em; width: 1.6em; text-align: center; }
-        .minispiel-rang .zeit { margin-left: auto; font-variant-numeric: tabular-nums; opacity: .9; }
-        .minispiel-rang.fehlstart { opacity: .55; }
+        .minispiel-rang .platz { font-size: 1.35em; width: 1.7em; text-align: center; }
+        .minispiel-rang .zeit {
+            margin-left: auto; font-variant-numeric: tabular-nums;
+            font-size: .8em; opacity: .85; letter-spacing: .04em;
+        }
+        .minispiel-rang .punkte {
+            font-size: .8em; padding: .15em .7em; border-radius: 999px;
+            background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.3);
+        }
+        .minispiel-rang.platz1 { border-left-color: #fbbf24; box-shadow: 0 0 34px rgba(251,191,36,.3); }
+        .minispiel-rang.platz1 .punkte { background: #fbbf24; color: #432004; border-color: #fde68a; }
+        .minispiel-rang.platz2 { border-left-color: #cbd5e1; }
+        .minispiel-rang.platz2 .punkte { background: #cbd5e1; color: #1e293b; border-color: #f1f5f9; }
+        .minispiel-rang.platz3 { border-left-color: #f0a46b; }
+        .minispiel-rang.platz3 .punkte { background: #f0a46b; color: #432004; border-color: #fed7aa; }
+        .minispiel-rang.fehlstart { opacity: .5; border-left-color: #f43f5e; }
+
+        /* Wer es nicht mag oder nicht verträgt, bekommt dieselbe Bühne still. */
+        @media (prefers-reduced-motion: reduce) {
+            .minispiel-buehne, .minispiel-buehne.rot, .minispiel-buehne.gruen,
+            .minispiel-buehne::before, .minispiel-buehne .gross, .minispiel-titel { animation: none; }
+            .minispiel-regel, .minispiel-rang { animation: none; opacity: 1; transform: none; }
+        }
 
         /* Einrichtungsbereich: zwei Karten, ein Raster. Jede Zeile gleich hoch, die
            Beschriftungen gleich breit - dadurch stehen die Bedienelemente in beiden
@@ -567,8 +683,8 @@
         <span class="zahl" id="timer-big-number">30</span><span class="einheit">s</span>
     </div>
 
-    <!-- Reaktionsspiel: dieselbe Buehne auf dem Beamer wie auf dem iPad.
-         Auf dem iPad ist sie zugleich der Buzzer - ein Tipper irgendwo zaehlt. -->
+    <!-- Reaktionsspiel: dieselbe Buehne auf dem Beamer wie auf dem Schuelergeraet.
+         Dort ist sie zugleich der Buzzer - ein Tipper irgendwo auf ihr zaehlt. -->
     <div id="minispiel-buehne" class="minispiel-buehne" onclick="minispielTipp()"></div>
 
     <div id="timer-countdown-overlay" class="fixed inset-0 flex items-center justify-center pointer-events-none z-40 hidden">
@@ -2095,25 +2211,36 @@
                     <div class="klein">Wer zu früh tippt, ist raus.</div>`;
             } else if (minispiel.phase === 'gruen') {
                 const dabei = Object.keys(minispiel.zeiten).length;
+                const text = `${dabei} ${dabei === 1 ? 'Team hat' : 'Teams haben'} getippt`;
+                /* Jeder Tipper ruft diese Funktion erneut auf. Wuerde dabei das ganze
+                   Bild neu gebaut, huepfte das "JETZT!" bei jedem Tipper noch einmal
+                   an - also nur den Zaehler nachtragen, solange das Bild schon steht. */
+                const zaehler = b.querySelector('.minispiel-zaehler');
+                if (zaehler) { zaehler.textContent = text; return; }
                 b.innerHTML = abbruch + `<div class="gross">JETZT!</div>
                     <div class="mittel">Tippen!</div>
-                    <div class="klein">${dabei} ${dabei === 1 ? 'Team hat' : 'Teams haben'} getippt</div>`;
+                    <div class="klein minispiel-zaehler">${text}</div>`;
             } else {
                 const liste = minispielRangliste();
                 const zeilen = liste.length
                     ? liste.map((e, i) => {
                         const punkte = e.ms >= 0 && i < MINISPIEL_PUNKTE.length ? MINISPIEL_PUNKTE[i] : 0;
-                        return `<div class="minispiel-rang${e.ms < 0 ? ' fehlstart' : ''}">
-                            <span class="platz">${e.ms < 0 ? '–' : (i + 1) + '.'}</span>
+                        /* Medaillen nur fuer die drei, die auch Punkte holen. Der Einflug
+                           kommt zeilenweise, damit die Siegerliste Spannung behaelt. */
+                        const art = e.ms < 0 ? ' fehlstart' : punkte ? ' platz' + (i + 1) : '';
+                        const zeichen = e.ms < 0 ? '–' : ['🥇', '🥈', '🥉'][i] || (i + 1) + '.';
+                        return `<div class="minispiel-rang${art}" style="animation-delay: ${(i * 0.18).toFixed(2)}s">
+                            <span class="platz">${zeichen}</span>
                             <span>${escapeHtml(e.team)}</span>
-                            <span class="zeit">${e.ms < 0 ? 'Fehlstart' : (e.ms / 1000).toFixed(2).replace('.', ',') + ' s'}${punkte ? ' · +' + punkte : ''}</span>
+                            <span class="zeit">${e.ms < 0 ? 'Fehlstart' : (e.ms / 1000).toFixed(2).replace('.', ',') + ' s'}</span>
+                            ${punkte ? `<span class="punkte">+${punkte}</span>` : ''}
                         </div>`;
                     }).join('')
                     : `<div class="mittel">Niemand hat getippt.</div>`;
                 /* Die Buehne deckt die ganze Seite ab - die Rundenleiste liegt darunter.
                    Deshalb muessen die zwei Knoepfe hier stehen, sonst kommt man nach
                    dem Spiel nicht mehr heraus. */
-                b.innerHTML = `<div class="mittel">⚡ Ergebnis</div>${zeilen}
+                b.innerHTML = `<div class="minispiel-titel">🏆 Ergebnis</div>${zeilen}
                     <div class="minispiel-knopfreihe">
                         <button type="button" onclick="event.stopPropagation(); minispielPunkteVergeben();"
                                 class="minispiel-knopf gruen-knopf">Punkte vergeben (3 · 2 · 1)</button>
@@ -2127,14 +2254,14 @@
         function minispielRegelnHtml() {
             /* Die Verzoegerung steht an der Zeile selbst: Ueber nth-child zaehlte die
                Ueberschrift mit, und die letzte Regel erschien zuerst. */
-            const regel = (nr, text, verzug) =>
-                `<div class="minispiel-regel" style="animation-delay: ${verzug}s">` +
+            const regel = (nr, text, verzug, art = '') =>
+                `<div class="minispiel-regel ${art}" style="animation-delay: ${verzug}s">` +
                 `<span class="nummer">${nr}</span> ${text}</div>`;
-            return `<div class="mittel">⚡ Reaktionsspiel</div>` +
-                regel('1', 'Schau auf dein iPad', 0.2) +
+            return `<div class="minispiel-titel">⚡ Reaktionsspiel</div>` +
+                regel('1', 'Schau auf dein Gerät', 0.2) +
                 regel('2', 'Rot heißt warten', 1.1) +
                 regel('3', 'Grün heißt sofort tippen', 2.0) +
-                regel('!', 'Zu früh getippt – raus für diese Runde', 2.9) +
+                regel('!', 'Zu früh getippt – raus für diese Runde', 2.9, 'warnung') +
                 `<div class="klein">Die schnellsten drei bekommen 3 · 2 · 1 Punkte</div>`;
         }
 
@@ -2204,7 +2331,7 @@
             if (zustand.phase === 'regeln') b.innerHTML = minispielRegelnHtml();
             else if (zustand.phase === 'rot') b.innerHTML = `<div class="gross">WARTEN</div><div class="mittel">Noch nicht tippen!</div>`;
             else if (zustand.phase === 'gruen') b.innerHTML = `<div class="gross">TIPPEN!</div>`;
-            else b.innerHTML = `<div class="mittel">⚡ Vorbei</div><div class="klein">Schau auf die Leinwand.</div>`;
+            else b.innerHTML = `<div class="minispiel-titel">⚡ Vorbei</div><div class="klein">Schau auf die Leinwand.</div>`;
         }
 
         /* Ein Tipper auf dem iPad. Vor Gruen ist es ein Fehlstart. */
