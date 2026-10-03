@@ -372,6 +372,10 @@
         }
         .avo-taste:hover { background: rgba(255,255,255,.22); }
         .avo-taste:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+        /* Der fluechtige Knopf springt zur Seite, statt sich druecken zu lassen.
+           transform statt Abstand: So verrutscht die Reihe nicht mit. */
+        .avo-taste { transition: transform .16s cubic-bezier(.2,1.4,.4,1), background .15s ease; }
+        .avo-taste.weg { transform: translateY(var(--weg, -70px)); }
         .avo-taste.richtig { background: #059669; border-color: #34d399; box-shadow: 0 5px 0 #064e3b; }
         .avo-taste.falsch { background: #9f1239; border-color: #fb7185; box-shadow: 0 5px 0 #4c0519; animation: tasteZittern .3s ease-in-out; }
         @media (max-width: 640px) {
@@ -2637,7 +2641,8 @@
                     ['1', 'Eine Form erscheint - Avocado oder Note?', ''],
                     ['2', 'Tippe, was du siehst', ''],
                     ['3', 'Die Knöpfe tauschen gern die Plätze', ''],
-                    ['?', 'Manchmal steht zweimal dasselbe - dann stimmt es auch', 'warnung']
+                    ['?', 'Manchmal steht zweimal dasselbe - dann stimmt es auch', 'warnung'],
+                    ['!', 'Springt ein Knopf weg: nochmal drauf', 'warnung']
                 ],
                 feld: (behaelter, dauer, senden) => avocadoFeldAufbauen(behaelter, dauer, senden)
             },
@@ -3438,12 +3443,21 @@
             }
 
             function naechsteFrage() {
+                /* Die Stufe waechst mit der Spielzeit von 0 auf 1 und steuert alles,
+                   was Unfug anrichtet: Groesse, Ort, Lage, wie aehnlich sich die
+                   Formen sehen, wie oft zwei gleiche Knoepfe kommen und wie oft einer
+                   wegspringt. Anfangs ist es harmlos, am Ende Chaos - und weil alles
+                   gewuerfelt wird, laeuft keine Runde wie die vorige. */
+                const stufe = Math.min(1, Math.max(0, 1 - (S.ende - performance.now()) / dauer));
+                const streuung = (mitte, spanne) => mitte + (Math.random() - 0.5) * spanne;
+
                 const istAvocado = Math.random() < 0.5;
                 const loesung = istAvocado ? 'Avocado' : 'Note';
-                /* In einem von vier Faellen steht auf beiden Knoepfen dasselbe - und
-                   dann ist es immer die richtige Antwort. Niemals zweimal die
-                   falsche: Sonst koennte man nicht gewinnen, und der Spass waere weg. */
-                const doppelt = Math.random() < 0.25;
+                /* Je weiter das Spiel, desto haeufiger steht auf beiden Knoepfen
+                   dasselbe - und dann ist es immer die richtige Antwort. Niemals
+                   zweimal die falsche: Sonst koennte man nicht gewinnen, und der
+                   Spass waere weg. */
+                const doppelt = Math.random() < 0.15 + stufe * 0.2;
                 const andere = istAvocado ? 'Note' : 'Avocado';
                 const paar = doppelt ? [loesung, loesung]
                                      : (Math.random() < 0.5 ? [loesung, andere] : [andere, loesung]);
@@ -3451,34 +3465,61 @@
                     avocado: istAvocado,
                     loesung: loesung,
                     paar: paar,
-                    groesse: 0.12 + Math.pow(Math.random(), 1.4) * 1.1,   // von fast nichts bis bildfuellend
-                    /* Meistens nur leicht gekippt, in jedem vierten Fall voellig
-                       beliebig - auf dem Kopf stehend ist beides noch schwerer
-                       auseinanderzuhalten, und darum geht es hier. */
-                    neigung: Math.random() < 0.25
+                    // Anfangs handliche Formen, spaeter von winzig bis bildfuellend
+                    groesse: Math.min(1.25, Math.max(0.12, streuung(0.62, 0.45 + stufe * 1.5))),
+                    // Erst leicht gekippt, dann immer oefter voellig beliebig
+                    neigung: Math.random() < 0.05 + stufe * 0.35
                         ? Math.random() * Math.PI * 2
-                        : (Math.random() - 0.5) * 1.1,
-                    // Die Form steht irgendwo auf dem Blatt, nicht brav in der Mitte
-                    px: Math.random(), py: Math.random(),
+                        : streuung(0, 0.4 + stufe * 1.1),
+                    // Erst nahe der Mitte, spaeter irgendwo auf dem Blatt
+                    px: Math.min(1, Math.max(0, streuung(0.5, 0.3 + stufe * 0.9))),
+                    py: Math.min(1, Math.max(0, streuung(0.5, 0.3 + stufe * 0.9))),
                     tinte: AVO_TINTEN[Math.floor(Math.random() * AVO_TINTEN.length)],
-                    schlank: 0.7 + Math.random() * 0.65,          // mal gedrungen, mal lang
-                    /* Die beiden Zufallszahlen machen die Grenzfaelle: eine Avocado
-                       fast ohne Taille sieht aus wie ein dicker Notenkopf, und ein
-                       Notenkopf mit kurzem Hals wie eine Avocado. */
-                    taille: Math.random(),
-                    stiel: Math.random()
+                    schlank: streuung(1, 0.3 + stufe * 0.6),
+                    /* Hier entscheidet sich, wie gemein die Form ist. Der klare Fall
+                       sieht aus wie aus dem Bilderbuch, der Grenzfall wie das jeweils
+                       andere: eine Avocado fast ohne Taille ist ein dicker Notenkopf,
+                       ein Notenkopf mit kurzem Hals eine kleine Avocado. Mit der
+                       Stufe steigt die Wahrscheinlichkeit fuer den Grenzfall. */
+                    ...(() => {
+                        const gemein = Math.random() < 0.1 + stufe * 0.7;
+                        if (istAvocado) {
+                            return gemein ? { taille: Math.random() * 0.22, stiel: Math.random() * 0.45 }
+                                          : { taille: 0.55 + Math.random() * 0.45, stiel: Math.random() };
+                        }
+                        return gemein ? { taille: 0.6 + Math.random() * 0.4, stiel: Math.random() * 0.3 }
+                                      : { taille: Math.random() * 0.4, stiel: 0.5 + Math.random() * 0.5 };
+                    })()
                 };
                 S.antwort = 0;
                 S.richtig = false;
+                /* In einem von vier Faellen ist ein Knopf scheu: Der erste Tipper
+                   laesst ihn wegspringen und zaehlt nicht, erst der zweite gilt.
+                   Welcher es ist, sieht man ihm vorher nicht an. */
+                const scheu = Math.random() < 0.05 + stufe * 0.35 ? Math.floor(Math.random() * 2) : -1;
+                const richtung = Math.random() < 0.5 ? -1 : 1;
                 tasten.forEach((t, i) => {
                     t.textContent = paar[i];
                     t.className = 'avo-taste';
+                    t.style.removeProperty('--weg');
+                    t.dataset.scheu = i === scheu ? '1' : '';
+                    /* Nach unten darf er weiter springen als nach oben - oben liegt
+                       das Blatt mit der Form, die man ja noch sehen will. */
+                    t.dataset.sprung = richtung < 0 ? -(42 + Math.floor(Math.random() * 20))
+                                                    : (62 + Math.floor(Math.random() * 30));
                     t.onclick = (e) => { e.stopPropagation(); raten(paar[i], t); };
                 });
             }
 
             function raten(name, taste) {
                 if (!S.lauf || !S.frage || S.antwort) return;
+                if (taste.dataset.scheu === '1') {
+                    // Entwischt - der Tipper zaehlt nicht, der Knopf steht jetzt woanders
+                    taste.dataset.scheu = '';
+                    taste.style.setProperty('--weg', taste.dataset.sprung + 'px');
+                    taste.classList.add('weg');
+                    return;
+                }
                 S.richtig = name === S.frage.loesung;
                 S.antwort = performance.now();
                 S.extra++;
