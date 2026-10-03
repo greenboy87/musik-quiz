@@ -441,6 +441,46 @@
         .rhy-aktiv { animation: rhyPuls 1.5s ease-out infinite; }
         @media (prefers-reduced-motion: reduce) { .rhy-aktiv { animation: none; } }
 
+        /* Schere, Note, Notenpapier */
+        .snp-paare { display: flex; flex-direction: column; gap: .3rem; margin-top: .5rem; }
+        .snp-paar {
+            display: flex; align-items: center; gap: .6rem; justify-content: center;
+            font-size: min(2.6vw, 22px); font-weight: 800;
+            background: rgba(255,255,255,.08); border-radius: 10px; padding: .25rem 1rem;
+        }
+        .snp-paar .gegen { font-size: .7em; opacity: .6; }
+        .snp-wahlreihe { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
+        .snp-knopf {
+            font-family: inherit; cursor: pointer; color: #f8fafc;
+            display: flex; flex-direction: column; align-items: center; gap: .3rem;
+            padding: 1rem 1.3rem; border-radius: 18px;
+            background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.3);
+            box-shadow: 0 5px 0 rgba(0,0,0,.4);
+            font-size: min(14vw, 64px); line-height: 1;
+        }
+        .snp-knopf:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+        .snp-knopf .wort { font-size: .28em; font-weight: 800; letter-spacing: .04em; }
+        /* Aufdeckung: jedes Duell kippt einzeln herein */
+        .snp-duell {
+            display: flex; align-items: center; justify-content: center; gap: .7rem;
+            font-size: min(3vw, 26px); font-weight: 800;
+            background: rgba(255,255,255,.07); border-radius: 14px;
+            padding: .4rem 1rem; min-width: min(70vw, 620px);
+            opacity: 0; transform: translateY(16px) rotateX(70deg);
+            animation: snpAuf .55s cubic-bezier(.2,1.3,.4,1) forwards;
+        }
+        @keyframes snpAuf { to { opacity: 1; transform: none; } }
+        .snp-zeichen { font-size: 1.8em; line-height: 1; }
+        .snp-name { min-width: 7em; text-align: center; opacity: .75; }
+        .snp-name.sieger {
+            opacity: 1; color: #fbbf24;
+            text-shadow: 0 0 18px rgba(251,191,36,.8);
+        }
+        .snp-mitte { opacity: .5; }
+        @media (prefers-reduced-motion: reduce) {
+            .snp-duell { animation: none; opacity: 1; transform: none; }
+        }
+
         /* Metronom im Rhythmus-Fenster */
         .metro-puls { display: flex; gap: .4rem; align-items: center; }
         .metro-punkt {
@@ -2555,6 +2595,11 @@
                     gestartet: spielLaeuft,
                     minispiel: minispiel ? { id: minispiel.id, phase: minispiel.phase } : null,
                     sammel: sammelspiel ? { art: sammelspiel.art, id: sammelspiel.id, phase: sammelspiel.phase } : null,
+                    /* Beim Gegnersuchen brauchen die Geraete die Teamnamen, beim Ziehen
+                       die Paare - mehr nicht. Die Zuege bleiben beim Schiedsrichter. */
+                    snp: snp ? { id: snp.id, phase: snp.phase,
+                                 namen: snp.phase === 'wahl' ? snp.namen : null,
+                                 paare: snp.phase === 'zug' ? snp.paare : null } : null,
                     // Nur Taktlaenge und erlaubte Bausteine - die Loesung bleibt hier
                     rhythmus: rhythmusRunde ? { soll: rhythmusRunde.soll, werte: rhythmusRunde.werte } : null,
                     songabgabe: songabgabeAn
@@ -2658,6 +2703,7 @@
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return;
             if (minispiel) beendeMinispiel();
+            if (snp) beendeSchereNote();
             /* Auch die Auswahl und das Glücksrad liegen auf dieser Buehne, ohne dass
                ein Spiel laeuft - Esc muss auch die wieder wegraeumen. */
             const buehne = getEl('sammel-buehne');
@@ -2856,6 +2902,335 @@
         }
 
         /* ============================================================ */
+        /* SCHERE - NOTE - NOTENPAPIER                                   */
+        /* Erst die Regeln, dann sucht sich jedes Team einen Gegner,     */
+        /* dann waehlen beide ihr Zeichen, dann wird aufgedeckt. Wer     */
+        /* niemanden findet - oder uebrig bleibt, weil die Zahl der      */
+        /* Teams ungerade ist - spielt gegen den Rechner.                */
+        /* Schiedsrichter ist das Lehrergeraet: Es bildet die Paare und  */
+        /* kennt die Zuege. Die Schuelergeraete erfahren nur ihr eigenes */
+        /* Paar - sonst koennte man die Wahl des Gegners ablesen.        */
+        /* ============================================================ */
+        const SNP_ZEICHEN = {
+            schere:  { wort: 'Schere',       bild: '✂️', schlaegt: 'papier' },
+            note:    { wort: 'Note',         bild: '🎵', schlaegt: 'schere' },
+            papier:  { wort: 'Notenpapier',  bild: '📜', schlaegt: 'note' }
+        };
+        const SNP_WAHL_MS = 15000;    // Gegner suchen
+        const SNP_ZUG_MS = 8000;      // Zeichen waehlen
+        const SNP_SIEG = 2, SNP_REMIS = 1;
+
+        let snp = null;            // Lehrergeraet
+        let snpSchueler = null;    // Schuelergeraet
+
+        function starteSchereNote() {
+            if (!liveRoomCode) {
+                showToast("Erst einen Raum starten - ohne Live-Empfang kommt keine Wahl an.", "danger");
+                return;
+            }
+            if (minispiel) beendeMinispiel();
+            if (sammelspiel) beendeSammelspiel();
+            const namen = teams.map(t => teamName(t)).filter(Boolean);
+            if (namen.length < 1) { showToast("Dafür braucht es wenigstens ein Team.", "danger"); return; }
+
+            snp = { id: 'n' + Date.now(), phase: 'regeln', uhren: [], namen: namen,
+                    wunsch: {}, zuege: {}, paare: [], bis: 0 };
+            zeigeSnp();
+            broadcastControlState();
+            playSound('up');
+
+            snp.uhren.push(setTimeout(() => {
+                if (!snp) return;
+                snp.phase = 'wahl';
+                snp.bis = Date.now() + SNP_WAHL_MS;
+                zeigeSnp(); broadcastControlState();
+                snp.takt = setInterval(() => { if (snp) zeigeSnp(); }, 1000);
+
+                snp.uhren.push(setTimeout(() => {
+                    if (!snp) return;
+                    clearInterval(snp.takt);
+                    snpPaareBilden();
+                    snp.phase = 'zug';
+                    snp.bis = Date.now() + SNP_ZUG_MS;
+                    zeigeSnp(); broadcastControlState(); playSound('up');
+                    snp.takt = setInterval(() => { if (snp) zeigeSnp(); }, 1000);
+
+                    snp.uhren.push(setTimeout(() => {
+                        if (!snp) return;
+                        clearInterval(snp.takt);
+                        snpRechnerZiehen();
+                        snp.phase = 'aufdeckung';
+                        zeigeSnp(); broadcastControlState(); playSound('up');
+                        snp.uhren.push(setTimeout(() => {
+                            if (!snp) return;
+                            snp.phase = 'ende';
+                            zeigeSnp(); broadcastControlState();
+                        }, 1200 + snp.paare.length * 900));
+                    }, SNP_ZUG_MS));
+                }, SNP_WAHL_MS));
+            }, SAMMEL_REGELN_MS));
+        }
+
+        function beendeSchereNote() {
+            if (snp) { snp.uhren.forEach(clearTimeout); clearInterval(snp.takt); }
+            snp = null;
+            const b = getEl('sammel-buehne');
+            if (b) { b.className = 'minispiel-buehne'; b.innerHTML = ''; }
+            broadcastControlState();
+            updateSpielKnopf();
+        }
+
+        /* Wer mit wem? Zuerst die, die sich gegenseitig gewaehlt haben - das ist der
+           schoene Fall. Dann einseitige Wuensche, solange der Gewuenschte noch frei
+           ist. Der Rest bekommt den Rechner; dadurch geht die Rechnung auch bei einer
+           ungeraden Zahl von Teams auf. */
+        function snpPaareBilden() {
+            const offen = snp.namen.slice();
+            const paare = [];
+            const nimm = (a, b) => {
+                paare.push([a, b]);
+                [a, b].forEach(n => { const i = offen.indexOf(n); if (i >= 0) offen.splice(i, 1); });
+            };
+            snp.namen.forEach(a => {
+                const b = snp.wunsch[a];
+                if (!b || !offen.includes(a) || !offen.includes(b)) return;
+                if (snp.wunsch[b] === a) nimm(a, b);
+            });
+            snp.namen.forEach(a => {
+                const b = snp.wunsch[a];
+                if (!b || !offen.includes(a) || !offen.includes(b) || a === b) return;
+                nimm(a, b);
+            });
+            offen.slice().forEach(a => { if (offen.includes(a)) nimm(a, null); });   // null = Rechner
+            snp.paare = paare;
+        }
+
+        function snpRechnerZiehen() {
+            const alle = Object.keys(SNP_ZEICHEN);
+            snp.paare.forEach(([a, b]) => {
+                [a, b].forEach(n => {
+                    if (n === null) return;
+                    if (!snp.zuege[n]) snp.zuege[n] = alle[Math.floor(Math.random() * alle.length)];
+                });
+            });
+            snp.rechnerzug = {};
+            snp.paare.forEach(([a, b], i) => {
+                if (b === null) snp.rechnerzug[i] = alle[Math.floor(Math.random() * alle.length)];
+            });
+        }
+
+        function snpZugVon(paarNr, seite) {
+            const paar = snp.paare[paarNr];
+            const name = paar[seite];
+            return name === null ? snp.rechnerzug[paarNr] : snp.zuege[name];
+        }
+
+        /* Wer gewinnt? 1 = links, -1 = rechts, 0 = unentschieden. */
+        function snpUrteil(links, rechts) {
+            if (links === rechts) return 0;
+            return SNP_ZEICHEN[links] && SNP_ZEICHEN[links].schlaegt === rechts ? 1 : -1;
+        }
+
+        function nimmSnpWunsch(team, gegen, id) {
+            if (!snp || snp.id !== id || snp.phase !== 'wahl') return;
+            if (!snp.namen.includes(team) || !snp.namen.includes(gegen) || team === gegen) return;
+            snp.wunsch[team] = gegen;
+            zeigeSnp();
+        }
+        function nimmSnpZug(team, wert, id) {
+            if (!snp || snp.id !== id || snp.phase !== 'zug') return;
+            if (!SNP_ZEICHEN[wert]) return;
+            snp.zuege[team] = wert;
+            zeigeSnp();
+        }
+
+        function snpPunkteVergeben() {
+            if (!snp) return;
+            let vergeben = 0;
+            snp.paare.forEach(([a, b], i) => {
+                const links = snpZugVon(i, 0), rechts = snpZugVon(i, 1);
+                const urteil = snpUrteil(links, rechts);
+                const gib = (name, punkte) => {
+                    if (name === null || !punkte) return;
+                    const team = teams.find(t => teamName(t).toLowerCase() === String(name).toLowerCase());
+                    if (!team) return;
+                    team.score = Math.max(0, team.score + punkte);
+                    vergeben++;
+                };
+                if (urteil === 0) { gib(a, SNP_REMIS); gib(b, SNP_REMIS); }
+                else if (urteil === 1) gib(a, SNP_SIEG);
+                else gib(b, SNP_SIEG);
+            });
+            if (!vergeben) { showToast("Es gibt niemanden, der Punkte bekommen könnte.", "info"); return; }
+            saveState(); renderScoreboard(); playSound('up');
+            showToast(`${vergeben} ${vergeben === 1 ? 'Team hat' : 'Teams haben'} Punkte bekommen.`, "success");
+            beendeSchereNote();
+        }
+
+        function snpRegelnHtml() {
+            const regel = (nr, text, verzug, art = '') =>
+                `<div class="minispiel-regel ${art}" style="animation-delay: ${verzug}s">` +
+                `<span class="nummer">${nr}</span> ${text}</div>`;
+            return `<div class="minispiel-titel">✂️ Schere, Note, Notenpapier</div>` +
+                regel('✂️', 'Schere schneidet Notenpapier', 0.2) +
+                regel('📜', 'Notenpapier wickelt die Note ein', 1.1) +
+                regel('🎵', 'Note verbiegt die Schere', 2.0) +
+                regel('!', 'Erst Gegner suchen, dann Zeichen wählen', 2.9, 'warnung') +
+                `<div class="klein">Sieg ${SNP_SIEG} Punkte · Unentschieden ${SNP_REMIS}</div>` +
+                countdownHtml(Math.round(SAMMEL_REGELN_MS / 1000));
+        }
+
+        function zeigeSnp() {
+            const b = getEl('sammel-buehne');
+            if (!b || !snp) return;
+            b.className = 'minispiel-buehne sichtbar';
+            const abbruch = `<button type="button" onclick="event.stopPropagation(); beendeSchereNote();"
+                    class="minispiel-abbruch" title="Abbrechen (oder Esc)">&#10005;</button>`;
+            const rest = Math.max(0, Math.ceil((snp.bis - Date.now()) / 1000));
+
+            if (snp.phase === 'regeln') {
+                b.innerHTML = abbruch + snpRegelnHtml();
+                countdownStarten(b, Math.round(SAMMEL_REGELN_MS / 1000));
+            } else if (snp.phase === 'wahl') {
+                const gewaehlt = Object.keys(snp.wunsch).length;
+                const uhr = b.querySelector('.katapult-uhr');
+                if (uhr) {
+                    uhr.textContent = rest;
+                    uhr.classList.toggle('knapp', rest <= 5);
+                    const zaehler = b.querySelector('.snp-zaehler');
+                    if (zaehler) zaehler.textContent = `${gewaehlt} von ${snp.namen.length} haben gewählt`;
+                    return;
+                }
+                b.innerHTML = abbruch +
+                    `<div class="minispiel-titel">✂️ Sucht euch einen Gegner</div>
+                     <div class="gross katapult-uhr${rest <= 5 ? ' knapp' : ''}">${rest}</div>
+                     <div class="klein snp-zaehler">${gewaehlt} von ${snp.namen.length} haben gewählt</div>`;
+            } else if (snp.phase === 'zug') {
+                const fertig = snp.paare.reduce((n, [a, bb]) => n + (snp.zuege[a] ? 1 : 0) + (bb && snp.zuege[bb] ? 1 : 0), 0);
+                const noetig = snp.paare.reduce((n, [a, bb]) => n + 1 + (bb ? 1 : 0), 0);
+                const uhr = b.querySelector('.katapult-uhr');
+                if (uhr) {
+                    uhr.textContent = rest;
+                    uhr.classList.toggle('knapp', rest <= 3);
+                    const zaehler = b.querySelector('.snp-zaehler');
+                    if (zaehler) zaehler.textContent = `${fertig} von ${noetig} haben gewählt`;
+                    return;
+                }
+                b.innerHTML = abbruch +
+                    `<div class="minispiel-titel">✂️ Wählt euer Zeichen</div>
+                     <div class="gross katapult-uhr${rest <= 3 ? ' knapp' : ''}">${rest}</div>
+                     <div class="klein snp-zaehler">${fertig} von ${noetig} haben gewählt</div>` +
+                    `<div class="snp-paare">` + snp.paare.map(([a, bb]) =>
+                        `<div class="snp-paar"><span>${escapeHtml(a)}</span><span class="gegen">gegen</span>` +
+                        `<span>${bb === null ? '🤖 Rechner' : escapeHtml(bb)}</span></div>`).join('') + `</div>`;
+            } else {
+                const zeilen = snp.paare.map(([a, bb], i) => {
+                    const links = snpZugVon(i, 0), rechts = snpZugVon(i, 1);
+                    const urteil = snpUrteil(links, rechts);
+                    const zeichen = (w) => w ? `<span class="snp-zeichen">${SNP_ZEICHEN[w].bild}</span>` : `<span class="snp-zeichen">❔</span>`;
+                    const name = (n, gewinnt) => `<span class="snp-name${gewinnt ? ' sieger' : ''}">${n === null ? '🤖 Rechner' : escapeHtml(n)}</span>`;
+                    return `<div class="snp-duell" style="animation-delay:${(i * 0.5).toFixed(1)}s">
+                            ${name(a, urteil === 1)} ${zeichen(links)}
+                            <span class="snp-mitte">${urteil === 0 ? '=' : '·'}</span>
+                            ${zeichen(rechts)} ${name(bb, urteil === -1)}
+                        </div>`;
+                }).join('');
+                const knoepfe = snp.phase === 'ende'
+                    ? `<div class="minispiel-knopfreihe">
+                           <button type="button" onclick="event.stopPropagation(); snpPunkteVergeben();"
+                                   class="minispiel-knopf gruen-knopf">Punkte vergeben (Sieg ${SNP_SIEG} · Remis ${SNP_REMIS})</button>
+                           <button type="button" onclick="event.stopPropagation(); beendeSchereNote();"
+                                   class="minispiel-knopf">Schließen ohne Punkte</button>
+                       </div>` : '';
+                b.innerHTML = (snp.phase === 'ende' ? '' : abbruch) +
+                    `<div class="minispiel-titel">✂️ Aufgedeckt</div>${zeilen}${knoepfe}`;
+            }
+            updateSpielKnopf();
+        }
+
+        /* ---------- Schuelergeraet ---------- */
+        function snpSchuelerZeigen(zustand) {
+            const b = getEl('sammel-buehne');
+            if (!b) return;
+            if (!zustand) {
+                if (snpSchueler) { snpSchueler = null; b.className = 'minispiel-buehne'; b.innerHTML = ''; }
+                return;
+            }
+            const name = localStorage.getItem('student_team_name') || '';
+            if (!snpSchueler || snpSchueler.id !== zustand.id) snpSchueler = { id: zustand.id, phase: '', gewaehlt: '', zug: '' };
+            const neu = snpSchueler.phase !== zustand.phase;
+            snpSchueler.phase = zustand.phase;
+            b.className = 'minispiel-buehne sichtbar';
+            if (!neu && zustand.phase !== 'wahl') return;
+
+            if (zustand.phase === 'regeln') {
+                b.innerHTML = snpRegelnHtml();
+                countdownStarten(b, Math.round(SAMMEL_REGELN_MS / 1000));
+                return;
+            }
+            if (zustand.phase === 'wahl') {
+                if (snpSchueler.gewaehlt) {
+                    if (!neu) return;
+                    b.innerHTML = `<div class="minispiel-titel">✂️ Gewählt</div>
+                        <div class="gross">${escapeHtml(snpSchueler.gewaehlt)}</div>
+                        <div class="klein">Mal sehen, ob es klappt</div>`;
+                    return;
+                }
+                const andere = (zustand.namen || []).filter(n => n !== name);
+                b.innerHTML = `<div class="minispiel-titel">✂️ Gegen wen?</div>
+                    <div class="minispiel-knopfreihe">` +
+                    (andere.length ? andere.map(n => `<button type="button" class="minispiel-knopf"
+                        onclick="event.stopPropagation(); snpWaehleGegner('${escapeHtml(n).replace(/'/g, "\\'")}')">${escapeHtml(n)}</button>`).join('')
+                        : `<div class="klein">Niemand sonst da - du spielst gegen den Rechner</div>`) +
+                    `</div><div class="klein">Oder warten: Dann bekommst du einen zugelost</div>`;
+                return;
+            }
+            if (zustand.phase === 'zug') {
+                const paar = (zustand.paare || []).find(pp => pp[0] === name || pp[1] === name);
+                const gegner = !paar ? null : (paar[0] === name ? paar[1] : paar[0]);
+                if (snpSchueler.zug) {
+                    b.innerHTML = `<div class="minispiel-titel">✂️ Abgeschickt</div>
+                        <div class="gross">${SNP_ZEICHEN[snpSchueler.zug].bild}</div>
+                        <div class="klein">Gleich wird aufgedeckt</div>`;
+                    return;
+                }
+                b.innerHTML = `<div class="minispiel-titel">Gegen ${gegner === null || gegner === undefined ? '🤖 den Rechner' : escapeHtml(gegner)}</div>
+                    <div class="snp-wahlreihe">` +
+                    Object.keys(SNP_ZEICHEN).map(k => `<button type="button" class="snp-knopf"
+                        onclick="event.stopPropagation(); snpWaehleZug('${k}')">
+                        <span>${SNP_ZEICHEN[k].bild}</span><span class="wort">${SNP_ZEICHEN[k].wort}</span></button>`).join('') +
+                    `</div>`;
+                return;
+            }
+            b.innerHTML = `<div class="minispiel-titel">✂️ Aufgedeckt</div>
+                <div class="klein">Schau auf die Leinwand</div>`;
+        }
+
+        function snpSenden(art, wert) {
+            const room = localStorage.getItem('student_room_code');
+            const team = localStorage.getItem('student_team_name');
+            if (!room || !team || !snpSchueler) return;
+            try {
+                window.fbPush(window.fbRef(window.fbDb, `rooms/${room}/messages`), {
+                    action: 'snp', art: art, team: team, wert: wert,
+                    spielId: snpSchueler.id, timestamp: window.fbServerTimestamp()
+                });
+            } catch (e) { console.error("Wahl konnte nicht gesendet werden:", e); }
+        }
+        function snpWaehleGegner(name) {
+            if (!snpSchueler || snpSchueler.gewaehlt) return;
+            snpSchueler.gewaehlt = name;
+            snpSenden('wunsch', name);
+            snpSchuelerZeigen({ id: snpSchueler.id, phase: 'wahl', namen: [] });
+        }
+        function snpWaehleZug(wert) {
+            if (!snpSchueler || snpSchueler.zug) return;
+            snpSchueler.zug = wert;
+            snpSenden('zug', wert);
+            snpSchuelerZeigen({ id: snpSchueler.id, phase: 'zug', paare: [] });
+        }
+
+        /* ============================================================ */
         /* SAMMELSPIELE                                                  */
         /* Notenschleuder und Notensortierer laufen nach demselben       */
         /* Muster: Regeln lesen, Spielzeit, Ergebnis - und beide sammeln */
@@ -2967,7 +3342,7 @@
            Spielen ist das uebersichtlicher als drei Knoepfe in der Rundenleiste -
            und die Klasse sieht am Beamer gleich, was kommt. */
         function spielAuswahl() {
-            if (sammelspiel || minispiel) { beendeSammelspiel(); beendeMinispiel(); return; }
+            if (sammelspiel || minispiel || snp) { beendeSammelspiel(); beendeMinispiel(); beendeSchereNote(); return; }
             if (!liveRoomCode) {
                 showToast("Erst einen Raum starten - ohne Live-Empfang kommt kein Ergebnis an.", "danger");
                 return;
@@ -2995,6 +3370,8 @@
                             onclick="event.stopPropagation(); starteSammelspiel('avocado');"><i class="fa-solid fa-circle-question"></i> Avocado or Not(e)</button>
                     <button type="button" class="minispiel-knopf"
                             onclick="event.stopPropagation(); starteSammelspiel('taktfueller');"><i class="fa-solid fa-ruler-horizontal"></i> Taktfüller</button>
+                    <button type="button" class="minispiel-knopf"
+                            onclick="event.stopPropagation(); starteSchereNote();"><i class="fa-solid fa-hand-scissors"></i> Schere, Note, Papier</button>
                 </div>
                 <div class="klein">Die drei besten bekommen 3 · 2 · 1 Punkte</div>`;
             updateSpielKnopf();
@@ -3281,8 +3658,9 @@
                wird der Knopf zur Punktevergabe - egal, welches Spiel gelaufen ist. */
             const sammelFertig = !!sammelspiel && sammelspiel.phase === 'ende';
             const reaktionFertig = !!minispiel && minispiel.phase === 'ende';
-            const fertig = sammelFertig || reaktionFertig;
-            const laeuft = (!!sammelspiel || !!minispiel) && !fertig;
+            const snpFertig = !!snp && snp.phase === 'ende';
+            const fertig = sammelFertig || reaktionFertig || snpFertig;
+            const laeuft = (!!sammelspiel || !!minispiel || !!snp) && !fertig;
             btn.innerHTML = fertig ? `<i class="fa-solid fa-award"></i>` : `<i class="fa-solid fa-gamepad"></i>`;
             btn.title = fertig
                 ? 'Punkte vergeben: 3 · 2 · 1 an die drei besten'
@@ -3290,7 +3668,8 @@
                          : 'Minispiel starten: fünf zur Auswahl';
             btn.setAttribute('aria-label', btn.title);
             btn.onclick = sammelFertig ? sammelspielPunkteVergeben
-                        : reaktionFertig ? minispielPunkteVergeben : spielAuswahl;
+                        : reaktionFertig ? minispielPunkteVergeben
+                        : snpFertig ? snpPunkteVergeben : spielAuswahl;
         }
 
         /* ---------- Schuelergeraet ---------- */
@@ -6425,6 +6804,7 @@
                     // Die Minispiele legen sich als eigene Buehne ueber alles
                     minispielSchuelerZeigen(payload.minispiel || null);
                     sammelspielSchuelerZeigen(payload.sammel || null);
+                    snpSchuelerZeigen(payload.snp || null);
                     rhythmusSchuelerZeigen(payload.rhythmus || null);
                     /* Fehlt das Feld (aeltere Sitzung), gilt "an" - so verhaelt sich
                        ein alter Raum wie bisher. */
@@ -7063,6 +7443,9 @@
                         showToast(`🤫 Spickzettel von Team "${quizPayload.team}" erhalten!`, "success");
                     } else if (quizPayload.action === "reaktion") {
                         nimmReaktion(quizPayload.team, Number(quizPayload.ms), quizPayload.spielId);
+                    } else if (quizPayload.action === "snp") {
+                        if (quizPayload.art === 'wunsch') nimmSnpWunsch(quizPayload.team, quizPayload.wert, quizPayload.spielId);
+                        else nimmSnpZug(quizPayload.team, quizPayload.wert, quizPayload.spielId);
                     } else if (quizPayload.action === "fern") {
                         fernBefehlAusfuehren(quizPayload);
                     } else if (quizPayload.action === "sammelstand") {
