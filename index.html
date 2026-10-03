@@ -1089,6 +1089,7 @@
             <h1 class="text-base font-black text-violet-300"><i class="fa-solid fa-drum mr-1"></i> Rhythmus-Fernbedienung</h1>
             <span id="fern-raum" class="text-[11px] font-bold text-slate-400"></span>
         </div>
+        <div id="fern-stand" class="text-[11px] mb-2 flex items-center gap-1.5 flex-wrap"></div>
         <div id="fern-hinweis" class="text-[11px] text-slate-400 mb-3 leading-normal">
             Was du hier einstellst, führt das Gerät am Beamer aus.
         </div>
@@ -4311,6 +4312,7 @@
             if (sicht) sicht.classList.remove('hidden');
             const raumAnzeige = getEl('fern-raum');
             if (raumAnzeige) raumAnzeige.textContent = 'Raum ' + fernRaum.toUpperCase();
+            fernMithoeren();
 
             fernTaktwahlZeichnen();
             fernWahlZeichnen();
@@ -4345,6 +4347,30 @@
             });
             getEl('fern-tempo-minus').addEventListener('click', () => { fernMetronom.bpm = Math.max(40, fernMetronom.bpm - 5); fernTempoAnzeigen(); });
             getEl('fern-tempo-plus').addEventListener('click', () => { fernMetronom.bpm = Math.min(200, fernMetronom.bpm + 5); fernTempoAnzeigen(); });
+        }
+
+        /* Das Handy hoert am selben Kanal mit wie die Schuelergeraete - nur um
+           anzuzeigen, in welcher Runde man gerade ist und ob der Rhythmusmodus
+           laeuft. Ohne das verliert man beim Hin und Her zwischen Beamer und Hand
+           den Faden. */
+        function fernMithoeren() {
+            if (!fernRaum || !window.fbOnValue) return;
+            try {
+                window.fbOnValue(window.fbRef(window.fbDb, `rooms/${fernRaum}/control`), (schnappschuss) => {
+                    const stand = schnappschuss.val() || {};
+                    const anzeige = getEl('fern-stand');
+                    if (!anzeige) return;
+                    const runde = stand.round !== undefined ? stand.round : '–';
+                    const laeuft = !!stand.rhythmus;
+                    anzeige.innerHTML = `<span class="bg-violet-500/25 text-violet-200 border border-violet-500/40 px-2 py-0.5 rounded-lg font-black">Runde ${runde}</span>` +
+                        (laeuft
+                            ? ` <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-lg font-bold">Rhythmus läuft</span>`
+                            : ` <span class="text-slate-500">kein Rhythmus aktiv</span>`) +
+                        (stand.locked ? ` <span class="text-rose-300 font-bold">gesperrt</span>` : '');
+                });
+            } catch (e) {
+                console.error("Fernbedienung konnte den Raum nicht mithören:", e);
+            }
         }
 
         function fernTempoAnzeigen() {
