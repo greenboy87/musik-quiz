@@ -2655,6 +2655,20 @@
                 ],
                 feld: (behaelter, dauer, senden) => avocadoFeldAufbauen(behaelter, dauer, senden)
             },
+            taktfueller: {
+                titel: '&#127932; Taktfüller',
+                dauer: 50000,
+                einheit: ['Takt', 'Takte'],
+                name: 'Taktfüller',
+                hinweis: 'Note antippen legt sie in den Takt, im Takt antippen nimmt sie zurück',
+                regeln: [
+                    ['1', 'Oben steht eine Taktart, zum Beispiel 3/4', ''],
+                    ['2', 'Tippe unten die Noten an, die hineinpassen', ''],
+                    ['3', 'Genau voll gibt einen Punkt - zu viel geht nicht hinein', ''],
+                    ['50', 'Sekunden lang - so viele Takte wie möglich', 'warnung']
+                ],
+                feld: (behaelter, dauer, senden) => taktfuellerFeldAufbauen(behaelter, dauer, senden)
+            },
             sortierer: {
                 titel: '&#127925; Notensortierer',
                 dauer: 50000,
@@ -2705,6 +2719,8 @@
                             onclick="event.stopPropagation(); starteSammelspiel('farbfalle');"><i class="fa-solid fa-palette"></i> Farbfalle</button>
                     <button type="button" class="minispiel-knopf"
                             onclick="event.stopPropagation(); starteSammelspiel('avocado');"><i class="fa-solid fa-circle-question"></i> Avocado or Not(e)</button>
+                    <button type="button" class="minispiel-knopf"
+                            onclick="event.stopPropagation(); starteSammelspiel('taktfueller');"><i class="fa-solid fa-ruler-horizontal"></i> Taktfüller</button>
                 </div>
                 <div class="klein">Die drei besten bekommen 3 · 2 · 1 Punkte</div>`;
             updateSpielKnopf();
@@ -3517,6 +3533,228 @@
         }
 
         /* ============================================================ */
+        /* TAKTFUELLER                                                   */
+        /* Oben eine Taktart, unten die Notenwerte: Antippen legt eine    */
+        /* Note in den Takt, ein Tipper auf eine liegende Note nimmt sie  */
+        /* wieder heraus. Was nicht mehr hineinpasst, kommt gar nicht     */
+        /* erst hinein - ein uebervoller Takt waere musikalisch Unsinn,   */
+        /* und als Fehler bestrafen muss man ihn deshalb auch nicht.      */
+        /* Gerechnet wird in Viertel-Einheiten: 4/4 sind vier, 6/8 drei.  */
+        /* ============================================================ */
+        const TAKTARTEN = [
+            { zeichen: '2/4', wert: 2,   leicht: true },
+            { zeichen: '3/4', wert: 3,   leicht: true },
+            { zeichen: '4/4', wert: 4,   leicht: true },
+            { zeichen: '6/8', wert: 3,   leicht: false },
+            { zeichen: '5/4', wert: 5,   leicht: false },
+            { zeichen: '3/8', wert: 1.5, leicht: false },
+            { zeichen: '7/8', wert: 3.5, leicht: false }
+        ];
+        const NOTENWERTE = [
+            { name: 'Ganze',   wert: 4,   typ: { flaggen: 0, hohl: true, ohneHals: true } },
+            { name: 'Halbe',   wert: 2,   typ: { flaggen: 0, hohl: true } },
+            { name: 'Viertel', wert: 1,   typ: { flaggen: 0, hohl: false } },
+            { name: 'Achtel',  wert: 0.5, typ: { flaggen: 1, hohl: false } }
+        ];
+
+        function taktfuellerFeldAufbauen(behaelter, dauer, senden) {
+            const leinwand = document.createElement('canvas');
+            leinwand.className = 'katapult-feld lauf-feld';
+            behaelter.appendChild(leinwand);
+            const ctx = leinwand.getContext('2d');
+
+            const S = {
+                w: 0, h: 0, takt: null, drin: [], voll: 0,
+                felder: [], blitz: 0, warnung: 0,
+                punkte: 0, extra: 0, lauf: true, letzterSend: 0, folge: 0,
+                ende: performance.now() + dauer, zuletzt: performance.now()
+            };
+
+            function messen() {
+                const r = leinwand.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                S.w = r.width; S.h = r.height;
+                leinwand.width = Math.round(r.width * dpr);
+                leinwand.height = Math.round(r.height * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                // Die vier Notenwerte liegen unten nebeneinander zum Antippen
+                const breite = Math.min(S.w * 0.2, S.h * 0.3);
+                const links = (S.w - breite * NOTENWERTE.length) / 2;
+                S.felder = NOTENWERTE.map((n, i) => ({
+                    note: n, x: links + i * breite, y: S.h * 0.62, b: breite, h: S.h * 0.33
+                }));
+            }
+
+            function neuerTakt() {
+                /* Anfangs nur die geraden Taktarten, spaeter auch die schraegen -
+                   7/8 will man nicht in der ersten Aufgabe sehen. */
+                const stufe = Math.min(1, Math.max(0, 1 - (S.ende - performance.now()) / dauer));
+                const auswahl = TAKTARTEN.filter(t => t.leicht || Math.random() < stufe * 0.9);
+                S.takt = auswahl[Math.floor(Math.random() * auswahl.length)];
+                S.drin = [];
+                S.voll = 0;
+                S.blitz = 0;
+            }
+
+            function summe() { return S.drin.reduce((a, n) => a + n.wert, 0); }
+
+            function legen(note) {
+                if (S.voll) return;
+                // Nichts, was ueberlaeuft: Der Takt bleibt immer musikalisch moeglich
+                if (summe() + note.wert > S.takt.wert + 0.001) { S.warnung = 0.45; return; }
+                S.drin.push(note);
+                if (Math.abs(summe() - S.takt.wert) < 0.001) {
+                    S.punkte++; S.extra++;
+                    S.voll = performance.now() + 900;
+                    senden(S, false);
+                }
+            }
+
+            leinwand.addEventListener('pointerdown', (e) => {
+                if (!S.lauf || S.voll) return;
+                e.preventDefault();
+                const r = leinwand.getBoundingClientRect();
+                const x = e.clientX - r.left, y = e.clientY - r.top;
+                const feld = S.felder.find(f => x >= f.x && x <= f.x + f.b && y >= f.y && y <= f.y + f.h);
+                if (feld) { legen(feld.note); return; }
+                // Im Takt nimmt ein Tipper die Note wieder heraus
+                const stelle = notenOrte().findIndex(o => Math.hypot(o.x - x, o.y - y) < S.h * 0.09);
+                if (stelle >= 0) S.drin.splice(stelle, 1);
+            });
+            window.addEventListener('resize', messen);
+            function aufraeumen() { S.lauf = false; window.removeEventListener('resize', messen); }
+
+            function notenOrte() {
+                const von = S.w * 0.26, bis = S.w * 0.92;
+                return S.drin.map((n, i) => ({
+                    x: von + (bis - von) * ((i + 0.5) / Math.max(S.drin.length, 1)),
+                    y: S.h * 0.3, note: n
+                }));
+            }
+            /* Je voller der Takt, desto kleiner die Noten - sonst kleben sie bei
+               sechs Achteln aneinander. */
+            function notenGroesse() {
+                const platz = (S.w * 0.92 - S.w * 0.26) / Math.max(S.drin.length, 1);
+                return Math.min(S.h * 0.17, platz * 0.9);
+            }
+
+            function schritt(jetzt) {
+                if (!S.lauf) { aufraeumen(); return; }
+                const dt = Math.min(0.05, (jetzt - S.zuletzt) / 1000);
+                S.zuletzt = jetzt;
+                if (!S.w) messen();
+                if (!S.takt) neuerTakt();
+                const rest = Math.max(0, S.ende - jetzt);
+                if (!rest) { aufraeumen(); senden(S, true); zeichnen(0); return; }
+                if (S.voll && jetzt > S.voll) neuerTakt();
+                if (S.warnung > 0) S.warnung = Math.max(0, S.warnung - dt);
+                zeichnen(rest);
+                requestAnimationFrame(schritt);
+            }
+
+            function zeichnen(rest) {
+                ctx.clearRect(0, 0, S.w, S.h);
+                const linie = S.h * 0.3;
+                const von = S.w * 0.22, bis = S.w * 0.95;
+
+                // Taktlinien und Notenlinie
+                ctx.strokeStyle = S.voll ? '#34d399' : (S.warnung > 0 ? '#f87171' : 'rgba(248,250,252,.75)');
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(von, linie); ctx.lineTo(bis, linie); ctx.stroke();
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(von, linie - S.h * 0.11); ctx.lineTo(von, linie + S.h * 0.11);
+                ctx.moveTo(bis, linie - S.h * 0.11); ctx.lineTo(bis, linie + S.h * 0.11);
+                ctx.stroke();
+
+                // Taktart
+                if (S.takt) {
+                    const zahlen = S.takt.zeichen.split('/');
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.font = `900 ${Math.max(16, S.h * 0.14)}px 'DM Sans', sans-serif`;
+                    ctx.fillStyle = '#7dd3fc';
+                    ctx.fillText(zahlen[0], S.w * 0.14, linie - S.h * 0.075);
+                    ctx.fillText(zahlen[1], S.w * 0.14, linie + S.h * 0.075);
+                }
+
+                // Was schon im Takt liegt
+                const ng = notenGroesse();
+                notenOrte().forEach(o => {
+                    zeichneNote(ctx, o.x, o.y - ng * 0.26, ng, o.note.typ,
+                                S.voll ? '#34d399' : '#f8fafc');
+                });
+
+                // Fuellstand als Balken unter dem Takt
+                if (S.takt) {
+                    const anteil = Math.min(1, summe() / S.takt.wert);
+                    const by = linie + S.h * 0.17, bh = S.h * 0.045;
+                    ctx.fillStyle = 'rgba(255,255,255,.12)';
+                    ctx.fillRect(von, by, bis - von, bh);
+                    ctx.fillStyle = S.voll ? '#34d399' : '#7dd3fc';
+                    ctx.fillRect(von, by, (bis - von) * anteil, bh);
+                }
+
+                // Vorrat unten
+                S.felder.forEach(f => {
+                    ctx.beginPath();
+                    const rr = Math.min(14, f.b * 0.18);
+                    ctx.moveTo(f.x + rr, f.y);
+                    ctx.arcTo(f.x + f.b, f.y, f.x + f.b, f.y + f.h, rr);
+                    ctx.arcTo(f.x + f.b, f.y + f.h, f.x, f.y + f.h, rr);
+                    ctx.arcTo(f.x, f.y + f.h, f.x, f.y, rr);
+                    ctx.arcTo(f.x, f.y, f.x + f.b, f.y, rr);
+                    ctx.closePath();
+                    const passt = S.takt && summe() + f.note.wert <= S.takt.wert + 0.001;
+                    ctx.fillStyle = passt ? 'rgba(255,255,255,.1)' : 'rgba(255,255,255,.03)';
+                    ctx.fill();
+                    ctx.strokeStyle = passt ? 'rgba(125,211,252,.6)' : 'rgba(248,250,252,.15)';
+                    ctx.lineWidth = 2; ctx.stroke();
+                    ctx.globalAlpha = passt ? 1 : 0.3;
+                    zeichneNote(ctx, f.x + f.b * 0.5, f.y + f.h * 0.42, f.h * 0.5, f.note.typ, '#f8fafc');
+                    ctx.globalAlpha = 1;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+                    // Die Beschriftung muss in das Feld passen, nicht ueber den Rand
+                    ctx.font = `800 ${Math.max(9, Math.min(S.h * 0.05, f.b * 0.2))}px 'DM Sans', sans-serif`;
+                    ctx.fillStyle = passt ? 'rgba(248,250,252,.8)' : 'rgba(248,250,252,.3)';
+                    ctx.fillText(f.note.name, f.x + f.b * 0.5, f.y + f.h - 4);
+                });
+
+                if (S.voll) {
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.font = `900 ${Math.max(18, S.h * 0.1)}px 'DM Sans', sans-serif`;
+                    ctx.fillStyle = '#34d399';
+                    ctx.fillText('Voll! +1', S.w / 2, S.h * 0.08);
+                }
+
+                ctx.font = `800 ${Math.max(13, S.h * 0.055)}px 'DM Sans', sans-serif`;
+                ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+                ctx.fillStyle = '#7dd3fc';
+                ctx.fillText(punkteWort(S.punkte), 14, 10);
+                ctx.textAlign = 'right';
+                const sek = Math.ceil(rest / 1000);
+                ctx.fillStyle = sek <= 10 ? '#fca5a5' : 'rgba(248,250,252,.8)';
+                ctx.fillText(`${sek} s`, S.w - 14, 10);
+
+                if (!S.lauf) {
+                    ctx.fillStyle = 'rgba(5,6,15,.75)';
+                    ctx.fillRect(0, 0, S.w, S.h);
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.font = `900 ${Math.max(26, S.h * 0.14)}px 'DM Sans', sans-serif`;
+                    ctx.fillText('ZEIT UM', S.w / 2, S.h / 2 - S.h * 0.06);
+                    ctx.font = `800 ${Math.max(16, S.h * 0.07)}px 'DM Sans', sans-serif`;
+                    ctx.fillStyle = '#7dd3fc';
+                    ctx.fillText(`${punkteWort(S.punkte)} · ${zahlWort(S.extra, 'Takt', 'Takte')}`, S.w / 2, S.h / 2 + S.h * 0.07);
+                }
+            }
+
+            messen();
+            neuerTakt();
+            requestAnimationFrame(schritt);
+            return S;
+        }
+
+        /* ============================================================ */
         /* AVOCADO ODER NOTE                                             */
         /* Beides ist ein runder Koerper mit einem Stiel nach oben - als */
         /* einfarbiger Umriss, in wechselnder Groesse und schief gestellt*/
@@ -3921,6 +4159,7 @@
             else { ctx.fill(); }
             ctx.restore();
             ctx.lineWidth = Math.max(2, groesse * 0.055);
+            if (typ.ohneHals) { ctx.restore(); return; }   // die Ganze steht ohne Hals
             /* Hals nach oben rechts oder nach unten links. Faehnchen gibt es nur
                aufwaerts - abwaerts kommen im Spiel nur Viertel vor. */
             ctx.beginPath();
