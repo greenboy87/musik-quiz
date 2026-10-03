@@ -354,25 +354,53 @@
         }
 
         /* Rhythmus-Eingabe: Anzeige, Bausteine, Bedienung */
+        /* Der Takt ist eine Reihe von Kaestchen - ein Kaestchen je Viertel. Leere
+           stehen gestrichelt da, gefuellte zeigen ihr Fragment. So sieht man auf
+           einen Blick, wie viel noch fehlt. */
         .rhy-anzeige {
-            background: rgba(2,6,23,.6); border: 1px solid rgba(148,163,184,.25);
-            border-radius: 14px; padding: .5rem; min-height: 4.5rem;
-            display: flex; align-items: center; justify-content: center;
-            overflow-x: auto;
+            background: rgba(2,6,23,.5); border: 1px solid rgba(148,163,184,.25);
+            border-radius: 14px; padding: .5rem; min-height: 5.2rem;
+            display: flex; align-items: stretch; gap: .35rem;
+            color: #f8fafc;
         }
-        .rhy-anzeige.verdeckt > svg { filter: blur(9px); opacity: .5; }
+        .rhy-anzeige.verdeckt { filter: blur(9px); opacity: .55; }
+        .rhy-platz {
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            min-width: 2.4rem; padding: .2rem;
+        }
+        .rhy-platz.leer { border: 2px dashed rgba(148,163,184,.4); background: rgba(255,255,255,.03); }
+        .rhy-platz.voll { border: 2px solid rgba(148,163,184,.35); background: rgba(255,255,255,.08); cursor: pointer; }
+        .rhy-platz.ziel { border-color: #a78bfa; background: rgba(139,92,246,.25); }
+        .rhy-platz svg { height: 3rem; width: auto; pointer-events: none; }
+        html[data-theme="light"] .rhy-anzeige { background: #fff; border-color: #cbd5e1; color: #0f172a; }
+        html[data-theme="light"] .rhy-platz.leer { border-color: #cbd5e1; background: #f1f5f9; }
+        html[data-theme="light"] .rhy-platz.voll { border-color: #94a3b8; background: #fff; }
+        /* Das Fragment, das gerade am Finger haengt */
+        .rhy-geist {
+            position: fixed; z-index: 9999; pointer-events: none; opacity: .9;
+            padding: .4rem .6rem; border-radius: 14px; color: #f8fafc;
+            background: rgba(30,41,59,.95); border: 2px solid #a78bfa;
+        }
+        .rhy-geist svg { height: 3rem; width: auto; }
+        html[data-theme="light"] .rhy-geist { background: #fff; color: #0f172a; }
         .rhy-leiste { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: center; margin-top: .6rem; }
-        /* Die Fragmentkarten sind verschieden breit - vier Sechzehntel brauchen
-           mehr Platz als eine Viertel. Feste Breite haette alles gestaucht. */
+        /* Fragmentkarten: nur das Notenbild, kein Wort darunter. Sie sind
+           verschieden breit - vier Sechzehntel brauchen mehr Platz als eine
+           Viertel - und duerfen sich nicht stauchen lassen, sonst klebt das
+           Notenbild zusammen und ist nicht mehr zu lesen. */
         .rhy-baustein {
-            min-width: 3.6rem; padding: .35rem .5rem .25rem; border-radius: 12px; cursor: pointer;
-            background: rgba(255,255,255,.07); border: 1px solid rgba(148,163,184,.3);
-            color: #f8fafc; font-family: inherit; font-size: .58rem; font-weight: 700;
-            display: flex; flex-direction: column; align-items: center; gap: .15rem;
+            padding: .5rem .7rem; border-radius: 14px; cursor: pointer;
+            background: rgba(255,255,255,.07); border: 2px solid rgba(148,163,184,.35);
+            color: #f8fafc; font-family: inherit;
+            display: flex; align-items: center; justify-content: center;
+            flex: 0 0 auto; touch-action: none;
         }
-        .rhy-baustein:hover { background: rgba(255,255,255,.15); }
-        .rhy-baustein:active { transform: translateY(2px); }
-        .rhy-baustein svg { height: 2.3rem; width: auto; }
+        .rhy-baustein:hover { background: rgba(255,255,255,.16); }
+        .rhy-baustein.gezogen { opacity: .35; }
+        .rhy-baustein svg { height: 3.1rem; width: auto; pointer-events: none; }
+        html[data-theme="light"] .rhy-baustein {
+            color: #0f172a; background: #fff; border-color: #94a3b8;
+        }
         .rhy-knopfreihe { display: flex; gap: .4rem; justify-content: center; margin-top: .5rem; flex-wrap: wrap; }
         .rhy-knopf {
             font-family: inherit; font-size: .7rem; font-weight: 800; cursor: pointer;
@@ -380,19 +408,24 @@
             background: rgba(255,255,255,.08); border: 1px solid rgba(148,163,184,.3); color: #e2e8f0;
         }
         .rhy-knopf:hover { background: rgba(255,255,255,.16); }
+        html[data-theme="light"] .rhy-knopf { background: #f1f5f9; border-color: #94a3b8; color: #1e293b; }
+        html[data-theme="light"] .rhy-knopf:hover { background: #e2e8f0; }
+        html[data-theme="light"] .rhy-stand { color: #475569; }
         .rhy-stand { text-align: center; font-size: .7rem; font-weight: 800; margin-top: .35rem; color: #94a3b8; }
         .rhy-stand.voll { color: #34d399; }
         .rhy-stand.zuviel { color: #fb7185; }
         /* Auswahl der Bausteine im Lehrerfenster */
         .rhy-wahl { display: flex; flex-wrap: wrap; gap: .35rem; }
         .rhy-chip {
-            display: flex; align-items: center; gap: .3rem; cursor: pointer;
-            padding: .25rem .5rem; border-radius: 10px; font-size: .62rem; font-weight: 800;
-            background: rgba(255,255,255,.05); border: 1px solid rgba(148,163,184,.25); color: #94a3b8;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            padding: .5rem .7rem; border-radius: 14px; flex: 0 0 auto;
+            background: rgba(255,255,255,.05); border: 2px solid rgba(148,163,184,.3); color: #64748b;
             font-family: inherit;
         }
-        .rhy-chip svg { height: 1.7rem; width: auto; }
-        .rhy-chip.an { background: rgba(139,92,246,.25); border-color: #a78bfa; color: #ede9fe; }
+        .rhy-chip svg { height: 2.9rem; width: auto; pointer-events: none; }
+        .rhy-chip.an { background: rgba(139,92,246,.25); border-color: #a78bfa; color: #f8fafc; }
+        html[data-theme="light"] .rhy-chip { background: #f8fafc; border-color: #cbd5e1; color: #94a3b8; }
+        html[data-theme="light"] .rhy-chip.an { background: #ede9fe; border-color: #7c3aed; color: #0f172a; }
 
         /* Glücksrad für die Spielauswahl */
         .rad-feld { display: block; width: min(62vh, 86vw); aspect-ratio: 1; max-width: 560px; }
@@ -3700,7 +3733,8 @@
                 const b = document.createElement('button');
                 b.type = 'button';
                 b.className = 'rhy-chip' + (an ? ' an' : '');
-                b.innerHTML = rhythmusSvg([w], an ? '#ede9fe' : '#94a3b8', true) + `<span>${w.wort}</span>`;
+                b.title = w.wort;
+                b.innerHTML = rhythmusSvg([w], null, true);
                 b.addEventListener('click', () => {
                     const i = rhythmusEntwurf.werte.indexOf(w.code);
                     if (i >= 0) rhythmusEntwurf.werte.splice(i, 1);
@@ -3843,8 +3877,11 @@
            Grundlinie - eine Rhythmuszeile braucht keine fuenf Notenlinien.
            "nackt" laesst Taktstriche und Linie weg: So passt ein einzelnes
            Fragment auf eine Karte. */
+        /* Gezeichnet wird in currentColor: Die Noten nehmen damit die Textfarbe
+           ihres Kastens an und sind im hellen wie im dunklen Theme zu sehen.
+           Vorher stand hier ein festes Hellgrau - auf weissem Grund unsichtbar. */
         function rhythmusSvg(liste, farbe, nackt) {
-            const tinte = farbe || '#f8fafc';
+            const tinte = farbe || 'currentColor';
             const vorschub = { 4: 96, 2: 62, 1: 38, 0.5: 24, 0.25: 17 };
             const links = 16, halsOben = 13, linie = 46, balkenDicke = 5;
             const teile = [];
@@ -3904,12 +3941,17 @@
                 const breite = rechts + 18;
                 return `<svg viewBox="0 0 ${breite} 74" width="100%" style="max-width:${Math.round(breite * 1.5)}px; height:auto; display:block; margin:0 auto">${teile.join('')}</svg>`;
             }
-            return `<svg viewBox="${links} 2 ${rechts - links} 62" style="height:100%; width:auto; display:block; margin:0 auto">${teile.join('')}</svg>`;
+            /* Keine Hoehe im Stil: Die legt das CSS der jeweiligen Karte fest.
+               Inline gesetzt gewaenne sie gegen jede Regel - und ohne Text im
+               Kasten fiele das Bild auf null zusammen. */
+            return `<svg viewBox="${links} 2 ${rechts - links} 62" style="width:auto; display:block; margin:0 auto">${teile.join('')}</svg>`;
         }
 
         /* Ein Eingabefeld fuer Rhythmen, das Schueler- und Lehrergeraet teilen.
-           Es kennt den Soll-Wert in Vierteln und sagt, wie voll der Takt ist -
-           abgeben darf man trotzdem, was man will. */
+           Der Takt steht als Reihe von Kaestchen da, eines je Viertel. Fragmente
+           kommen per Tipper ans Ende oder per Ziehen an eine bestimmte Stelle -
+           gezogen wird mit Zeigerereignissen und nicht mit HTML-Drag-and-Drop,
+           weil letzteres auf einem iPad nicht ausgeloest wird. */
         function rhythmusEditor(wurzel, soll, werte) {
             const erlaubt = (werte && werte.length ? RHYTHMUS_BAUSTEINE.filter(w => werte.includes(w.code)) : RHYTHMUS_BAUSTEINE);
             const liste = [];
@@ -3928,20 +3970,106 @@
                 const t = document.createElement('button');
                 t.type = 'button';
                 t.className = 'rhy-baustein';
-                t.innerHTML = rhythmusSvg([w], null, true) + `<span>${w.wort}</span>`;
-                t.addEventListener('click', (e) => { e.preventDefault(); liste.push(w); zeichnen(); });
+                t.title = w.wort;
+                t.innerHTML = rhythmusSvg([w], null, true);
+                ziehenEinrichten(t, w);
                 leiste.appendChild(t);
             });
             wurzel.querySelector('[data-tat="zurueck"]').addEventListener('click', (e) => { e.preventDefault(); liste.pop(); zeichnen(); });
             wurzel.querySelector('[data-tat="leeren"]').addEventListener('click', (e) => { e.preventDefault(); liste.length = 0; zeichnen(); });
 
+            /* Ziehen und Tippen aus einer Hand: Wer nur kurz tippt, haengt das
+               Fragment hinten an; wer zieht, setzt es an die Stelle, auf die er
+               zeigt. Beides ueber dieselben Zeigerereignisse. */
+            function ziehenEinrichten(knopf, baustein) {
+                let geist = null, gezogen = false, start = null;
+                knopf.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    start = { x: e.clientX, y: e.clientY };
+                    gezogen = false;
+                    // Faengt den Zeiger ein, damit das Ziehen auch ausserhalb der
+                    // Karte weitergeht. Schlaegt fehl, wenn kein echter Zeiger
+                    // dahintersteckt - dann geht es eben ohne.
+                    try { knopf.setPointerCapture(e.pointerId); } catch (_) {}
+                });
+                knopf.addEventListener('pointermove', (e) => {
+                    if (!start) return;
+                    if (!gezogen && Math.hypot(e.clientX - start.x, e.clientY - start.y) < 8) return;
+                    gezogen = true;
+                    knopf.classList.add('gezogen');
+                    if (!geist) {
+                        geist = document.createElement('div');
+                        geist.className = 'rhy-geist';
+                        geist.innerHTML = rhythmusSvg([baustein], null, true);
+                        document.body.appendChild(geist);
+                    }
+                    geist.style.left = (e.clientX - 30) + 'px';
+                    geist.style.top = (e.clientY - 34) + 'px';
+                    zielZeigen(e.clientX, e.clientY);
+                });
+                const loslassen = (e) => {
+                    if (!start) return;
+                    start = null;
+                    knopf.classList.remove('gezogen');
+                    if (geist) { geist.remove(); geist = null; }
+                    if (!gezogen) { liste.push(baustein); zeichnen(); return; }   // kurzer Tipper
+                    const stelle = stelleAn(e.clientX, e.clientY);
+                    if (stelle === null) { zielLoeschen(); return; }
+                    liste.splice(stelle, 0, baustein);
+                    zeichnen();
+                };
+                knopf.addEventListener('pointerup', loslassen);
+                knopf.addEventListener('pointercancel', () => { start = null; gezogen = false; knopf.classList.remove('gezogen'); if (geist) { geist.remove(); geist = null; } zielLoeschen(); });
+            }
+
+            /* An welche Stelle gehoert ein Fragment, das hier losgelassen wird?
+               Null heisst: ausserhalb des Taktes, also nicht einsetzen. */
+            function stelleAn(x, y) {
+                const r = anzeige.getBoundingClientRect();
+                if (x < r.left - 30 || x > r.right + 30 || y < r.top - 40 || y > r.bottom + 40) return null;
+                const kaesten = [...anzeige.children];
+                for (let i = 0; i < kaesten.length; i++) {
+                    const k = kaesten[i].getBoundingClientRect();
+                    if (x < k.left + k.width / 2) return Math.min(i, liste.length);
+                }
+                return liste.length;
+            }
+            function zielZeigen(x, y) {
+                zielLoeschen();
+                const stelle = stelleAn(x, y);
+                if (stelle === null) return;
+                const kasten = anzeige.children[stelle] || anzeige.children[anzeige.children.length - 1];
+                if (kasten) kasten.classList.add('ziel');
+            }
+            function zielLoeschen() {
+                [...anzeige.children].forEach(k => k.classList.remove('ziel'));
+            }
+
             function zeichnen() {
-                anzeige.innerHTML = liste.length ? rhythmusSvg(liste)
-                    : '<span style="color:#64748b; font-size:.75rem">Noch nichts eingegeben</span>';
+                anzeige.innerHTML = '';
+                liste.forEach((b, i) => {
+                    const kasten = document.createElement('div');
+                    kasten.className = 'rhy-platz voll';
+                    kasten.style.flex = `${b.dauer} 1 0`;
+                    kasten.title = b.wort + ' (antippen zum Entfernen)';
+                    kasten.innerHTML = rhythmusSvg([b], null, true);
+                    kasten.addEventListener('click', () => { liste.splice(i, 1); zeichnen(); });
+                    anzeige.appendChild(kasten);
+                });
+                // Der Rest des Taktes steht als leere Kaestchen da - eines je Viertel
+                let frei = Math.max(0, soll - rhythmusDauer(liste));
+                while (frei > 0.001) {
+                    const teil = Math.min(1, frei);
+                    const kasten = document.createElement('div');
+                    kasten.className = 'rhy-platz leer';
+                    kasten.style.flex = `${teil} 1 0`;
+                    anzeige.appendChild(kasten);
+                    frei -= teil;
+                }
                 const dauer = rhythmusDauer(liste);
                 const voll = Math.abs(dauer - soll) < 0.001;
                 stand.className = 'rhy-stand' + (voll ? ' voll' : dauer > soll ? ' zuviel' : '');
-                const zahl = (x) => Number.isInteger(x) ? x : x.toFixed(1).replace('.', ',');
+                const zahl = (x) => Number.isInteger(x) ? x : x.toFixed(2).replace(/0$/, '').replace('.', ',');
                 stand.textContent = voll ? `Takt voll: ${zahl(soll)} Viertel`
                                          : `${zahl(dauer)} von ${zahl(soll)} Vierteln`;
             }
