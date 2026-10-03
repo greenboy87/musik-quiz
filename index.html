@@ -1157,10 +1157,10 @@
                     id="spiel-start-btn"
                     onclick="toggleSpielStart()"
                     class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
-                    title="Solange das Spiel nicht gestartet ist, sehen die Teams „Warten auf den Spielbeginn“ statt des Antwortfeldes – sie können aber schon ihre Songs abgeben"
+                    title="Spiel starten: Solange es nicht läuft, sehen die Teams „Warten auf den Spielbeginn“ statt des Antwortfeldes – sie können aber schon ihre Songs abgeben"
+                    aria-label="Spiel starten"
                 >
                     <i class="fa-solid fa-play"></i>
-                    <span>Spiel starten</span>
                 </button>
                 <button
                     id="round-lock-btn"
@@ -1930,12 +1930,16 @@
         function updateStartButtonUI() {
             const btn = getEl('spiel-start-btn');
             if (!btn) return;
+            /* Nur das Zeichen, kein Wort: Die Leiste ist eng, und Play/Pause versteht
+               sich von selbst. Was der naechste Druck bewirkt, steht im Tooltip. */
             if (spielLaeuft) {
-                btn.innerHTML = `<i class="fa-solid fa-pause"></i> <span>Spiel läuft</span>`;
+                btn.innerHTML = `<i class="fa-solid fa-pause"></i>`;
+                btn.setAttribute('aria-label', 'Zurück in die Wartehalle');
                 btn.className = "bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans";
                 btn.title = "Zurück in die Wartehalle: Die Teams sehen wieder „Warten auf den Spielbeginn“ und können Songs abgeben";
             } else {
-                btn.innerHTML = `<i class="fa-solid fa-play"></i> <span>Spiel starten</span>`;
+                btn.innerHTML = `<i class="fa-solid fa-play"></i>`;
+                btn.setAttribute('aria-label', 'Spiel starten');
                 btn.className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans";
                 btn.title = "Die Teams sehen noch „Warten auf den Spielbeginn“. Ein Klick gibt das Antwortfeld frei.";
             }
