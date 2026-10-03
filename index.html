@@ -3808,8 +3808,13 @@
                     ${kompakt ? '' : '<input type="range" min="40" max="200" value="90" step="1" data-rolle="regler" class="flex-1 min-w-[6rem] accent-violet-500">'}
                     <span class="text-[11px] font-bold text-slate-400">Takte</span>
                     <span data-rolle="takte" class="flex gap-1"></span>
+                    <button type="button" data-rolle="vorklatsch"
+                            class="ml-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-1.5 px-3 rounded-lg text-xs transition-all active:scale-95"
+                            title="Zählt einen Takt ein und klatscht den eingegebenen Rhythmus vor">
+                        <i class="fa-solid fa-hands-clapping mr-1"></i> Vorklatschen
+                    </button>
                     <button type="button" data-rolle="start"
-                            class="ml-auto bg-violet-600 hover:bg-violet-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs transition-all active:scale-95">
+                            class="bg-violet-600 hover:bg-violet-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs transition-all active:scale-95">
                         <i class="fa-solid fa-play mr-1"></i> Start
                     </button>
                 </div>`;
@@ -3817,6 +3822,7 @@
             teil('minus').addEventListener('click', () => metronomTempo(-5));
             teil('plus').addEventListener('click', () => metronomTempo(5));
             teil('start').addEventListener('click', () => metronomUmschalten());
+            teil('vorklatsch').addEventListener('click', () => rhythmusVorklatschen());
             const regler = teil('regler');
             if (regler) regler.addEventListener('input', (e) => metronomTempoSetzen(e.target.value));
             metronomAnsichten = metronomAnsichten.filter(a => a.isConnected && a !== wurzel);
@@ -3875,6 +3881,74 @@
             });
         }
         function metronomTempo(schritt) { metronomTempoSetzen(metronom.bpm + schritt); }
+
+        /* Ein Klatschen: kurzes Rauschen mit scharfem Einsatz. Ein Sinuston klaenge
+           wie ein zweites Metronom - man soll Taktschlag und Rhythmus auseinander
+           halten koennen. */
+        function klatschKlang(ctx, zeit) {
+            const laenge = Math.floor(ctx.sampleRate * 0.09);
+            const puffer = ctx.createBuffer(1, laenge, ctx.sampleRate);
+            const daten = puffer.getChannelData(0);
+            for (let i = 0; i < laenge; i++) {
+                // Rauschen, das schnell leiser wird
+                daten[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / laenge, 3);
+            }
+            const quelle = ctx.createBufferSource();
+            quelle.buffer = puffer;
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 1500;
+            filter.Q.value = 0.8;
+            const g = ctx.createGain();
+            g.gain.setValueAtTime(0.9, zeit);
+            quelle.connect(filter); filter.connect(g); g.connect(ctx.destination);
+            quelle.start(zeit);
+        }
+
+        /* Welcher Rhythmus wird vorgeklatscht? Steht das Fenster offen, das, was
+           gerade darin steht - sonst der, mit dem die Runde laeuft. */
+        function rhythmusZumVorklatschen() {
+            const fenster = getEl('rhythmus-fenster');
+            const offen = fenster && !fenster.classList.contains('hidden');
+            if (offen && rhythmusLoesungsEditor) return rhythmusLoesungsEditor.lesen();
+            return rhythmusRunde ? rhythmusRunde.loesung : '';
+        }
+
+        /* Einzaehlen und vorklatschen: ein Takt Metronom, dann der Rhythmus selbst.
+           Alles im Voraus auf die Audiouhr gelegt - nachtraeglich getaktet wuerde es
+           hoerbar schwanken. */
+        let vorklatschUhren = [];
+        function rhythmusVorklatschen() {
+            const code = rhythmusZumVorklatschen();
+            const noten = rhythmusLesen(code);
+            if (!noten.length) { showToast("Trage erst einen Rhythmus ein, der vorgeklatscht werden soll.", "danger"); return; }
+            const ctx = ensureAudioContext();
+            if (!ctx) { showToast("Dieses Gerät gibt keinen Ton aus.", "danger"); return; }
+            if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+            metronomStoppen();
+
+            const schlagDauer = 60 / metronom.bpm;
+            const proTakt = metronomSchlaege();
+            // In 6/8 schlaegt das Metronom Achtel - eine Viertel dauert dann zwei Schlaege
+            const viertel = schlagDauer * (metronomSchlaege() === 6 ? 2 : 1);
+            const start = ctx.currentTime + 0.15;
+
+            vorklatschUhren.forEach(clearTimeout);
+            vorklatschUhren = [];
+            for (let i = 0; i < proTakt; i++) {
+                const wann = start + i * schlagDauer;
+                metronomKlick(ctx, wann, i === 0);
+                vorklatschUhren.push(setTimeout(() => metronomPulsZeichnen(i), Math.max(0, (wann - ctx.currentTime) * 1000)));
+            }
+
+            let t = start + proTakt * schlagDauer;
+            noten.forEach(b => b.teile.forEach(teil => {
+                if (!teil.p) klatschKlang(ctx, t);
+                t += teil.d * viertel;
+            }));
+            vorklatschUhren.push(setTimeout(() => metronomPulsZeichnen(-1), Math.max(0, (t - ctx.currentTime) * 1000 + 200)));
+            showToast("Einzähler läuft - danach kommt der Rhythmus.", "info");
+        }
 
         function metronomKlick(ctx, zeit, betont) {
             const o = ctx.createOscillator(), g = ctx.createGain();
