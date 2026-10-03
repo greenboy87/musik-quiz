@@ -2660,11 +2660,11 @@
                 dauer: 50000,
                 einheit: ['Takt', 'Takte'],
                 name: 'Taktfüller',
-                hinweis: 'Note antippen legt sie in den Takt, im Takt antippen nimmt sie zurück',
+                hinweis: 'Noten antippen, dann Fertig - im Takt antippen nimmt zurück',
                 regeln: [
                     ['1', 'Oben steht eine Taktart, zum Beispiel 3/4', ''],
-                    ['2', 'Tippe unten die Noten an, die hineinpassen', ''],
-                    ['3', 'Genau voll gibt einen Punkt - zu viel geht nicht hinein', ''],
+                    ['2', 'Lege Noten in den Takt, so viele du willst', ''],
+                    ['3', 'Fertig drücken: nur genau voll gibt einen Punkt', ''],
                     ['50', 'Sekunden lang - so viele Takte wie möglich', 'warnung']
                 ],
                 feld: (behaelter, dauer, senden) => taktfuellerFeldAufbauen(behaelter, dauer, senden)
@@ -3564,8 +3564,8 @@
             const ctx = leinwand.getContext('2d');
 
             const S = {
-                w: 0, h: 0, takt: null, drin: [], voll: 0,
-                felder: [], blitz: 0, warnung: 0,
+                w: 0, h: 0, takt: null, drin: [], pause: 0, ergebnis: '',
+                felder: [], fertigFeld: null,
                 punkte: 0, extra: 0, lauf: true, letzterSend: 0, folge: 0,
                 ende: performance.now() + dauer, zuletzt: performance.now()
             };
@@ -3577,12 +3577,14 @@
                 leinwand.width = Math.round(r.width * dpr);
                 leinwand.height = Math.round(r.height * dpr);
                 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-                // Die vier Notenwerte liegen unten nebeneinander zum Antippen
-                const breite = Math.min(S.w * 0.2, S.h * 0.3);
-                const links = (S.w - breite * NOTENWERTE.length) / 2;
+                // Unten die vier Notenwerte und daneben der Fertig-Knopf
+                const anzahl = NOTENWERTE.length + 1;
+                const breite = Math.min(S.w * 0.18, S.h * 0.28);
+                const links = (S.w - breite * anzahl) / 2;
                 S.felder = NOTENWERTE.map((n, i) => ({
                     note: n, x: links + i * breite, y: S.h * 0.62, b: breite, h: S.h * 0.33
                 }));
+                S.fertigFeld = { x: links + NOTENWERTE.length * breite, y: S.h * 0.62, b: breite, h: S.h * 0.33 };
             }
 
             function neuerTakt() {
@@ -3592,30 +3594,39 @@
                 const auswahl = TAKTARTEN.filter(t => t.leicht || Math.random() < stufe * 0.9);
                 S.takt = auswahl[Math.floor(Math.random() * auswahl.length)];
                 S.drin = [];
-                S.voll = 0;
-                S.blitz = 0;
+                S.pause = 0;
+                S.ergebnis = '';
             }
 
             function summe() { return S.drin.reduce((a, n) => a + n.wert, 0); }
 
+            /* Es darf zu viel hineingelegt werden - geprueft wird erst auf Knopfdruck.
+               Sonst waere jeder volle Takt automatisch richtig, und zaehlen muesste
+               niemand mehr. */
             function legen(note) {
-                if (S.voll) return;
-                // Nichts, was ueberlaeuft: Der Takt bleibt immer musikalisch moeglich
-                if (summe() + note.wert > S.takt.wert + 0.001) { S.warnung = 0.45; return; }
+                if (S.pause) return;
                 S.drin.push(note);
-                if (Math.abs(summe() - S.takt.wert) < 0.001) {
-                    S.punkte++; S.extra++;
-                    S.voll = performance.now() + 900;
-                    senden(S, false);
-                }
             }
 
+            function abgeben() {
+                if (S.pause || !S.takt) return;
+                const ist = summe(), soll = S.takt.wert;
+                S.ergebnis = Math.abs(ist - soll) < 0.001 ? 'richtig' : (ist > soll ? 'zuviel' : 'zuwenig');
+                S.extra++;
+                if (S.ergebnis === 'richtig') S.punkte++;
+                S.pause = performance.now() + (S.ergebnis === 'richtig' ? 900 : 1500);
+                senden(S, false);
+            }
+
+            function imFeld(f, x, y) { return f && x >= f.x && x <= f.x + f.b && y >= f.y && y <= f.y + f.h; }
+
             leinwand.addEventListener('pointerdown', (e) => {
-                if (!S.lauf || S.voll) return;
+                if (!S.lauf || S.pause) return;
                 e.preventDefault();
                 const r = leinwand.getBoundingClientRect();
                 const x = e.clientX - r.left, y = e.clientY - r.top;
-                const feld = S.felder.find(f => x >= f.x && x <= f.x + f.b && y >= f.y && y <= f.y + f.h);
+                if (imFeld(S.fertigFeld, x, y)) { abgeben(); return; }
+                const feld = S.felder.find(f => imFeld(f, x, y));
                 if (feld) { legen(feld.note); return; }
                 // Im Takt nimmt ein Tipper die Note wieder heraus
                 const stelle = notenOrte().findIndex(o => Math.hypot(o.x - x, o.y - y) < S.h * 0.09);
@@ -3646,8 +3657,7 @@
                 if (!S.takt) neuerTakt();
                 const rest = Math.max(0, S.ende - jetzt);
                 if (!rest) { aufraeumen(); senden(S, true); zeichnen(0); return; }
-                if (S.voll && jetzt > S.voll) neuerTakt();
-                if (S.warnung > 0) S.warnung = Math.max(0, S.warnung - dt);
+                if (S.pause && jetzt > S.pause) neuerTakt();
                 zeichnen(rest);
                 requestAnimationFrame(schritt);
             }
@@ -3658,7 +3668,8 @@
                 const von = S.w * 0.22, bis = S.w * 0.95;
 
                 // Taktlinien und Notenlinie
-                ctx.strokeStyle = S.voll ? '#34d399' : (S.warnung > 0 ? '#f87171' : 'rgba(248,250,252,.75)');
+                ctx.strokeStyle = S.ergebnis === 'richtig' ? '#34d399'
+                                : S.ergebnis ? '#f87171' : 'rgba(248,250,252,.75)';
                 ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.moveTo(von, linie); ctx.lineTo(bis, linie); ctx.stroke();
                 ctx.lineWidth = 4;
@@ -3681,21 +3692,28 @@
                 const ng = notenGroesse();
                 notenOrte().forEach(o => {
                     zeichneNote(ctx, o.x, o.y - ng * 0.26, ng, o.note.typ,
-                                S.voll ? '#34d399' : '#f8fafc');
+                                S.ergebnis === 'richtig' ? '#34d399' : S.ergebnis ? '#fca5a5' : '#f8fafc');
                 });
 
                 // Fuellstand als Balken unter dem Takt
                 if (S.takt) {
-                    const anteil = Math.min(1, summe() / S.takt.wert);
-                    const by = linie + S.h * 0.17, bh = S.h * 0.045;
+                    const anteil = summe() / S.takt.wert;
+                    const by = linie + S.h * 0.17, bh = S.h * 0.045, breite = bis - von;
                     ctx.fillStyle = 'rgba(255,255,255,.12)';
-                    ctx.fillRect(von, by, bis - von, bh);
-                    ctx.fillStyle = S.voll ? '#34d399' : '#7dd3fc';
-                    ctx.fillRect(von, by, (bis - von) * anteil, bh);
+                    ctx.fillRect(von, by, breite, bh);
+                    ctx.fillStyle = S.ergebnis === 'richtig' ? '#34d399' : '#7dd3fc';
+                    ctx.fillRect(von, by, breite * Math.min(1, anteil), bh);
+                    /* Was ueber den Takt hinausgeht, haengt rot hinten dran: Man sieht
+                       sofort, dass zu viel drin ist - erfaehrt aber nicht, ob der Rest
+                       stimmt, denn das ist ja die Aufgabe. */
+                    if (anteil > 1) {
+                        ctx.fillStyle = '#f87171';
+                        ctx.fillRect(von + breite, by, Math.min(breite * 0.25, breite * (anteil - 1)), bh);
+                    }
                 }
 
                 // Vorrat unten
-                S.felder.forEach(f => {
+                function kasten(f, fuellung, rahmen) {
                     ctx.beginPath();
                     const rr = Math.min(14, f.b * 0.18);
                     ctx.moveTo(f.x + rr, f.y);
@@ -3704,26 +3722,36 @@
                     ctx.arcTo(f.x, f.y + f.h, f.x, f.y, rr);
                     ctx.arcTo(f.x, f.y, f.x + f.b, f.y, rr);
                     ctx.closePath();
-                    const passt = S.takt && summe() + f.note.wert <= S.takt.wert + 0.001;
-                    ctx.fillStyle = passt ? 'rgba(255,255,255,.1)' : 'rgba(255,255,255,.03)';
-                    ctx.fill();
-                    ctx.strokeStyle = passt ? 'rgba(125,211,252,.6)' : 'rgba(248,250,252,.15)';
-                    ctx.lineWidth = 2; ctx.stroke();
-                    ctx.globalAlpha = passt ? 1 : 0.3;
+                    ctx.fillStyle = fuellung; ctx.fill();
+                    ctx.strokeStyle = rahmen; ctx.lineWidth = 2; ctx.stroke();
+                }
+                /* Kein Ausgrauen mehr: Es darf alles gelegt werden, auch zu viel.
+                   Ob es stimmt, entscheidet erst der Fertig-Knopf. */
+                S.felder.forEach(f => {
+                    kasten(f, 'rgba(255,255,255,.1)', 'rgba(125,211,252,.6)');
                     zeichneNote(ctx, f.x + f.b * 0.5, f.y + f.h * 0.42, f.h * 0.5, f.note.typ, '#f8fafc');
-                    ctx.globalAlpha = 1;
                     ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
                     // Die Beschriftung muss in das Feld passen, nicht ueber den Rand
                     ctx.font = `800 ${Math.max(9, Math.min(S.h * 0.05, f.b * 0.2))}px 'DM Sans', sans-serif`;
-                    ctx.fillStyle = passt ? 'rgba(248,250,252,.8)' : 'rgba(248,250,252,.3)';
+                    ctx.fillStyle = 'rgba(248,250,252,.8)';
                     ctx.fillText(f.note.name, f.x + f.b * 0.5, f.y + f.h - 4);
                 });
+                if (S.fertigFeld) {
+                    const f = S.fertigFeld;
+                    kasten(f, 'rgba(16,185,129,.28)', '#34d399');
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.font = `900 ${Math.max(11, Math.min(S.h * 0.07, f.b * 0.26))}px 'DM Sans', sans-serif`;
+                    ctx.fillStyle = '#ecfdf5';
+                    ctx.fillText('Fertig', f.x + f.b * 0.5, f.y + f.h * 0.5);
+                }
 
-                if (S.voll) {
+                if (S.ergebnis) {
                     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                     ctx.font = `900 ${Math.max(18, S.h * 0.1)}px 'DM Sans', sans-serif`;
-                    ctx.fillStyle = '#34d399';
-                    ctx.fillText('Voll! +1', S.w / 2, S.h * 0.08);
+                    ctx.fillStyle = S.ergebnis === 'richtig' ? '#34d399' : '#f87171';
+                    ctx.fillText(S.ergebnis === 'richtig' ? 'Stimmt! +1'
+                               : S.ergebnis === 'zuviel' ? 'Zu viel im Takt' : 'Da fehlt noch was',
+                               S.w / 2, S.h * 0.08);
                 }
 
                 ctx.font = `800 ${Math.max(13, S.h * 0.055)}px 'DM Sans', sans-serif`;
