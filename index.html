@@ -1001,7 +1001,14 @@
                 <div class="text-[11px] font-bold text-slate-300 mb-1">Diese Bausteine stehen der Klasse zur Verfügung:</div>
                 <div id="rhythmus-wahl" class="rhy-wahl"></div>
             </div>
-            <div class="text-[11px] font-bold text-slate-300">Was du geklatscht hast:</div>
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold text-slate-300">Was du geklatscht hast:</span>
+                <button type="button" onclick="rhythmusZufall()" id="rhythmus-zufall-btn"
+                        class="ml-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] rounded-lg px-3 py-1 transition-all active:scale-95"
+                        title="Würfelt aus deinen Bausteinen einen vollen Takt">
+                    <i class="fa-solid fa-dice"></i> Zufall
+                </button>
+            </div>
             <div id="rhythmus-loesung-feld"></div>
             <div class="flex gap-2 pt-1">
                 <button onclick="rhythmusRundeStarten()" id="rhythmus-start-btn"
@@ -4034,6 +4041,44 @@
         /* Klatschmodus an heisst: Es zaehlt, wann geklatscht wird, nicht wie lang
            der Ton steht. Aus heisst: Die Schreibweise muss genau stimmen - dann ist
            eine Halbe etwas anderes als eine Viertel mit Pause. */
+        /* Wuerfelt aus den gewaehlten Bausteinen einen Takt, der genau aufgeht.
+           Gesucht wird durch Probieren: Ein Baustein, der noch hineinpasst, wird
+           angehaengt; geht es nicht mehr auf, faengt der Versuch von vorn an. Das
+           ist kurz genug, um in Millisekunden fertig zu sein, und spart die Logik
+           eines richtigen Rueckwaertssuchers. */
+        function rhythmusZufall() {
+            const erlaubt = RHYTHMUS_BAUSTEINE.filter(b => rhythmusEntwurf.werte.includes(b.code));
+            if (!erlaubt.length) { showToast("Wähle erst Bausteine aus, aus denen gewürfelt werden soll.", "danger"); return; }
+            const soll = rhythmusEntwurf.soll;
+            for (let versuch = 0; versuch < 400; versuch++) {
+                const takt = [];
+                let rest = soll;
+                let steckt = false;
+                while (rest > 0.001 && !steckt) {
+                    const moeglich = erlaubt.filter(b => b.dauer <= rest + 0.001);
+                    if (!moeglich.length) { steckt = true; break; }
+                    takt.push(moeglich[Math.floor(Math.random() * moeglich.length)]);
+                    rest = soll - rhythmusDauer(takt);
+                }
+                if (!steckt && Math.abs(rest) < 0.001) {
+                    /* Zwei Dinge, die ein Diktat unbrauchbar machen, und die beide
+                       nur beim Wuerfeln entstehen: ein Takt aus einem einzigen
+                       Zeichen, und ein Takt, der mehr schweigt als klingt. In den
+                       ersten Versuchen wird deshalb neu gewuerfelt - danach nimmt
+                       der Zufall, was er kriegt, damit es nie haengen bleibt. */
+                    const nurPause = (b) => b.teile.every(t => t.p);
+                    const pausen = takt.filter(nurPause).length;
+                    if (versuch < 200 && (takt.length < 2 && soll > 1)) continue;
+                    if (versuch < 200 && pausen * 2 > takt.length) continue;
+                    if (versuch < 200 && nurPause(takt[0])) continue;   // Anfang muss hoerbar sein
+                    rhythmusLoesungsEditor.setzen(rhythmusSchreiben(takt));
+                    playSound('up');
+                    return;
+                }
+            }
+            showToast("Aus diesen Bausteinen geht der Takt nicht genau auf - nimm noch einen kürzeren dazu.", "danger");
+        }
+
         function rhythmusKlatschUmschalten() {
             const schalter = getEl('rhythmus-klatsch');
             rhythmusEntwurf.klatsch = schalter ? schalter.checked : true;
