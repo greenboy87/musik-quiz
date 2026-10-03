@@ -3929,7 +3929,8 @@
             const f = getEl('rhythmus-fenster');
             if (!f) return;
             if (rhythmusRunde) {
-                rhythmusEntwurf = { soll: rhythmusRunde.soll, werte: rhythmusRunde.werte.slice(), loesung: rhythmusRunde.loesung };
+                rhythmusEntwurf = { soll: rhythmusRunde.soll, zeichen: rhythmusRunde.zeichen,
+                                    werte: rhythmusRunde.werte.slice(), loesung: rhythmusRunde.loesung };
             }
             f.classList.remove('hidden');
             f.classList.add('flex');
@@ -4044,7 +4045,8 @@
                 showToast(`Achtung: Dein Rhythmus ist ${dauer} Viertel lang, der Takt hat ${rhythmusEntwurf.soll}.`, "info");
             }
             rhythmusEntwurf.loesung = loesung;
-            rhythmusRunde = { soll: rhythmusEntwurf.soll, werte: rhythmusEntwurf.werte.slice(), loesung: loesung };
+            rhythmusRunde = { soll: rhythmusEntwurf.soll, zeichen: rhythmusEntwurf.zeichen || '4/4',
+                              werte: rhythmusEntwurf.werte.slice(), loesung: loesung };
             metronomLeisteZeigen(true);
             broadcastControlState();
             renderIncomingAnswersList();
@@ -4149,6 +4151,25 @@
         function rhythmusSchreiben(liste) { return liste.map(b => b.code).join('-'); }
         function rhythmusDauer(liste) { return liste.reduce((a, b) => a + b.dauer, 0); }
 
+        /* Derselbe Rhythmus, anders geschrieben: Zwei Achtel im Verbund klingen wie
+           zwei einzeln notierte, eine Achtelpause plus Achtel wie das Fragment "Pause
+           + Achtel". Verglichen wird deshalb nicht die Folge der Fragmente, sondern
+           das, was man hoert - jedes Fragment in seine Werte zerlegt. */
+        function rhythmusKern(code) {
+            const teile = [];
+            rhythmusLesen(code).forEach(b => b.teile.forEach(t => {
+                /* Pausen nebeneinander zu einer zusammenfassen: Zwei Achtelpausen
+                   klingen wie eine Viertelpause, da ist nichts zu hoeren, was sie
+                   unterscheidet. Noten dagegen bleiben einzeln - zwei Viertel sind
+                   zwei Schlaege, eine Halbe ist einer. */
+                const letzter = teile[teile.length - 1];
+                if (t.p && letzter && letzter.p) letzter.d += t.d;
+                else teile.push({ p: !!t.p, d: t.d });
+            }));
+            return teile.map(t => (t.p ? 'p' : 'n') + t.d).join(',');
+        }
+        function rhythmusGleich(a, b) { return rhythmusKern(a) === rhythmusKern(b); }
+
         /* Zeichnet eine Folge von Fragmenten als SVG. Haelse nach oben, eine
            Grundlinie - eine Rhythmuszeile braucht keine fuenf Notenlinien.
            "nackt" laesst Taktstriche und Linie weg: So passt ein einzelnes
@@ -4156,14 +4177,16 @@
         /* Gezeichnet wird in currentColor: Die Noten nehmen damit die Textfarbe
            ihres Kastens an und sind im hellen wie im dunklen Theme zu sehen.
            Vorher stand hier ein festes Hellgrau - auf weissem Grund unsichtbar. */
-        function rhythmusSvg(liste, farbe, nackt) {
+        function rhythmusSvg(liste, farbe, nackt, taktzeichen) {
             const tinte = farbe || 'currentColor';
             const vorschub = { 4: 96, 2: 62, 1: 38, 0.5: 24, 0.25: 17 };
             const links = 16, halsOben = 13, linie = 46, balkenDicke = 5;
             const teile = [];
             // Im Takt beginnt das erste Zeichen mit Abstand zum Taktstrich - sonst
-            // klebt eine Halbe Pause mit ihrem Balken daran fest.
-            let x = links + (nackt ? 10 : 30);
+            // klebt eine Halbe Pause mit ihrem Balken daran fest. Steht eine
+            // Taktangabe davor, braucht die ebenfalls Platz.
+            const mitTakt = !nackt && !!taktzeichen;
+            let x = links + (nackt ? 10 : (mitTakt ? 52 : 30));
             // Linker und rechter Rand der tatsaechlichen Zeichnung - danach wird die
             // Karte zugeschnitten. Nach dem Vorschub zu schneiden hiesse: Eine Halbe
             // klebt links und hat rechts eine halbe Karte Luft.
@@ -4172,6 +4195,14 @@
 
             if (!nackt) {
                 teile.push(`<line x1="${links}" y1="${linie - 17}" x2="${links}" y2="${linie + 15}" stroke="${tinte}" stroke-width="3"/>`);
+            }
+            if (mitTakt) {
+                const [oben, unten] = String(taktzeichen).split('/');
+                const tx = links + 26;
+                teile.push(`<text x="${tx}" y="${linie - 8}" fill="${tinte}" font-size="19" font-weight="900"` +
+                           ` text-anchor="middle" dominant-baseline="middle" font-family="DM Sans, sans-serif">${oben}</text>`);
+                teile.push(`<text x="${tx}" y="${linie + 10}" fill="${tinte}" font-size="19" font-weight="900"` +
+                           ` text-anchor="middle" dominant-baseline="middle" font-family="DM Sans, sans-serif">${unten || ''}</text>`);
             }
             const linieVon = x - 12;
 
@@ -6938,6 +6969,25 @@
             }
             list.appendChild(protectionBanner);
 
+            /* Ist alles aufgedeckt, gehoert die Loesung dazu: Dann steht auf dem
+               Beamer, was richtig gewesen waere, und jede Antwort darunter laesst
+               sich unmittelbar damit vergleichen. Verdeckt bleibt sie verdeckt -
+               sonst waere der Sichtschutz sinnlos. */
+            if (!beamerProtectionActive && rhythmusRunde && rhythmusRunde.loesung) {
+                const loesungsKarte = document.createElement('div');
+                loesungsKarte.className = "w-full col-span-full mb-1";
+                loesungsKarte.innerHTML = `
+                    <div class="bg-emerald-950/30 border border-emerald-800/50 rounded-xl p-2 animate-scaleIn">
+                        <div class="text-[11px] font-black text-emerald-300 mb-1 flex items-center gap-1.5 font-sans">
+                            <i class="fa-solid fa-drum"></i> Deine Vorgabe - so war es geklatscht
+                        </div>
+                        <div class="text-slate-100">
+                            ${rhythmusSvg(rhythmusLesen(rhythmusRunde.loesung), null, false, rhythmusRunde.zeichen)}
+                        </div>
+                    </div>`;
+                list.appendChild(loesungsKarte);
+            }
+
             // Chronologische Kärtchen rendern (Kompakte Kärtchen im mehrspaltigen Grid)
             incomingAnswers.forEach((ans, index) => {
                 const item = document.createElement('div');
@@ -7012,14 +7062,14 @@
                         const noten = rhythmusLesen(code);
                         let urteil = '';
                         if (rhythmusRunde && rhythmusRunde.loesung) {
-                            const stimmt = code === rhythmusRunde.loesung;
+                            const stimmt = rhythmusGleich(code, rhythmusRunde.loesung);
                             urteil = stimmt
                                 ? `<span class="text-[10px] font-black text-emerald-400"><i class="fa-solid fa-check"></i> stimmt mit deiner Vorgabe</span>`
                                 : `<span class="text-[10px] font-black text-rose-400"><i class="fa-solid fa-xmark"></i> weicht ab</span>`;
                         }
                         answerTextContent = `
                             <div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
-                                ${noten.length ? rhythmusSvg(noten) : '<span class="text-xs text-slate-500">leer</span>'}
+                                ${noten.length ? rhythmusSvg(noten, null, false, rhythmusRunde && rhythmusRunde.zeichen) : '<span class="text-xs text-slate-500">leer</span>'}
                                 <div class="text-center mt-1">${urteil}</div>
                             </div>
                         `;
