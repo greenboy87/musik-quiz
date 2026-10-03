@@ -427,6 +427,15 @@
         html[data-theme="light"] .rhy-chip { background: #f8fafc; border-color: #cbd5e1; color: #94a3b8; }
         html[data-theme="light"] .rhy-chip.an { background: #ede9fe; border-color: #7c3aed; color: #0f172a; }
 
+        /* Laeuft eine Rhythmus-Runde, pulsiert ihr Knopf: Es ist ein anderer
+           Spielmodus als sonst, und das soll man im Vorbeigehen sehen. */
+        @keyframes rhyPuls {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(167,139,250,.7); }
+            60% { box-shadow: 0 0 0 9px rgba(167,139,250,0); }
+        }
+        .rhy-aktiv { animation: rhyPuls 1.5s ease-out infinite; }
+        @media (prefers-reduced-motion: reduce) { .rhy-aktiv { animation: none; } }
+
         /* Metronom im Rhythmus-Fenster */
         .metro-puls { display: flex; gap: .4rem; align-items: center; }
         .metro-punkt {
@@ -976,28 +985,7 @@
                 </button>
             </div>
             <!-- Einzaehler: erst das Metronom, dann klatschen -->
-            <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 space-y-2">
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-[11px] font-bold text-slate-300"><i class="fa-solid fa-stopwatch mr-1"></i> Metronom</span>
-                    <div class="metro-puls" id="metro-puls"></div>
-                </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-[11px] font-bold text-slate-400 w-14">Tempo</span>
-                    <button type="button" class="rhy-knopf" onclick="metronomTempo(-5)">−</button>
-                    <span id="metro-tempo" class="text-sm font-black text-violet-300 w-16 text-center">90 bpm</span>
-                    <button type="button" class="rhy-knopf" onclick="metronomTempo(5)">+</button>
-                    <input id="metro-regler" type="range" min="40" max="200" value="90" step="1"
-                           oninput="metronomTempoSetzen(this.value)" class="flex-1 min-w-[6rem] accent-violet-500">
-                </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-[11px] font-bold text-slate-400 w-14">Takte</span>
-                    <span id="metro-takte" class="flex gap-1"></span>
-                    <button type="button" id="metro-knopf" onclick="metronomUmschalten()"
-                            class="ml-auto bg-violet-600 hover:bg-violet-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs transition-all active:scale-95">
-                        <i class="fa-solid fa-play mr-1"></i> Start
-                    </button>
-                </div>
-            </div>
+            <div id="metro-im-fenster" class="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5"></div>
 
             <div>
                 <div class="text-[11px] font-bold text-slate-300 mb-1">Diese Bausteine stehen der Klasse zur Verfügung:</div>
@@ -1423,6 +1411,7 @@
                 </button>
                 
                 <button 
+                    id="songs-modal-btn"
                     onclick="openTeamSongsModal()" 
                     class="bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 hover:text-white p-3 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center"
                     title="Vorbereitete Songs der Teams ansehen (Spickzettel)"
@@ -1582,6 +1571,17 @@
                             class="w-24 bg-slate-900 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold text-[11px] rounded-lg px-3 py-1 transition-all active:scale-95">
                         Ton testen
                     </button>
+                </div>
+
+                <div class="einrichtung-zeile flex items-center gap-2 border-t border-slate-700/40">
+                    <span class="einrichtung-beschriftung text-[11px] text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-music text-slate-400"></i> Songabgabe
+                    </span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="songabgabe-toggle" checked class="sr-only peer" onchange="handleSongabgabeToggle()">
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
+                    </label>
+                    <span class="flex-grow text-[10px] text-slate-400">aus: Teams kommen direkt zum Antwortfeld</span>
                 </div>
 
                 <div class="einrichtung-zeile flex items-center gap-2 border-t border-slate-700/40">
@@ -1748,6 +1748,11 @@
                 </button>
             </div>
         </div>
+
+        <!-- Metronom unter dem Rundenmanager - nur sichtbar, solange eine
+             Rhythmus-Runde laeuft. Dann will man einzaehlen, ohne erst ein
+             Fenster zu oeffnen. -->
+        <div id="metro-leiste" class="hidden bg-violet-950/25 border border-violet-800/40 rounded-xl p-2.5 mb-3 animate-fadeIn"></div>
 
         <!-- ========================================== -->
         <!-- CHRONOLOGISCHE LIVE ANTWORTEN VOM IPAD       -->
@@ -2022,6 +2027,7 @@
                 const autoSortEl = getEl('auto-sort-toggle');
                 const soundEl = getEl('sound-toggle');
                 const autoLockEl = getEl('auto-lock-toggle');
+                const songabgabeEl = getEl('songabgabe-toggle');
 
                 const saveDataObj = {
                     activeClass: activeClass,
@@ -2030,6 +2036,7 @@
                     autoSort: autoSortEl ? autoSortEl.checked : true,
                     soundEnabled: soundEl ? soundEl.checked : true,
                     autoLockEnabled: autoLockEl ? autoLockEl.checked : false,
+                    songabgabeAn: songabgabeEl ? songabgabeEl.checked : true,
                     beamerProtectionActive: beamerProtectionActive,
                     answerHistory: answerHistory
                 };
@@ -2452,7 +2459,8 @@
                     minispiel: minispiel ? { id: minispiel.id, phase: minispiel.phase } : null,
                     sammel: sammelspiel ? { art: sammelspiel.art, id: sammelspiel.id, phase: sammelspiel.phase } : null,
                     // Nur Taktlaenge und erlaubte Bausteine - die Loesung bleibt hier
-                    rhythmus: rhythmusRunde ? { soll: rhythmusRunde.soll, werte: rhythmusRunde.werte } : null
+                    rhythmus: rhythmusRunde ? { soll: rhythmusRunde.soll, werte: rhythmusRunde.werte } : null,
+                    songabgabe: songabgabeAn
                 });
             } catch(e) {
                 console.error("Fehler beim Senden des Updates:", e);
@@ -3711,6 +3719,31 @@
         /* Die Loesung bleibt auf dem Lehrergeraet; gesendet werden nur  */
         /* Taktlaenge und erlaubte Bausteine.                            */
         /* ============================================================ */
+        /* Songabgabe: In einer reinen Rhythmusstunde hat der Spickzettel nichts zu
+           suchen. Der Schalter gehoert zur Sitzung und nicht zum Raum - so laesst er
+           sich mitten in der Stunde umlegen, ohne einen neuen Raum aufzumachen. */
+        let songabgabeAn = true;
+
+        function handleSongabgabeToggle() {
+            const schalter = getEl('songabgabe-toggle');
+            songabgabeAn = schalter ? schalter.checked : true;
+            saveState();
+            broadcastControlState();
+            renderScoreboard();
+            updateSongabgabeUI();
+            showToast(songabgabeAn
+                ? "Songabgabe an: Die Teams geben vor dem Spiel ihre Songs ab."
+                : "Songabgabe aus: Die Teams kommen gleich zum Antwortfeld.", "info");
+        }
+
+        /* Ohne Songabgabe hat der Spickzettel-Knopf keinen Inhalt mehr. */
+        function updateSongabgabeUI() {
+            const schalter = getEl('songabgabe-toggle');
+            if (schalter) schalter.checked = songabgabeAn;
+            const knopf = getEl('songs-modal-btn');
+            if (knopf) knopf.classList.toggle('hidden', !songabgabeAn);
+        }
+
         let rhythmusRunde = null;      // laeuft: { soll, werte, loesung }
         let rhythmusEntwurf = { soll: 4, werte: ['V', 'AA', 'Vp', 'H'], loesung: '' };
         let rhythmusLoesungsEditor = null;
@@ -3730,41 +3763,98 @@
             return METRONOM_SCHLAEGE[rhythmusEntwurf.zeichen] || rhythmusEntwurf.soll || 4;
         }
 
+        /* Die Bedienung gibt es zweimal: im Rhythmus-Fenster und - waehrend eine
+           Rhythmus-Runde laeuft - unter der Rundenleiste. Beide zeigen dasselbe
+           Metronom, deshalb werden sie aus einer Liste heraus gemeinsam versorgt. */
+        let metronomAnsichten = [];
+
+        /* Die Leiste unter dem Rundenmanager gibt es nur, solange eine
+           Rhythmus-Runde laeuft - sonst nimmt sie nur Platz weg. */
+        function metronomLeisteZeigen(an) {
+            const leiste = getEl('metro-leiste');
+            if (!leiste) return;
+            leiste.classList.toggle('hidden', !an);
+            if (an) metronomBauen(leiste, true);
+            else leiste.innerHTML = '';
+        }
+
+        function metronomBauen(wurzel, kompakt) {
+            if (!wurzel) return;
+            wurzel.innerHTML = `
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-[11px] font-bold text-slate-300 flex items-center gap-1"><i class="fa-solid fa-stopwatch"></i>${kompakt ? '' : ' Metronom'}</span>
+                    <div class="metro-puls" data-rolle="puls"></div>
+                    <button type="button" class="rhy-knopf" data-rolle="minus">−</button>
+                    <span data-rolle="tempo" class="text-sm font-black text-violet-300 w-16 text-center">90 bpm</span>
+                    <button type="button" class="rhy-knopf" data-rolle="plus">+</button>
+                    ${kompakt ? '' : '<input type="range" min="40" max="200" value="90" step="1" data-rolle="regler" class="flex-1 min-w-[6rem] accent-violet-500">'}
+                    <span class="text-[11px] font-bold text-slate-400">Takte</span>
+                    <span data-rolle="takte" class="flex gap-1"></span>
+                    <button type="button" data-rolle="start"
+                            class="ml-auto bg-violet-600 hover:bg-violet-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs transition-all active:scale-95">
+                        <i class="fa-solid fa-play mr-1"></i> Start
+                    </button>
+                </div>`;
+            const teil = (rolle) => wurzel.querySelector(`[data-rolle="${rolle}"]`);
+            teil('minus').addEventListener('click', () => metronomTempo(-5));
+            teil('plus').addEventListener('click', () => metronomTempo(5));
+            teil('start').addEventListener('click', () => metronomUmschalten());
+            const regler = teil('regler');
+            if (regler) regler.addEventListener('input', (e) => metronomTempoSetzen(e.target.value));
+            metronomAnsichten = metronomAnsichten.filter(a => a.isConnected && a !== wurzel);
+            metronomAnsichten.push(wurzel);
+            metronomTakteZeichnen();
+            metronomTempoSetzen(metronom.bpm);
+            metronomPulsZeichnen(-1);
+            metronomKnopf();
+        }
+
+        function metronomJedeAnsicht(tat) {
+            metronomAnsichten = metronomAnsichten.filter(a => a.isConnected);
+            metronomAnsichten.forEach(a => tat(a, (rolle) => a.querySelector(`[data-rolle="${rolle}"]`)));
+        }
+
         function metronomPulsZeichnen(aktiv) {
-            const ziel = getEl('metro-puls');
-            if (!ziel) return;
             const anzahl = metronomSchlaege();
-            if (ziel.children.length !== anzahl) {
-                ziel.innerHTML = '';
-                for (let i = 0; i < anzahl; i++) {
-                    const p = document.createElement('span');
-                    p.className = 'metro-punkt' + (i === 0 ? ' eins' : '');
-                    ziel.appendChild(p);
+            metronomJedeAnsicht((wurzel, teil) => {
+                const ziel = teil('puls');
+                if (!ziel) return;
+                if (ziel.children.length !== anzahl) {
+                    ziel.innerHTML = '';
+                    for (let i = 0; i < anzahl; i++) {
+                        const p = document.createElement('span');
+                        p.className = 'metro-punkt' + (i === 0 ? ' eins' : '');
+                        ziel.appendChild(p);
+                    }
                 }
-            }
-            [...ziel.children].forEach((p, i) => p.classList.toggle('an', i === aktiv));
+                [...ziel.children].forEach((p, i) => p.classList.toggle('an', i === aktiv));
+            });
         }
 
         function metronomTakteZeichnen() {
-            const ziel = getEl('metro-takte');
-            if (!ziel) return;
-            ziel.innerHTML = '';
-            [['1', 1], ['2', 2], ['3', 3], ['4', 4], ['∞', 0]].forEach(([wort, n]) => {
-                const b = document.createElement('button');
-                b.type = 'button';
-                b.className = 'rhy-knopf';
-                b.textContent = wort;
-                if (metronom.takte === n) b.style.cssText = 'background:rgba(139,92,246,.3); border-color:#a78bfa; color:#ede9fe';
-                b.addEventListener('click', () => { metronom.takte = n; metronomTakteZeichnen(); });
-                ziel.appendChild(b);
+            metronomJedeAnsicht((wurzel, teil) => {
+                const ziel = teil('takte');
+                if (!ziel) return;
+                ziel.innerHTML = '';
+                [['1', 1], ['2', 2], ['3', 3], ['4', 4], ['∞', 0]].forEach(([wort, n]) => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'rhy-knopf';
+                    b.textContent = wort;
+                    if (metronom.takte === n) b.style.cssText = 'background:rgba(139,92,246,.3); border-color:#a78bfa; color:#ede9fe';
+                    b.addEventListener('click', () => { metronom.takte = n; metronomTakteZeichnen(); });
+                    ziel.appendChild(b);
+                });
             });
         }
 
         function metronomTempoSetzen(wert) {
             metronom.bpm = Math.max(40, Math.min(200, Math.round(Number(wert) || 90)));
-            const anzeige = getEl('metro-tempo'), regler = getEl('metro-regler');
-            if (anzeige) anzeige.textContent = metronom.bpm + ' bpm';
-            if (regler) regler.value = metronom.bpm;
+            metronomJedeAnsicht((wurzel, teil) => {
+                const anzeige = teil('tempo'), regler = teil('regler');
+                if (anzeige) anzeige.textContent = metronom.bpm + ' bpm';
+                if (regler) regler.value = metronom.bpm;
+            });
         }
         function metronomTempo(schritt) { metronomTempoSetzen(metronom.bpm + schritt); }
 
@@ -3823,14 +3913,16 @@
         }
 
         function metronomKnopf() {
-            const b = getEl('metro-knopf');
-            if (!b) return;
-            b.innerHTML = metronom.laeuft ? '<i class="fa-solid fa-stop mr-1"></i> Stopp'
-                                          : '<i class="fa-solid fa-play mr-1"></i> Start';
-            b.className = (metronom.laeuft
-                ? "ml-auto bg-rose-600 hover:bg-rose-500"
-                : "ml-auto bg-violet-600 hover:bg-violet-500") +
-                " text-white font-bold py-1.5 px-4 rounded-lg text-xs transition-all active:scale-95";
+            metronomJedeAnsicht((wurzel, teil) => {
+                const b = teil('start');
+                if (!b) return;
+                b.innerHTML = metronom.laeuft ? '<i class="fa-solid fa-stop mr-1"></i> Stopp'
+                                              : '<i class="fa-solid fa-play mr-1"></i> Start';
+                b.className = (metronom.laeuft
+                    ? "ml-auto bg-rose-600 hover:bg-rose-500"
+                    : "ml-auto bg-violet-600 hover:bg-violet-500") +
+                    " text-white font-bold py-1.5 px-4 rounded-lg text-xs transition-all active:scale-95";
+            });
         }
 
         function rhythmusFensterZeigen() {
@@ -3845,12 +3937,14 @@
             rhythmusWahlZeichnen();
             rhythmusEditorNeu();
             rhythmusKnoepfeAktualisieren();
-            metronomTempoSetzen(metronom.bpm);
-            metronomTakteZeichnen();
-            metronomPulsZeichnen(-1);
+            metronomBauen(getEl('metro-im-fenster'), false);
         }
         function rhythmusFensterSchliessen() {
-            metronomStoppen();   // es soll nicht hinter einem geschlossenen Fenster weiterticken
+            /* Nur stoppen, wenn danach keine Bedienung mehr sichtbar ist: Laeuft eine
+               Rhythmus-Runde, steht das Metronom unter dem Rundenmanager und darf
+               ruhig weiterticken. Sonst tickte es hinter einem geschlossenen Fenster
+               ohne Knopf zum Anhalten. */
+            if (!rhythmusRunde) metronomStoppen();
             const f = getEl('rhythmus-fenster');
             if (!f) return;
             f.classList.add('hidden');
@@ -3931,7 +4025,7 @@
             if (stop) stop.classList.toggle('hidden', !rhythmusRunde);
             if (knopf) {
                 knopf.className = rhythmusRunde
-                    ? "bg-violet-600 hover:bg-violet-500 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
+                    ? "rhy-aktiv bg-violet-600 hover:bg-violet-500 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
                     : "bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans";
                 knopf.title = rhythmusRunde ? 'Rhythmus-Runde läuft - hier ändern oder beenden'
                                             : 'Rhythmus-Runde: Du klatschst, die Klasse schreibt mit';
@@ -3951,6 +4045,7 @@
             }
             rhythmusEntwurf.loesung = loesung;
             rhythmusRunde = { soll: rhythmusEntwurf.soll, werte: rhythmusEntwurf.werte.slice(), loesung: loesung };
+            metronomLeisteZeigen(true);
             broadcastControlState();
             renderIncomingAnswersList();
             rhythmusKnoepfeAktualisieren();
@@ -3961,11 +4056,37 @@
 
         function rhythmusRundeBeenden() {
             rhythmusRunde = null;
+            metronomStoppen();
+            metronomLeisteZeigen(false);
             broadcastControlState();
             renderIncomingAnswersList();
             rhythmusKnoepfeAktualisieren();
             rhythmusFensterSchliessen();
             showToast("Rhythmus-Runde beendet - die Teams haben wieder das Antwortfeld.", "info");
+        }
+
+        /* Ohne Songabgabe fuehrt der Weg nach dem Beitritt direkt zum Antwortfeld.
+           Wer den Spickzettel gerade offen hat, wird mitgenommen - und wer ihn
+           schon abgeschickt hat, merkt ohnehin nichts davon. */
+        function songabgabeSchuelerZeigen(an) {
+            const prep = getEl('student-prep-card'), buzzer = getEl('student-buzzer-card');
+            if (!prep || !buzzer) return;
+            const beigetreten = !!localStorage.getItem('student_team_name');
+            if (!beigetreten) return;
+            if (!an) {
+                if (!prep.classList.contains('hidden')) {
+                    prep.classList.add('hidden');
+                    buzzer.classList.remove('hidden');
+                }
+                return;
+            }
+            // Wieder eingeschaltet: Wer noch nichts abgegeben hat, bekommt das Formular
+            const room = localStorage.getItem('student_room_code');
+            if (!localStorage.getItem(`prep_songs_sent_${room}`) && buzzer.classList.contains('hidden') === false
+                && prep.classList.contains('hidden')) {
+                prep.classList.remove('hidden');
+                buzzer.classList.add('hidden');
+            }
         }
 
         /* ---------- Schuelergeraet ---------- */
@@ -5413,6 +5534,9 @@
                         if (soundEl) soundEl.checked = parsed.soundEnabled !== false;
                         const autoLockEl = getEl('auto-lock-toggle');
                         if (autoLockEl) autoLockEl.checked = parsed.autoLockEnabled === true;
+                        // Fehlt der Wert (aeltere Sicherung), bleibt die Songabgabe an
+                        songabgabeAn = parsed.songabgabeAn !== false;
+                        updateSongabgabeUI();
                         const changePwEl = getEl('change-password-input');
                         if (changePwEl) changePwEl.value = teacherPassword;
                     }
@@ -5730,6 +5854,9 @@
                     minispielSchuelerZeigen(payload.minispiel || null);
                     sammelspielSchuelerZeigen(payload.sammel || null);
                     rhythmusSchuelerZeigen(payload.rhythmus || null);
+                    /* Fehlt das Feld (aeltere Sitzung), gilt "an" - so verhaelt sich
+                       ein alter Raum wie bisher. */
+                    songabgabeSchuelerZeigen(payload.songabgabe !== false);
                 }
             }, (fehler) => {
                 // Ohne diesen Zweig verschwand ein abgebrochener Listener stillschweigend:
@@ -8356,7 +8483,7 @@
                 /* In der Wartehalle leuchtet die ganze Karte gruen, sobald die Songs da
                    sind. Waehrend des Spiels waere das verwirrend - dort bedeutet Gruen
                    "fuer diese Runde ausgewaehlt" -, deshalb nur vor dem Start. */
-                if (!spielLaeuft && songsDa) {
+                if (!spielLaeuft && songsDa && songabgabeAn) {
                     borderStyle = 'border-emerald-500 bg-emerald-950/60 shadow-lg shadow-emerald-900/30 ring-2 ring-emerald-500/20';
                 }
 
