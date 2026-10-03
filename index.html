@@ -353,6 +353,47 @@
             .noten-taste.falsch { animation: none; }
         }
 
+        /* Rhythmus-Eingabe: Anzeige, Bausteine, Bedienung */
+        .rhy-anzeige {
+            background: rgba(2,6,23,.6); border: 1px solid rgba(148,163,184,.25);
+            border-radius: 14px; padding: .5rem; min-height: 4.5rem;
+            display: flex; align-items: center; justify-content: center;
+            overflow-x: auto;
+        }
+        .rhy-anzeige.verdeckt > svg { filter: blur(9px); opacity: .5; }
+        .rhy-leiste { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: center; margin-top: .6rem; }
+        /* Die Fragmentkarten sind verschieden breit - vier Sechzehntel brauchen
+           mehr Platz als eine Viertel. Feste Breite haette alles gestaucht. */
+        .rhy-baustein {
+            min-width: 3.6rem; padding: .35rem .5rem .25rem; border-radius: 12px; cursor: pointer;
+            background: rgba(255,255,255,.07); border: 1px solid rgba(148,163,184,.3);
+            color: #f8fafc; font-family: inherit; font-size: .58rem; font-weight: 700;
+            display: flex; flex-direction: column; align-items: center; gap: .15rem;
+        }
+        .rhy-baustein:hover { background: rgba(255,255,255,.15); }
+        .rhy-baustein:active { transform: translateY(2px); }
+        .rhy-baustein svg { height: 2.3rem; width: auto; }
+        .rhy-knopfreihe { display: flex; gap: .4rem; justify-content: center; margin-top: .5rem; flex-wrap: wrap; }
+        .rhy-knopf {
+            font-family: inherit; font-size: .7rem; font-weight: 800; cursor: pointer;
+            padding: .4rem .8rem; border-radius: 10px;
+            background: rgba(255,255,255,.08); border: 1px solid rgba(148,163,184,.3); color: #e2e8f0;
+        }
+        .rhy-knopf:hover { background: rgba(255,255,255,.16); }
+        .rhy-stand { text-align: center; font-size: .7rem; font-weight: 800; margin-top: .35rem; color: #94a3b8; }
+        .rhy-stand.voll { color: #34d399; }
+        .rhy-stand.zuviel { color: #fb7185; }
+        /* Auswahl der Bausteine im Lehrerfenster */
+        .rhy-wahl { display: flex; flex-wrap: wrap; gap: .35rem; }
+        .rhy-chip {
+            display: flex; align-items: center; gap: .3rem; cursor: pointer;
+            padding: .25rem .5rem; border-radius: 10px; font-size: .62rem; font-weight: 800;
+            background: rgba(255,255,255,.05); border: 1px solid rgba(148,163,184,.25); color: #94a3b8;
+            font-family: inherit;
+        }
+        .rhy-chip svg { height: 1.7rem; width: auto; }
+        .rhy-chip.an { background: rgba(139,92,246,.25); border-color: #a78bfa; color: #ede9fe; }
+
         /* Glücksrad für die Spielauswahl */
         .rad-feld { display: block; width: min(62vh, 86vw); aspect-ratio: 1; max-width: 560px; }
         .rad-text { min-height: 1.6em; }
@@ -869,6 +910,50 @@
          Dort ist sie zugleich der Buzzer - ein Tipper irgendwo auf ihr zaehlt. -->
     <div id="minispiel-buehne" class="minispiel-buehne" onclick="minispielTipp()"></div>
 
+    <!-- Rhythmus-Runde einrichten. Eigenes Fenster statt Buehne: Es gehoert zum
+         Rundenbetrieb und nicht zu den Minispielen. -->
+    <div id="rhythmus-fenster" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/92 p-4" onclick="if (event.target === this) rhythmusFensterSchliessen();">
+        <div class="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3 font-sans">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-black text-violet-300"><i class="fa-solid fa-drum mr-1"></i> Rhythmus-Runde</h3>
+                <button onclick="rhythmusFensterSchliessen()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-normal">
+                Du klatschst den Takt vor, die Klasse schreibt ihn auf ihren Geräten mit.
+                Trage hier ein, was du geklatscht hast - die Antworten werden damit verglichen.
+            </p>
+            <div class="flex items-center gap-2 text-[11px] font-bold text-slate-300">
+                <span>Taktart:</span>
+                <span id="rhythmus-taktwahl" class="flex gap-1"></span>
+                <button type="button" id="rhythmus-verdecken" onclick="rhythmusVerdeckenUmschalten()"
+                        class="ml-auto bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-2 py-1 rounded-lg text-[10px]"
+                        title="Für den Beamer unkenntlich machen">
+                    <i class="fa-solid fa-eye-slash"></i> Verdecken
+                </button>
+            </div>
+            <div>
+                <div class="text-[11px] font-bold text-slate-300 mb-1">Diese Bausteine stehen der Klasse zur Verfügung:</div>
+                <div id="rhythmus-wahl" class="rhy-wahl"></div>
+            </div>
+            <div class="text-[11px] font-bold text-slate-300">Was du geklatscht hast:</div>
+            <div id="rhythmus-loesung-feld"></div>
+            <div class="flex gap-2 pt-1">
+                <button onclick="rhythmusRundeStarten()" id="rhythmus-start-btn"
+                        class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">
+                    <i class="fa-solid fa-play mr-1"></i> Rhythmus-Runde starten
+                </button>
+                <button onclick="rhythmusRundeBeenden()" id="rhythmus-stop-btn"
+                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold py-2 px-3 rounded-xl text-xs transition-all active:scale-95">
+                    Beenden
+                </button>
+            </div>
+            <p class="text-[10px] text-slate-500 leading-normal">
+                Solange die Runde läuft, sehen die Teams statt des Antwortfeldes die Notenwerte.
+                Die Lösung bleibt auf diesem Gerät - gesendet wird nur die Taktlänge.
+            </p>
+        </div>
+    </div>
+
     <!-- Sammelspiele: eigene Buehne, gleiche Optik. Hier wird nicht getippt,
          sondern gezielt und gezogen - deshalb kein onclick auf der ganzen Flaeche. -->
     <div id="sammel-buehne" class="minispiel-buehne"></div>
@@ -1034,7 +1119,12 @@
             </div>
 
             <div class="space-y-4">
-                <div>
+                <!-- Rhythmus-Runde: statt des Textfeldes wird geklopft, was gehoert wurde -->
+                <div id="rhythmus-eingabe" class="hidden">
+                    <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Dein Rhythmus:</label>
+                    <div id="rhythmus-eingabe-feld"></div>
+                </div>
+                <div id="text-eingabe">
                     <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Deine Antwort:</label>
                     <textarea 
                         id="student-answer-input" 
@@ -1534,6 +1624,15 @@
                 </div>
             </div>
             <div class="flex items-center gap-2 justify-end">
+                <button
+                    id="rhythmus-btn"
+                    onclick="rhythmusFensterZeigen()"
+                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
+                    title="Rhythmus-Runde: Du klatschst, die Klasse schreibt mit"
+                    aria-label="Rhythmus-Runde"
+                >
+                    <i class="fa-solid fa-drum"></i>
+                </button>
                 <!-- Ein Knopf fuer alle Minispiele: Die Auswahl steht auf der Buehne.
                      Drei Knoepfe nebeneinander haetten die Rundenleiste gesprengt. -->
                 <button
@@ -2283,7 +2382,9 @@
                     locked: roundLocked,
                     gestartet: spielLaeuft,
                     minispiel: minispiel ? { id: minispiel.id, phase: minispiel.phase } : null,
-                    sammel: sammelspiel ? { art: sammelspiel.art, id: sammelspiel.id, phase: sammelspiel.phase } : null
+                    sammel: sammelspiel ? { art: sammelspiel.art, id: sammelspiel.id, phase: sammelspiel.phase } : null,
+                    // Nur Taktlaenge und erlaubte Bausteine - die Loesung bleibt hier
+                    rhythmus: rhythmusRunde ? { soll: rhythmusRunde.soll, werte: rhythmusRunde.werte } : null
                 });
             } catch(e) {
                 console.error("Fehler beim Senden des Updates:", e);
@@ -3530,6 +3631,327 @@
             naechsteFrage();
             requestAnimationFrame(schritt);
             return S;
+        }
+
+        /* ============================================================ */
+        /* RHYTHMUS-RUNDE                                                */
+        /* Die Lehrkraft klatscht, die Klasse schreibt mit. Welche       */
+        /* Bausteine ueberhaupt zur Verfuegung stehen, waehlt die        */
+        /* Lehrkraft vorher aus - in der fuenften Klasse reichen Viertel */
+        /* und Achtel, spaeter kommt der Rest dazu. Weniger Auswahl      */
+        /* heisst auch weniger Suchen auf dem Geraet.                    */
+        /* Die Loesung bleibt auf dem Lehrergeraet; gesendet werden nur  */
+        /* Taktlaenge und erlaubte Bausteine.                            */
+        /* ============================================================ */
+        let rhythmusRunde = null;      // laeuft: { soll, werte, loesung }
+        let rhythmusEntwurf = { soll: 4, werte: ['V', 'AA', 'Vp', 'H'], loesung: '' };
+        let rhythmusLoesungsEditor = null;
+        let rhythmusVerdeckt = false;
+        let rhythmusSchuelerEditor = null;
+        let rhythmusSchuelerSchluessel = '';
+
+        function rhythmusFensterZeigen() {
+            const f = getEl('rhythmus-fenster');
+            if (!f) return;
+            if (rhythmusRunde) {
+                rhythmusEntwurf = { soll: rhythmusRunde.soll, werte: rhythmusRunde.werte.slice(), loesung: rhythmusRunde.loesung };
+            }
+            f.classList.remove('hidden');
+            f.classList.add('flex');
+            rhythmusTaktwahlZeichnen();
+            rhythmusWahlZeichnen();
+            rhythmusEditorNeu();
+            rhythmusKnoepfeAktualisieren();
+        }
+        function rhythmusFensterSchliessen() {
+            const f = getEl('rhythmus-fenster');
+            if (!f) return;
+            f.classList.add('hidden');
+            f.classList.remove('flex');
+        }
+
+        function rhythmusTaktwahlZeichnen() {
+            const ziel = getEl('rhythmus-taktwahl');
+            if (!ziel) return;
+            ziel.innerHTML = '';
+            [['2/4', 2], ['3/4', 3], ['4/4', 4], ['6/8', 3]].forEach(([wort, viertel], i) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'rhy-knopf' + (rhythmusEntwurf.soll === viertel && rhythmusEntwurf.zeichen === wort ? ' an' : '');
+                b.style.cssText = rhythmusEntwurf.zeichen === wort
+                    ? 'background:rgba(139,92,246,.3); border-color:#a78bfa; color:#ede9fe' : '';
+                b.textContent = wort;
+                b.addEventListener('click', () => {
+                    rhythmusEntwurf.soll = viertel;
+                    rhythmusEntwurf.zeichen = wort;
+                    rhythmusTaktwahlZeichnen();
+                    rhythmusEditorNeu();
+                });
+                ziel.appendChild(b);
+            });
+        }
+
+        function rhythmusWahlZeichnen() {
+            const ziel = getEl('rhythmus-wahl');
+            if (!ziel) return;
+            ziel.innerHTML = '';
+            RHYTHMUS_BAUSTEINE.forEach(w => {
+                const an = rhythmusEntwurf.werte.includes(w.code);
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'rhy-chip' + (an ? ' an' : '');
+                b.innerHTML = rhythmusSvg([w], an ? '#ede9fe' : '#94a3b8', true) + `<span>${w.wort}</span>`;
+                b.addEventListener('click', () => {
+                    const i = rhythmusEntwurf.werte.indexOf(w.code);
+                    if (i >= 0) rhythmusEntwurf.werte.splice(i, 1);
+                    else rhythmusEntwurf.werte.push(w.code);
+                    rhythmusWahlZeichnen();
+                    rhythmusEditorNeu();
+                });
+                ziel.appendChild(b);
+            });
+        }
+
+        /* Baut das Loesungsfeld neu auf - nach jeder Aenderung an Taktart oder
+           Auswahl. Was schon eingegeben wurde, bleibt erhalten, soweit die Werte
+           noch erlaubt sind: Sonst verliert man beim Umschalten seine Eingabe. */
+        function rhythmusEditorNeu() {
+            const feld = getEl('rhythmus-loesung-feld');
+            if (!feld) return;
+            const alt = rhythmusLoesungsEditor ? rhythmusLoesungsEditor.lesen() : rhythmusEntwurf.loesung;
+            rhythmusLoesungsEditor = rhythmusEditor(feld, rhythmusEntwurf.soll, rhythmusEntwurf.werte);
+            const gerettet = rhythmusLesen(alt).filter(w => rhythmusEntwurf.werte.includes(w.code));
+            if (gerettet.length) rhythmusLoesungsEditor.setzen(rhythmusSchreiben(gerettet));
+            rhythmusLoesungsEditor.verdecken(rhythmusVerdeckt);
+        }
+
+        function rhythmusVerdeckenUmschalten() {
+            rhythmusVerdeckt = !rhythmusVerdeckt;
+            if (rhythmusLoesungsEditor) rhythmusLoesungsEditor.verdecken(rhythmusVerdeckt);
+            const b = getEl('rhythmus-verdecken');
+            if (b) b.innerHTML = rhythmusVerdeckt
+                ? '<i class="fa-solid fa-eye"></i> Zeigen'
+                : '<i class="fa-solid fa-eye-slash"></i> Verdecken';
+        }
+
+        function rhythmusKnoepfeAktualisieren() {
+            const start = getEl('rhythmus-start-btn'), stop = getEl('rhythmus-stop-btn'), knopf = getEl('rhythmus-btn');
+            if (start) start.innerHTML = rhythmusRunde
+                ? '<i class="fa-solid fa-rotate mr-1"></i> Neu übernehmen'
+                : '<i class="fa-solid fa-play mr-1"></i> Rhythmus-Runde starten';
+            if (stop) stop.classList.toggle('hidden', !rhythmusRunde);
+            if (knopf) {
+                knopf.className = rhythmusRunde
+                    ? "bg-violet-600 hover:bg-violet-500 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
+                    : "bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans";
+                knopf.title = rhythmusRunde ? 'Rhythmus-Runde läuft - hier ändern oder beenden'
+                                            : 'Rhythmus-Runde: Du klatschst, die Klasse schreibt mit';
+            }
+        }
+
+        function rhythmusRundeStarten() {
+            if (!rhythmusLoesungsEditor) return;
+            const loesung = rhythmusLoesungsEditor.lesen();
+            if (!rhythmusEntwurf.werte.length) { showToast("Wähle mindestens einen Baustein aus.", "danger"); return; }
+            if (!loesung) { showToast("Trage erst ein, was du geklatscht hast.", "danger"); return; }
+            const dauer = rhythmusLoesungsEditor.dauer();
+            if (Math.abs(dauer - rhythmusEntwurf.soll) > 0.001) {
+                /* Nur ein Hinweis, keine Sperre: Vielleicht klatscht er ja wirklich
+                   einen halben Takt vor oder zwei Takte am Stueck. */
+                showToast(`Achtung: Dein Rhythmus ist ${dauer} Viertel lang, der Takt hat ${rhythmusEntwurf.soll}.`, "info");
+            }
+            rhythmusEntwurf.loesung = loesung;
+            rhythmusRunde = { soll: rhythmusEntwurf.soll, werte: rhythmusEntwurf.werte.slice(), loesung: loesung };
+            broadcastControlState();
+            renderIncomingAnswersList();
+            rhythmusKnoepfeAktualisieren();
+            rhythmusFensterSchliessen();
+            showToast("🥁 Rhythmus-Runde läuft - die Teams sehen jetzt die Notenwerte.", "success");
+            playSound('up');
+        }
+
+        function rhythmusRundeBeenden() {
+            rhythmusRunde = null;
+            broadcastControlState();
+            renderIncomingAnswersList();
+            rhythmusKnoepfeAktualisieren();
+            rhythmusFensterSchliessen();
+            showToast("Rhythmus-Runde beendet - die Teams haben wieder das Antwortfeld.", "info");
+        }
+
+        /* ---------- Schuelergeraet ---------- */
+        function rhythmusSchuelerZeigen(stand) {
+            const kasten = getEl('rhythmus-eingabe'), text = getEl('text-eingabe');
+            if (!kasten || !text) return;
+            if (!stand) {
+                kasten.classList.add('hidden');
+                text.classList.remove('hidden');
+                rhythmusSchuelerEditor = null;
+                rhythmusSchuelerSchluessel = '';
+                return;
+            }
+            kasten.classList.remove('hidden');
+            text.classList.add('hidden');
+            // Nur neu bauen, wenn sich wirklich etwas geaendert hat - sonst waere die
+            // halb fertige Eingabe bei jedem Rundensignal weg.
+            const schluessel = stand.soll + ':' + (stand.werte || []).join(',');
+            if (schluessel !== rhythmusSchuelerSchluessel) {
+                rhythmusSchuelerSchluessel = schluessel;
+                rhythmusSchuelerEditor = rhythmusEditor(getEl('rhythmus-eingabe-feld'), stand.soll, stand.werte);
+            }
+        }
+
+        /* ============================================================ */
+        /* RHYTHMUS: FRAGMENTE UND NOTENSCHRIFT                          */
+        /* Gebaut wird nicht aus einzelnen Noten, sondern aus fertigen    */
+        /* Fragmenten - meist genau eine Zaehlzeit lang. Das hat zwei     */
+        /* Gruende: Auf dem Geraet tippt man zwei statt fuenf Mal, und    */
+        /* die Balkenregel ist damit von selbst erfuellt, weil ein Balken */
+        /* nie ueber eine Zaehlzeit hinausreicht. Zwei Achtel auf "1 und" */
+        /* stehen im Verbund, eine Achtel auf dem "und" bekommt ihr       */
+        /* eigenes Faehnchen - genau so, wie es im Heft steht.            */
+        /* Ein Rhythmus ist die Folge der Kuerzel: "V-AA-Vp-SSSS".        */
+        /* ============================================================ */
+        const RHYTHMUS_BAUSTEINE = [
+            { code: 'V',    dauer: 1,   wort: 'Viertel',        teile: [{ d: 1 }] },
+            { code: 'AA',   dauer: 1,   wort: 'Zwei Achtel',    teile: [{ d: .5 }, { d: .5 }] },
+            { code: 'Vp',   dauer: 1,   wort: 'Viertelpause',   teile: [{ d: 1, p: true }] },
+            { code: 'pA',   dauer: 1,   wort: 'Pause + Achtel', teile: [{ d: .5, p: true }, { d: .5 }] },
+            { code: 'Ap',   dauer: 1,   wort: 'Achtel + Pause', teile: [{ d: .5 }, { d: .5, p: true }] },
+            { code: 'SSSS', dauer: 1,   wort: 'Vier Sechzehntel',       teile: [{ d: .25 }, { d: .25 }, { d: .25 }, { d: .25 }] },
+            { code: 'ASS',  dauer: 1,   wort: 'Achtel + 2 Sechzehntel', teile: [{ d: .5 }, { d: .25 }, { d: .25 }] },
+            { code: 'SSA',  dauer: 1,   wort: '2 Sechzehntel + Achtel', teile: [{ d: .25 }, { d: .25 }, { d: .5 }] },
+            { code: 'H',    dauer: 2,   wort: 'Halbe',          teile: [{ d: 2 }] },
+            { code: 'Hp',   dauer: 2,   wort: 'Halbe Pause',    teile: [{ d: 2, p: true }] },
+            { code: 'G',    dauer: 4,   wort: 'Ganze',          teile: [{ d: 4 }] },
+            { code: 'Gp',   dauer: 4,   wort: 'Ganze Pause',    teile: [{ d: 4, p: true }] },
+            /* Die beiden Halben Zaehlzeiten gibt es einzeln, damit auch Synkopen
+               ueber die Zaehlzeit hinweg aufschreibbar sind: Achtel - Viertel - Achtel. */
+            { code: 'A',    dauer: .5,  wort: 'Achtel einzeln', teile: [{ d: .5 }] },
+            { code: 'P',    dauer: .5,  wort: 'Achtelpause',    teile: [{ d: .5, p: true }] }
+        ];
+        const RHYTHMUS_NACH_CODE = {};
+        RHYTHMUS_BAUSTEINE.forEach(b => { RHYTHMUS_NACH_CODE[b.code] = b; });
+
+        function rhythmusLesen(text) {
+            return String(text || '').split('-').map(c => RHYTHMUS_NACH_CODE[c]).filter(Boolean);
+        }
+        function rhythmusSchreiben(liste) { return liste.map(b => b.code).join('-'); }
+        function rhythmusDauer(liste) { return liste.reduce((a, b) => a + b.dauer, 0); }
+
+        /* Zeichnet eine Folge von Fragmenten als SVG. Haelse nach oben, eine
+           Grundlinie - eine Rhythmuszeile braucht keine fuenf Notenlinien.
+           "nackt" laesst Taktstriche und Linie weg: So passt ein einzelnes
+           Fragment auf eine Karte. */
+        function rhythmusSvg(liste, farbe, nackt) {
+            const tinte = farbe || '#f8fafc';
+            const vorschub = { 4: 96, 2: 62, 1: 38, 0.5: 24, 0.25: 17 };
+            const links = 16, halsOben = 13, linie = 46, balkenDicke = 5;
+            const teile = [];
+            let x = links + (nackt ? 8 : 14);
+
+            if (!nackt) {
+                teile.push(`<line x1="${links}" y1="${linie - 17}" x2="${links}" y2="${linie + 15}" stroke="${tinte}" stroke-width="3"/>`);
+            }
+            const linieVon = x - 12;
+
+            liste.forEach(baustein => {
+                // Haelse und Koepfe eines Fragments merken, um danach die Balken zu ziehen
+                const gruppe = [];
+                baustein.teile.forEach(t => {
+                    const px = x;
+                    x += vorschub[t.d] || 38;
+                    if (t.p) {
+                        if (t.d >= 4) teile.push(`<rect x="${px - 8}" y="${linie - 12}" width="16" height="7" fill="${tinte}"/>`);
+                        else if (t.d >= 2) teile.push(`<rect x="${px - 8}" y="${linie - 1}" width="16" height="7" fill="${tinte}"/>`);
+                        else if (t.d >= 1) teile.push(`<path d="M${px - 4} ${linie - 16} L${px + 4} ${linie - 7} L${px - 3} ${linie - 1} L${px + 5} ${linie + 8}` +
+                                   ` M${px - 3} ${linie + 2} q 6 2 7 9 q -5 -4 -9 -2" fill="none" stroke="${tinte}" stroke-width="3" stroke-linecap="round"/>`);
+                        else teile.push(`<path d="M${px + 4} ${linie - 10} L${px - 3} ${linie + 10}" stroke="${tinte}" stroke-width="2.5" stroke-linecap="round" fill="none"/>` +
+                                   `<circle cx="${px - 1}" cy="${linie - 8}" r="3.2" fill="${tinte}"/>`);
+                        gruppe.length = 0;      // eine Pause unterbricht den Balken
+                        return;
+                    }
+                    const hohl = t.d >= 2;
+                    teile.push(`<ellipse cx="${px}" cy="${linie}" rx="7.5" ry="5.4" transform="rotate(-18 ${px} ${linie})"` +
+                               (hohl ? ` fill="none" stroke="${tinte}" stroke-width="2.6"/>` : ` fill="${tinte}"/>`));
+                    if (t.d >= 4) return;                       // die Ganze steht ohne Hals
+                    const hx = px + 6.6;
+                    teile.push(`<line x1="${hx}" y1="${linie - 2}" x2="${hx}" y2="${halsOben}" stroke="${tinte}" stroke-width="2.4" stroke-linecap="round"/>`);
+                    if (t.d <= 0.5) gruppe.push({ hx: hx, d: t.d });
+                });
+
+                if (gruppe.length >= 2) {
+                    // Hauptbalken ueber die ganze Gruppe
+                    const a = gruppe[0].hx, b = gruppe[gruppe.length - 1].hx;
+                    teile.push(`<rect x="${a - 1.2}" y="${halsOben - 1}" width="${b - a + 2.4}" height="${balkenDicke}" fill="${tinte}"/>`);
+                    // Zweiter Balken nur zwischen benachbarten Sechzehnteln
+                    for (let i = 0; i < gruppe.length - 1; i++) {
+                        if (gruppe[i].d > 0.25 || gruppe[i + 1].d > 0.25) continue;
+                        teile.push(`<rect x="${gruppe[i].hx - 1.2}" y="${halsOben + balkenDicke + 1.5}" ` +
+                                   `width="${gruppe[i + 1].hx - gruppe[i].hx + 2.4}" height="${balkenDicke}" fill="${tinte}"/>`);
+                    }
+                } else if (gruppe.length === 1 && gruppe[0].d <= 0.5) {
+                    // Einzelne Achtel: Faehnchen statt Balken
+                    const hx = gruppe[0].hx;
+                    teile.push(`<path d="M${hx} ${halsOben} q 11 5 9 16 q -2 -8 -9 -9" fill="${tinte}"/>`);
+                }
+            });
+
+            const rechts = x + 6;
+            if (!nackt) {
+                teile.unshift(`<line x1="${linieVon}" y1="${linie}" x2="${rechts + 8}" y2="${linie}" stroke="${tinte}" stroke-width="1.5" opacity=".45"/>`);
+                teile.push(`<line x1="${rechts + 8}" y1="${linie - 17}" x2="${rechts + 8}" y2="${linie + 15}" stroke="${tinte}" stroke-width="3"/>`);
+                const breite = rechts + 18;
+                return `<svg viewBox="0 0 ${breite} 74" width="100%" style="max-width:${Math.round(breite * 1.5)}px; height:auto; display:block; margin:0 auto">${teile.join('')}</svg>`;
+            }
+            return `<svg viewBox="${links} 2 ${rechts - links} 62" style="height:100%; width:auto; display:block; margin:0 auto">${teile.join('')}</svg>`;
+        }
+
+        /* Ein Eingabefeld fuer Rhythmen, das Schueler- und Lehrergeraet teilen.
+           Es kennt den Soll-Wert in Vierteln und sagt, wie voll der Takt ist -
+           abgeben darf man trotzdem, was man will. */
+        function rhythmusEditor(wurzel, soll, werte) {
+            const erlaubt = (werte && werte.length ? RHYTHMUS_BAUSTEINE.filter(w => werte.includes(w.code)) : RHYTHMUS_BAUSTEINE);
+            const liste = [];
+            wurzel.innerHTML = `<div class="rhy-anzeige"></div>
+                <div class="rhy-stand"></div>
+                <div class="rhy-leiste"></div>
+                <div class="rhy-knopfreihe">
+                    <button type="button" class="rhy-knopf" data-tat="zurueck">&#8630; Zurück</button>
+                    <button type="button" class="rhy-knopf" data-tat="leeren">Alles löschen</button>
+                </div>`;
+            const anzeige = wurzel.querySelector('.rhy-anzeige');
+            const stand = wurzel.querySelector('.rhy-stand');
+            const leiste = wurzel.querySelector('.rhy-leiste');
+
+            erlaubt.forEach(w => {
+                const t = document.createElement('button');
+                t.type = 'button';
+                t.className = 'rhy-baustein';
+                t.innerHTML = rhythmusSvg([w], null, true) + `<span>${w.wort}</span>`;
+                t.addEventListener('click', (e) => { e.preventDefault(); liste.push(w); zeichnen(); });
+                leiste.appendChild(t);
+            });
+            wurzel.querySelector('[data-tat="zurueck"]').addEventListener('click', (e) => { e.preventDefault(); liste.pop(); zeichnen(); });
+            wurzel.querySelector('[data-tat="leeren"]').addEventListener('click', (e) => { e.preventDefault(); liste.length = 0; zeichnen(); });
+
+            function zeichnen() {
+                anzeige.innerHTML = liste.length ? rhythmusSvg(liste)
+                    : '<span style="color:#64748b; font-size:.75rem">Noch nichts eingegeben</span>';
+                const dauer = rhythmusDauer(liste);
+                const voll = Math.abs(dauer - soll) < 0.001;
+                stand.className = 'rhy-stand' + (voll ? ' voll' : dauer > soll ? ' zuviel' : '');
+                const zahl = (x) => Number.isInteger(x) ? x : x.toFixed(1).replace('.', ',');
+                stand.textContent = voll ? `Takt voll: ${zahl(soll)} Viertel`
+                                         : `${zahl(dauer)} von ${zahl(soll)} Vierteln`;
+            }
+            zeichnen();
+            return {
+                lesen: () => rhythmusSchreiben(liste),
+                dauer: () => rhythmusDauer(liste),
+                setzen: (code) => { liste.length = 0; rhythmusLesen(code).forEach(w => liste.push(w)); zeichnen(); },
+                verdecken: (ja) => anzeige.classList.toggle('verdeckt', !!ja)
+            };
         }
 
         /* ============================================================ */
@@ -5024,6 +5446,7 @@
                     // Die Minispiele legen sich als eigene Buehne ueber alles
                     minispielSchuelerZeigen(payload.minispiel || null);
                     sammelspielSchuelerZeigen(payload.sammel || null);
+                    rhythmusSchuelerZeigen(payload.rhythmus || null);
                 }
             }, (fehler) => {
                 // Ohne diesen Zweig verschwand ein abgebrochener Listener stillschweigend:
@@ -5398,11 +5821,16 @@
             const name = localStorage.getItem('student_team_name');
             const emoji = localStorage.getItem('student_team_emoji') || "🎵";
             const answerEl = getEl('student-answer-input');
-            const answer = answerEl ? answerEl.value.trim() : "";
+            /* In der Rhythmus-Runde steckt die Antwort im Noteneditor. Sie geht als
+               "RHY:V-A-A" durch dasselbe Feld wie jede andere - so bleiben Joker,
+               Sperre, Zaehler und Archiv unveraendert. */
+            const rhythmusAktiv = rhythmusSchuelerEditor && !getEl('rhythmus-eingabe').classList.contains('hidden');
+            const answer = rhythmusAktiv ? 'RHY:' + rhythmusSchuelerEditor.lesen()
+                                         : (answerEl ? answerEl.value.trim() : "");
             const btn = getEl('student-submit-btn');
 
-            if (!answer) {
-                showToast("Deine Antwort ist leer!", "danger");
+            if (!answer || answer === 'RHY:') {
+                showToast(rhythmusAktiv ? "Dein Takt ist noch leer!" : "Deine Antwort ist leer!", "danger");
                 return;
             }
 
@@ -6134,11 +6562,33 @@
                             </div>
                         </div>
                     `;
+                    if (String(ans.answer || '').startsWith('RHY:')) {
+                        /* Rhythmus-Antwort: als Noten zeigen und gegen die Loesung
+                           halten. Das Urteil ist ein Hinweis, kein Urteilsspruch -
+                           die Punkteknoepfe bleiben unveraendert, du kannst also
+                           anders entscheiden, wenn du doch anders geklatscht hast. */
+                        const code = String(ans.answer).slice(4);
+                        const noten = rhythmusLesen(code);
+                        let urteil = '';
+                        if (rhythmusRunde && rhythmusRunde.loesung) {
+                            const stimmt = code === rhythmusRunde.loesung;
+                            urteil = stimmt
+                                ? `<span class="text-[10px] font-black text-emerald-400"><i class="fa-solid fa-check"></i> stimmt mit deiner Vorgabe</span>`
+                                : `<span class="text-[10px] font-black text-rose-400"><i class="fa-solid fa-xmark"></i> weicht ab</span>`;
+                        }
+                        answerTextContent = `
+                            <div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
+                                ${noten.length ? rhythmusSvg(noten) : '<span class="text-xs text-slate-500">leer</span>'}
+                                <div class="text-center mt-1">${urteil}</div>
+                            </div>
+                        `;
+                    } else {
                     answerTextContent = `
                         <div class="text-xl sm:text-2xl text-slate-100 bg-slate-950/60 p-2 rounded-lg border border-slate-800 font-bold break-words text-center font-sans" title="${escapeHtml(ans.answer)}">
                             ${escapeHtml(ans.answer)}
                         </div>
                     `;
+                    }
                     actionButtons = `
                         <div class="flex gap-1.5 justify-end font-bold pt-1 border-t border-slate-800/30 font-sans">
                             <button
