@@ -983,6 +983,11 @@
             <div class="flex items-center gap-2 text-[11px] font-bold text-slate-300">
                 <span>Taktart:</span>
                 <span id="rhythmus-taktwahl" class="flex gap-1"></span>
+                <label class="flex items-center gap-1.5 cursor-pointer" title="An: Eine Viertel mit folgender Pause gilt wie eine Halbe - beim Klatschen klingt beides gleich">
+                    <input type="checkbox" id="rhythmus-klatsch" class="sr-only peer" onchange="rhythmusKlatschUmschalten()">
+                    <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600 relative"></div>
+                    <span class="text-[11px]">Klatschmodus</span>
+                </label>
                 <button type="button" id="rhythmus-verdecken" onclick="rhythmusVerdeckenUmschalten()"
                         class="ml-auto bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-2 py-1 rounded-lg text-[10px]"
                         title="Für den Beamer unkenntlich machen">
@@ -1507,6 +1512,17 @@
                         <i class="fa-solid fa-qrcode"></i> QR-Code
                     </button>
                 </div>
+
+                <div class="einrichtung-zeile flex items-center gap-2 border-t border-slate-700/40">
+                    <span class="einrichtung-beschriftung text-[11px] text-slate-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-cloud text-slate-400"></i> Sicherung
+                    </span>
+                    <span id="cloud-sync-status" class="flex-grow text-[10px] text-slate-400 font-semibold">nicht verbunden</span>
+                    <button id="cloud-sync-btn" onclick="CloudTresor.menu()" title="Spielstände verschlüsselt in der Cloud sichern"
+                            class="w-24 bg-slate-900 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold text-[11px] rounded-lg px-3 py-1 transition-all active:scale-95">
+                        <i class="fa-solid fa-cloud"></i> Cloud
+                    </button>
+                </div>
             </div>
 
             <!-- RECHTS: alles, was die Sitzung und das Geraet betrifft -->
@@ -1529,16 +1545,6 @@
                     </button>
                 </div>
 
-                <div class="einrichtung-zeile flex items-center gap-2 border-t border-slate-700/40">
-                    <span class="einrichtung-beschriftung text-[11px] text-slate-300 flex items-center gap-1.5">
-                        <i class="fa-solid fa-cloud text-slate-400"></i> Sicherung
-                    </span>
-                    <span id="cloud-sync-status" class="flex-grow text-[10px] text-slate-400 font-semibold">nicht verbunden</span>
-                    <button id="cloud-sync-btn" onclick="CloudTresor.menu()" title="Spielstände verschlüsselt in der Cloud sichern"
-                            class="w-24 bg-slate-900 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold text-[11px] rounded-lg px-3 py-1 transition-all active:scale-95">
-                        <i class="fa-solid fa-cloud"></i> Cloud
-                    </button>
-                </div>
 
                 <div class="einrichtung-zeile flex items-center gap-2 border-t border-slate-700/40">
                     <span class="einrichtung-beschriftung text-[11px] text-slate-300 flex items-center gap-1.5">
@@ -3750,7 +3756,7 @@
         }
 
         let rhythmusRunde = null;      // laeuft: { soll, werte, loesung }
-        let rhythmusEntwurf = { soll: 4, werte: ['V', 'AA', 'Vp', 'H'], loesung: '' };
+        let rhythmusEntwurf = { soll: 4, zeichen: '4/4', klatsch: true, werte: ['V', 'AA', 'Vp', 'H'], loesung: '' };
         let rhythmusLoesungsEditor = null;
         let rhythmusVerdeckt = false;
         let rhythmusSchuelerEditor = null;
@@ -3935,10 +3941,13 @@
             if (!f) return;
             if (rhythmusRunde) {
                 rhythmusEntwurf = { soll: rhythmusRunde.soll, zeichen: rhythmusRunde.zeichen,
+                                    klatsch: rhythmusRunde.klatsch !== false,
                                     werte: rhythmusRunde.werte.slice(), loesung: rhythmusRunde.loesung };
             }
             f.classList.remove('hidden');
             f.classList.add('flex');
+            const klatschSchalter = getEl('rhythmus-klatsch');
+            if (klatschSchalter) klatschSchalter.checked = rhythmusEntwurf.klatsch !== false;
             rhythmusTaktwahlZeichnen();
             rhythmusWahlZeichnen();
             rhythmusEditorNeu();
@@ -4022,6 +4031,21 @@
             rhythmusLoesungsEditor.verdecken(rhythmusVerdeckt);
         }
 
+        /* Klatschmodus an heisst: Es zaehlt, wann geklatscht wird, nicht wie lang
+           der Ton steht. Aus heisst: Die Schreibweise muss genau stimmen - dann ist
+           eine Halbe etwas anderes als eine Viertel mit Pause. */
+        function rhythmusKlatschUmschalten() {
+            const schalter = getEl('rhythmus-klatsch');
+            rhythmusEntwurf.klatsch = schalter ? schalter.checked : true;
+            if (rhythmusRunde) {
+                rhythmusRunde.klatsch = rhythmusEntwurf.klatsch;
+                renderIncomingAnswersList();   // die Urteile aendern sich damit
+            }
+            showToast(rhythmusEntwurf.klatsch
+                ? "Klatschmodus an: Viertel + Pause zählt wie eine Halbe."
+                : "Klatschmodus aus: Die Notenwerte müssen genau stimmen.", "info");
+        }
+
         function rhythmusVerdeckenUmschalten() {
             rhythmusVerdeckt = !rhythmusVerdeckt;
             if (rhythmusLoesungsEditor) rhythmusLoesungsEditor.verdecken(rhythmusVerdeckt);
@@ -4059,6 +4083,7 @@
             }
             rhythmusEntwurf.loesung = loesung;
             rhythmusRunde = { soll: rhythmusEntwurf.soll, zeichen: rhythmusEntwurf.zeichen || '4/4',
+                              klatsch: rhythmusEntwurf.klatsch !== false,
                               werte: rhythmusEntwurf.werte.slice(), loesung: loesung };
             metronomLeisteZeigen(true);
             broadcastControlState();
@@ -4173,9 +4198,17 @@
            zwei einzeln notierte, eine Achtelpause plus Achtel wie das Fragment "Pause
            + Achtel". Verglichen wird deshalb nicht die Folge der Fragmente, sondern
            das, was man hoert - jedes Fragment in seine Werte zerlegt. */
-        function rhythmusKern(code) {
+        function rhythmusKern(code, klatsch) {
             const teile = [];
             rhythmusLesen(code).forEach(b => b.teile.forEach(t => {
+                /* Klatschmodus: Geklatscht wird der Anschlag, danach klingt nichts
+                   nach. Eine Viertel mit folgender Viertelpause hoert sich deshalb an
+                   wie eine Halbe - die Pause wandert in die Note davor. Nur eine
+                   Pause ganz am Anfang bleibt stehen, die hoert man als Warten. */
+                if (klatsch && t.p && teile.length && !teile[teile.length - 1].p) {
+                    teile[teile.length - 1].d += t.d;
+                    return;
+                }
                 /* Pausen nebeneinander zu einer zusammenfassen: Zwei Achtelpausen
                    klingen wie eine Viertelpause, da ist nichts zu hoeren, was sie
                    unterscheidet. Noten dagegen bleiben einzeln - zwei Viertel sind
@@ -4186,7 +4219,7 @@
             }));
             return teile.map(t => (t.p ? 'p' : 'n') + t.d).join(',');
         }
-        function rhythmusGleich(a, b) { return rhythmusKern(a) === rhythmusKern(b); }
+        function rhythmusGleich(a, b, klatsch) { return rhythmusKern(a, klatsch) === rhythmusKern(b, klatsch); }
 
         /* Zeichnet eine Folge von Fragmenten als SVG. Haelse nach oben, eine
            Grundlinie - eine Rhythmuszeile braucht keine fuenf Notenlinien.
@@ -7089,7 +7122,7 @@
                         const noten = rhythmusLesen(code);
                         let urteil = '';
                         if (rhythmusRunde && rhythmusRunde.loesung) {
-                            const stimmt = rhythmusGleich(code, rhythmusRunde.loesung);
+                            const stimmt = rhythmusGleich(code, rhythmusRunde.loesung, rhythmusRunde.klatsch);
                             urteil = stimmt
                                 ? `<span class="text-[10px] font-black text-emerald-400"><i class="fa-solid fa-check"></i> stimmt mit deiner Vorgabe</span>`
                                 : `<span class="text-[10px] font-black text-rose-400"><i class="fa-solid fa-xmark"></i> weicht ab</span>`;
