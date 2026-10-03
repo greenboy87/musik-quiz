@@ -515,7 +515,7 @@
                 <div id="student-room-known" class="hidden">
                     <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Du trittst bei:</label>
                     <div class="w-full bg-slate-950 border-2 border-violet-500/50 rounded-2xl px-4 py-3 text-center">
-                        <span id="student-room-display" class="text-3xl font-black text-violet-300 font-mono tracking-widest">–</span>
+                        <span id="student-room-display" style="word-break: break-all" class="text-3xl font-black text-violet-300 font-mono tracking-widest">–</span>
                     </div>
                 </div>
                 <div id="student-room-missing" class="hidden">
@@ -901,8 +901,8 @@
                                 type="text" 
                                 id="room-code-input" oninput="this.value = normalisiereRaumCode(this.value)" 
                                 value="" 
-                                placeholder="Raum-Code (z.B. 7c)..." 
-                                maxlength="8"
+                                placeholder="Raum-Code (z.B. 7c oder greenboys)..." 
+                                maxlength="16"
                                 class="w-full bg-slate-950 border border-slate-700/60 rounded-xl px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-violet-500 font-mono font-bold"
                             >
                             <button
