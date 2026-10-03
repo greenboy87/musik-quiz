@@ -2798,7 +2798,14 @@
             function bahnOrt(w, t) {
                 return { x: w.x0 + w.vx * t, y: w.y0 + w.vy * t + 0.5 * S.g * t * t };
             }
-            const runter = (e) => { if (!S.lauf || S.wurf) return; e.preventDefault(); S.zug = zeigerPunkt(e); };
+            /* Zeiger einfangen, sonst kommt das Loslassen ausserhalb des Spielfelds
+               nie an und die Ziellinie bleibt stehen, ohne dass geschossen wird. */
+            const runter = (e) => {
+                if (!S.lauf || S.wurf) return;
+                e.preventDefault();
+                try { leinwand.setPointerCapture(e.pointerId); } catch (_) {}
+                S.zug = zeigerPunkt(e);
+            };
             const bewegen = (e) => { if (!S.zug) return; e.preventDefault(); S.zug = zeigerPunkt(e); };
             const hoch    = (e) => { if (!S.zug) return; e.preventDefault(); abschuss(); };
             leinwand.addEventListener('pointerdown', runter);
@@ -3152,14 +3159,21 @@
                 const note = bombe ? null : [...S.noten].reverse().find(n => Math.hypot(n.x - p.x, n.y - p.y) <= S.r * 1.15);
                 const sache = bombe || note;
                 if (!sache) return;
+                /* Den Zeiger einfangen: Sonst hoeren Bewegung und Loslassen auf, sobald
+                   der Finger ueber den Rand des Spielfelds hinausrutscht - das Stueck
+                   klebte dann am Zeiger fest, ohne je abgelegt zu werden. */
+                try { leinwand.setPointerCapture(e.pointerId); } catch (_) {}
                 S.griff = { sache: sache, art: bombe ? 'bombe' : 'note', dx: sache.x - p.x, dy: sache.y - p.y };
             };
             const bewegen = (e) => {
                 if (!S.griff) return;
                 e.preventDefault();
                 const p = zeigerPunkt(e);
-                S.griff.sache.x = p.x + S.griff.dx;
-                S.griff.sache.y = p.y + S.griff.dy;
+                /* Im Feld halten. Wer zu weit nach unten zog, schob Note oder Bombe
+                   halb aus dem Bild: Dort lag sie dann ausserhalb jeder Zone und war
+                   mit dem Finger nicht mehr zu fassen. */
+                S.griff.sache.x = Math.max(S.r, Math.min(S.w - S.r, p.x + S.griff.dx));
+                S.griff.sache.y = Math.max(S.r, Math.min(S.h - S.r, p.y + S.griff.dy));
             };
             const hoch = (e) => {
                 if (!S.griff) return;
