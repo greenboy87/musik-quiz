@@ -314,6 +314,47 @@
         @keyframes regelRein { to { opacity: 1; transform: translateX(0); } }
         @keyframes rangRein  { to { opacity: 1; transform: translateY(0); } }
 
+        /* Spielfeld der Sammelspiele: Die Spiele fuellen diesen Block selbst. */
+        .sammel-feld { display: flex; flex-direction: column; align-items: center; gap: .9rem; width: 100%; }
+
+        /* Notenlesen: Notensystem und Tastenreihe */
+        .noten-blatt {
+            display: block; width: min(92vw, 820px); aspect-ratio: 16 / 7; max-height: 42vh;
+            border-radius: 18px; border: 2px solid rgba(125,211,252,.4);
+            background: linear-gradient(180deg, rgba(248,250,252,.96), rgba(226,232,240,.92));
+            box-shadow: 0 10px 40px rgba(0,0,0,.5);
+        }
+        .noten-tasten { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
+        .noten-taste {
+            font-family: inherit; font-weight: 900; cursor: pointer;
+            font-size: min(5vw, 26px); width: 2.6em; height: 2.4em; border-radius: 14px;
+            background: rgba(255,255,255,.12); color: #f8fafc;
+            border: 2px solid rgba(255,255,255,.32);
+            box-shadow: 0 5px 0 rgba(0,0,0,.4);
+            transition: transform .08s ease, background .15s ease;
+        }
+        .noten-taste:hover { background: rgba(255,255,255,.22); }
+        .noten-taste:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+        .noten-taste.richtig { background: #059669; border-color: #34d399; box-shadow: 0 5px 0 #064e3b; }
+        .noten-taste.falsch {
+            background: #9f1239; border-color: #fb7185; box-shadow: 0 5px 0 #4c0519;
+            animation: tasteZittern .3s ease-in-out;
+        }
+        /* Schon einmal falsch geraten: Die Taste bleibt blass, der Punkt ist weg. */
+        .noten-taste.raus { opacity: .35; }
+        @keyframes tasteZittern {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        @media (max-width: 640px) {
+            .noten-blatt { width: 100%; aspect-ratio: 4 / 3; max-height: 46vh; }
+            .noten-taste { font-size: min(7vw, 26px); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .noten-taste.falsch { animation: none; }
+        }
+
         /* Liveliste: eigener Block, damit die Zeilen untereinander stehen - die
            Buehne selbst ist eine Flex-Spalte, der Block erbt das. */
         .sammel-liste { display: flex; flex-direction: column; align-items: center; gap: .5rem; width: 100%; }
@@ -1422,7 +1463,7 @@
                     id="spiel-waehlen-btn"
                     onclick="spielAuswahl()"
                     class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
-                    title="Minispiel starten: Reaktionsspiel, Notenschleuder oder Notensortierer"
+                    title="Minispiel starten: Reaktionsspiel, Notenschleuder, Notensortierer oder Notenlesen"
                     aria-label="Minispiel starten"
                 >
                     <i class="fa-solid fa-gamepad"></i>
@@ -2487,7 +2528,21 @@
                     ['3', 'Mitte zählt 3, Rand nur 1', ''],
                     ['45', 'Sekunden lang - so oft treffen wie möglich', 'warnung']
                 ],
-                feld: (leinwand, dauer, senden) => katapultFeldAufbauen(leinwand, dauer, senden)
+                feld: katapultFeldAufbauen
+            },
+            notenlesen: {
+                titel: '&#127932; Notenlesen',
+                dauer: 45000,
+                einheit: 'Noten',
+                name: 'Notenlesen',
+                hinweis: 'Welcher Buchstabe ist das?',
+                regeln: [
+                    ['1', 'Eine Note steht im Violinschlüssel', ''],
+                    ['2', 'Tippe ihren Buchstaben: C D E F G A H', ''],
+                    ['3', 'Gleich richtig = 1 Punkt', ''],
+                    ['45', 'Sekunden lang - so viele Noten wie möglich', 'warnung']
+                ],
+                feld: (behaelter, dauer, senden) => notenlesenFeldAufbauen(behaelter, dauer, senden)
             },
             sortierer: {
                 titel: '&#127925; Notensortierer',
@@ -2502,7 +2557,7 @@
                     ['💣', 'Bomben in den Bombenmüll - sonst Minuspunkte', 'warnung'],
                     ['💣', 'Bombe in einer Ecke löscht deren Punkte', 'warnung']
                 ],
-                feld: (leinwand, dauer, senden) => sortiererFeldAufbauen(leinwand, dauer, senden)
+                feld: sortiererFeldAufbauen
             }
         };
 
@@ -2531,6 +2586,8 @@
                             onclick="event.stopPropagation(); starteSammelspiel('katapult');"><i class="fa-solid fa-bullseye"></i> Notenschleuder</button>
                     <button type="button" class="minispiel-knopf"
                             onclick="event.stopPropagation(); starteSammelspiel('sortierer');"><i class="fa-solid fa-music"></i> Notensortierer</button>
+                    <button type="button" class="minispiel-knopf"
+                            onclick="event.stopPropagation(); starteSammelspiel('notenlesen');"><i class="fa-solid fa-book-open"></i> Notenlesen</button>
                 </div>
                 <div class="klein">Die drei besten bekommen 3 · 2 · 1 Punkte</div>`;
             updateSpielKnopf();
@@ -2716,7 +2773,7 @@
             btn.title = fertig
                 ? 'Punkte vergeben: 3 · 2 · 1 an die drei besten'
                 : laeuft ? 'Minispiel abbrechen'
-                         : 'Minispiel starten: Reaktionsspiel, Notenschleuder oder Notensortierer';
+                         : 'Minispiel starten: Reaktionsspiel, Notenschleuder, Notensortierer oder Notenlesen';
             btn.setAttribute('aria-label', btn.title);
             btn.onclick = sammelFertig ? sammelspielPunkteVergeben
                         : reaktionFertig ? minispielPunkteVergeben : spielAuswahl;
@@ -2751,9 +2808,9 @@
                 /* Ohne Teamnamen kommt kein Ergebnis beim Lehrergeraet an. Mitspielen
                    darf man trotzdem - nur wissen sollte man es. */
                 const name = localStorage.getItem('student_team_name');
-                b.innerHTML = `<canvas class="katapult-feld"></canvas>
+                b.innerHTML = `<div class="sammel-feld"></div>
                     <div class="klein">${name ? spiel.hinweis : 'Nur zum Üben - du bist keinem Team beigetreten'}</div>`;
-                sammelspielSchueler.spiel = spiel.feld(b.querySelector('canvas'), spiel.dauer, sammelspielSenden);
+                sammelspielSchueler.spiel = spiel.feld(b.querySelector('.sammel-feld'), spiel.dauer, sammelspielSenden);
             } else {
                 const punkte = sammelspielSchueler.spiel ? sammelspielSchueler.spiel.punkte : 0;
                 if (sammelspielSchueler.spiel) {
@@ -2792,7 +2849,10 @@
             }
         }
 
-        function katapultFeldAufbauen(leinwand, dauer, senden) {
+        function katapultFeldAufbauen(behaelter, dauer, senden) {
+            const leinwand = document.createElement('canvas');
+            leinwand.className = 'katapult-feld';
+            behaelter.appendChild(leinwand);
             const ctx = leinwand.getContext('2d');
             const S = {
                 w: 0, h: 0, boden: 0, kx: 0, ky: 0, g: 0,
@@ -3035,6 +3095,194 @@
         }
 
         /* ============================================================ */
+        /* NOTENLESEN                                                    */
+        /* Eine Note steht im Violinschluessel, getippt wird ihr         */
+        /* Buchstabe. Eine Oktave von c' (Hilfslinie unter dem System)   */
+        /* bis c'' (dritter Zwischenraum) - die acht Stufen, mit denen   */
+        /* der Unterricht anfaengt. Der Schluessel ist gezeichnet und    */
+        /* nicht gesetzt: Das Zeichen U+1D11E fehlt auf vielen Geraeten, */
+        /* und ohne Schluessel waere die Aufgabe sinnlos.                */
+        /* ============================================================ */
+        const NOTENSTUFEN = [
+            { name: 'C', stufe: -2 },   // c' - eine Hilfslinie unter dem System
+            { name: 'D', stufe: -1 },
+            { name: 'E', stufe: 0 },    // unterste Linie
+            { name: 'F', stufe: 1 },
+            { name: 'G', stufe: 2 },    // die Linie, um die sich der Schluessel windet
+            { name: 'A', stufe: 3 },
+            { name: 'H', stufe: 4 },    // mittlere Linie
+            { name: 'C', stufe: 5 }     // c'' - dritter Zwischenraum
+        ];
+        const NOTENTASTEN = ['C', 'D', 'E', 'F', 'G', 'A', 'H'];
+
+        /* Violinschluessel aus einem Zug: Schwanz unter dem System, Hals nach oben,
+           Schleife oben herum, weite Kurve rechts und zuletzt die Spirale um die
+           G-Linie. a ist der Linienabstand, gy die Hoehe der G-Linie. */
+        function zeichneViolinschluessel(ctx, cx, gy, a, farbe) {
+            ctx.save();
+            ctx.strokeStyle = farbe;
+            ctx.lineWidth = a * 0.2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            const P = (x, y) => [cx + x * a, gy + y * a];
+            const kurve = (p1, p2, p3) => ctx.bezierCurveTo(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]);
+            ctx.beginPath();
+            ctx.moveTo(...P(-0.45, 2.45));                         // Schwanz unter dem System
+            kurve(P(0.1, 2.6), P(0.45, 2.2), P(0.42, 1.75));       // Haken nach oben
+            kurve(P(0.38, 1.0), P(0.1, 0.2), P(0.0, -0.6));        // Hals durch die Spirale
+            kurve(P(-0.12, -1.6), P(-0.3, -2.3), P(-0.05, -3.0));  // weiter nach oben
+            kurve(P(0.25, -3.6), P(0.78, -3.2), P(0.72, -2.5));    // Schleife oben herum
+            kurve(P(0.68, -1.6), P(-0.1, -1.1), P(-0.55, -0.55));  // zurueck nach unten links
+            kurve(P(-1.05, 0.05), P(-0.95, 0.95), P(-0.25, 1.05)); // grosse Windung um die G-Linie
+            kurve(P(0.5, 1.15), P(0.85, 0.5), P(0.6, 0.0));        // rechte Seite der Windung
+            kurve(P(0.4, -0.4), P(-0.1, -0.35), P(-0.15, 0.1));    // inneres Ende der Spirale
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function notenlesenFeldAufbauen(behaelter, dauer, senden) {
+            const leinwand = document.createElement('canvas');
+            leinwand.className = 'noten-blatt';
+            const tastenreihe = document.createElement('div');
+            tastenreihe.className = 'noten-tasten';
+            behaelter.appendChild(leinwand);
+            behaelter.appendChild(tastenreihe);
+            const ctx = leinwand.getContext('2d');
+
+            const S = {
+                w: 0, h: 0, a: 0, gy: 0, grundlinie: 0,
+                frage: null, vorige: -1, sauber: true, antwort: 0,
+                punkte: 0, extra: 0, lauf: true, letzterSend: 0, folge: 0,
+                ende: performance.now() + dauer, zuletzt: performance.now()
+            };
+
+            const tasten = NOTENTASTEN.map(name => {
+                const t = document.createElement('button');
+                t.type = 'button';
+                t.className = 'noten-taste';
+                t.textContent = name;
+                t.addEventListener('click', (e) => { e.stopPropagation(); raten(name, t); });
+                tastenreihe.appendChild(t);
+                return t;
+            });
+
+            function messen() {
+                const r = leinwand.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                S.w = r.width; S.h = r.height;
+                leinwand.width = Math.round(r.width * dpr);
+                leinwand.height = Math.round(r.height * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                /* Groesse des Systems: Das hoechste Teil ist der Schluessel - er
+                   reicht 4,6 Linienabstaende ueber die unterste Linie und 2,7
+                   darunter. Daran bemisst sich alles, sonst stuende sein Schwanz
+                   auf schmalen Geraeten unten aus dem Bild. */
+                S.a = Math.min(S.h * 0.115, S.w * 0.08);
+                S.grundlinie = S.h * 0.44 + 2 * S.a;   // unterste Linie (e')
+                S.gy = S.grundlinie - S.a;             // G-Linie
+            }
+
+            function naechsteFrage() {
+                let i = Math.floor(Math.random() * NOTENSTUFEN.length);
+                if (i === S.vorige) i = (i + 1 + Math.floor(Math.random() * (NOTENSTUFEN.length - 1))) % NOTENSTUFEN.length;
+                S.vorige = i;
+                S.frage = NOTENSTUFEN[i];
+                S.sauber = true;
+                S.antwort = 0;
+                tasten.forEach(t => t.classList.remove('richtig', 'falsch', 'raus'));
+            }
+
+            function raten(name, taste) {
+                if (!S.lauf || !S.frage || S.antwort) return;
+                if (name === S.frage.name) {
+                    if (S.sauber) S.punkte++;
+                    S.extra++;
+                    taste.classList.add('richtig');
+                    S.antwort = performance.now();
+                    senden(S, false);
+                    // Kurz stehen lassen, damit man die gruene Taste noch sieht
+                    setTimeout(() => { if (S.lauf) naechsteFrage(); }, 450);
+                } else {
+                    S.sauber = false;
+                    taste.classList.remove('falsch');
+                    void taste.offsetWidth;        // Animation neu ausloesen
+                    taste.classList.add('falsch');
+                    setTimeout(() => { taste.classList.remove('falsch'); taste.classList.add('raus'); }, 300);
+                }
+            }
+
+            window.addEventListener('resize', messen);
+            function aufraeumen() { S.lauf = false; window.removeEventListener('resize', messen); }
+
+            function schritt(jetzt) {
+                if (!S.lauf) { aufraeumen(); return; }
+                S.zuletzt = jetzt;
+                if (!S.w) messen();
+                const rest = Math.max(0, S.ende - jetzt);
+                if (!rest) { aufraeumen(); senden(S, true); zeichnen(0); return; }
+                if (!S.frage) naechsteFrage();
+                zeichnen(rest);
+                requestAnimationFrame(schritt);
+            }
+
+            function zeichnen(rest) {
+                ctx.clearRect(0, 0, S.w, S.h);
+                const tinte = '#0f172a';
+                const links = S.w * 0.08, rechts = S.w * 0.92;
+
+                ctx.strokeStyle = tinte; ctx.lineWidth = Math.max(1, S.a * 0.09);
+                for (let i = 0; i < 5; i++) {
+                    const y = S.grundlinie - i * S.a;
+                    ctx.beginPath(); ctx.moveTo(links, y); ctx.lineTo(rechts, y); ctx.stroke();
+                }
+                zeichneViolinschluessel(ctx, links + S.a * 1.5, S.gy, S.a, tinte);
+
+                if (S.frage) {
+                    const x = S.w * 0.62;
+                    const y = S.grundlinie - S.frage.stufe * (S.a / 2);
+                    // Hilfslinie fuer das tiefe c'
+                    if (S.frage.stufe <= -2) {
+                        ctx.beginPath();
+                        ctx.moveTo(x - S.a * 0.95, y); ctx.lineTo(x + S.a * 0.95, y); ctx.stroke();
+                    }
+                    /* Ab der mittleren Linie zeigt der Hals nach unten - so steht es
+                       in jedem Heft, und genau danach sollen sie spaeter lesen. */
+                    const abwaerts = S.frage.stufe >= 4;
+                    const gross = S.a * 2;
+                    zeichneNote(ctx, x, y - gross * 0.32, gross, { flaggen: 0, hohl: false },
+                                S.antwort ? '#047857' : tinte, abwaerts);
+                }
+
+                ctx.font = `800 ${Math.max(13, S.h * 0.075)}px 'DM Sans', sans-serif`;
+                ctx.textBaseline = 'top';
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#0369a1';
+                ctx.fillText(`${S.punkte} Punkte`, 14, 10);
+                ctx.textAlign = 'right';
+                const sek = Math.ceil(rest / 1000);
+                ctx.fillStyle = sek <= 10 ? '#be123c' : '#475569';
+                ctx.fillText(`${sek} s`, S.w - 14, 10);
+
+                if (!S.lauf) {
+                    ctx.fillStyle = 'rgba(5,6,15,.8)';
+                    ctx.fillRect(0, 0, S.w, S.h);
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.font = `900 ${Math.max(24, S.h * 0.18)}px 'DM Sans', sans-serif`;
+                    ctx.fillText('ZEIT UM', S.w / 2, S.h / 2 - S.h * 0.08);
+                    ctx.font = `800 ${Math.max(15, S.h * 0.09)}px 'DM Sans', sans-serif`;
+                    ctx.fillStyle = '#7dd3fc';
+                    ctx.fillText(`${S.punkte} Punkte · ${S.extra} Noten`, S.w / 2, S.h / 2 + S.h * 0.09);
+                }
+            }
+
+            messen();
+            naechsteFrage();
+            requestAnimationFrame(schritt);
+            return S;
+        }
+
+        /* ============================================================ */
         /* NOTENSORTIERER                                                */
         /* In der Mitte erscheinen Noten, die in die passende Ecke       */
         /* gehoeren. Dazwischen wandern Bomben mit laufender Zuendzeit:  */
@@ -3053,9 +3301,9 @@
         /* Eine Note zeichnen statt ein Zeichen zu setzen: Die Unicode-Noten
            (besonders die Halbe) fehlen auf manchen Geraeten oder sehen dort voellig
            anders aus - ausgerechnet beim Unterschied zwischen voll und hohl. */
-        function zeichneNote(ctx, x, y, groesse, typ, farbe) {
+        function zeichneNote(ctx, x, y, groesse, typ, farbe, abwaerts) {
             const kopfB = groesse * 0.34, kopfH = groesse * 0.25;
-            const halsX = kopfB * 0.82, kopfY = groesse * 0.32;
+            const halsX = (abwaerts ? -1 : 1) * kopfB * 0.82, kopfY = groesse * 0.32;
             ctx.save();
             ctx.translate(x, y);
             ctx.strokeStyle = farbe; ctx.fillStyle = farbe;
@@ -3066,8 +3314,13 @@
             else { ctx.fill(); }
             ctx.restore();
             ctx.lineWidth = Math.max(2, groesse * 0.055);
-            ctx.beginPath(); ctx.moveTo(halsX, kopfY); ctx.lineTo(halsX, -groesse * 0.5); ctx.stroke();
-            for (let i = 0; i < typ.flaggen; i++) {
+            /* Hals nach oben rechts oder nach unten links. Faehnchen gibt es nur
+               aufwaerts - abwaerts kommen im Spiel nur Viertel vor. */
+            ctx.beginPath();
+            ctx.moveTo(halsX, kopfY);
+            ctx.lineTo(halsX, abwaerts ? kopfY + groesse * 0.82 : -groesse * 0.5);
+            ctx.stroke();
+            for (let i = 0; !abwaerts && i < typ.flaggen; i++) {
                 const oben = -groesse * 0.5 + i * groesse * 0.2;
                 ctx.beginPath();
                 ctx.moveTo(halsX, oben);
@@ -3078,7 +3331,10 @@
             ctx.restore();
         }
 
-        function sortiererFeldAufbauen(leinwand, dauer, senden) {
+        function sortiererFeldAufbauen(behaelter, dauer, senden) {
+            const leinwand = document.createElement('canvas');
+            leinwand.className = 'katapult-feld';
+            behaelter.appendChild(leinwand);
             const ctx = leinwand.getContext('2d');
             const S = {
                 w: 0, h: 0, zonen: [], muell: null,
