@@ -314,6 +314,31 @@
         @keyframes regelRein { to { opacity: 1; transform: translateX(0); } }
         @keyframes rangRein  { to { opacity: 1; transform: translateY(0); } }
 
+        /* Liveliste: eigener Block, damit die Zeilen untereinander stehen - die
+           Buehne selbst ist eine Flex-Spalte, der Block erbt das. */
+        .sammel-liste { display: flex; flex-direction: column; align-items: center; gap: .5rem; width: 100%; }
+
+        /* Countdown unter den Regeln: Er sagt, wie lange noch Lesezeit ist. */
+        .minispiel-countdown {
+            margin-top: .4rem; font-size: min(3vw, 26px); letter-spacing: .08em;
+            text-transform: uppercase; color: rgba(248,250,252,.75);
+            display: flex; align-items: center; gap: .6rem;
+        }
+        .minispiel-countdown .zahl {
+            font-variant-numeric: tabular-nums; font-size: 1.7em; color: #7dd3fc;
+            min-width: 1.4em; text-align: center;
+            text-shadow: 0 0 16px rgba(56,189,248,.8);
+        }
+        /* Die letzten drei Sekunden sollen auffallen - dann aufhoeren zu lesen. */
+        .minispiel-countdown.knapp .zahl {
+            color: #fbbf24; text-shadow: 0 0 20px rgba(251,191,36,.9);
+            animation: zahlPuls .5s ease-out;
+        }
+        @keyframes zahlPuls { 0% { transform: scale(1.5); } 100% { transform: scale(1); } }
+        @media (prefers-reduced-motion: reduce) {
+            .minispiel-countdown.knapp .zahl { animation: none; }
+        }
+
         /* Bedienung auf der Buehne: Sie deckt alles ab, also gehoeren die Knoepfe
            hierher und nicht in die Leiste darunter. Arcade-Knoepfe mit Sockel:
            Der Druck ist sichtbar, das hilft am Beamer. */
@@ -2168,6 +2193,31 @@
         /* Schulnetz liegen zwischen zwei iPads schnell 100 ms, und      */
         /* genau darum geht es bei Platz eins bis drei.                  */
         /* ============================================================ */
+        /* "Spiel startet in 7" unter den Regeln - auf dem Beamer wie auf dem Geraet.
+           Die Zeit laeuft auf jedem Geraet fuer sich: Ein Zeitstempel vom
+           Lehrergeraet waere nur so gut wie die Uhren der Schuelergeraete, und die
+           gehen im Schulhaus gern Minuten auseinander. Den Wechsel loest ohnehin
+           das Lehrergeraet aus, der Countdown sagt nur, wie lange noch Lesezeit ist. */
+        function countdownHtml(sekunden) {
+            return `<div class="minispiel-countdown">Spiel startet in <span class="zahl">${sekunden}</span></div>`;
+        }
+        /* Aktualisiert nur die eigene Zahl: Das ganze Regelbild neu zu bauen haette
+           die Einfluege der Regelzeilen im Sekundentakt neu gestartet. */
+        function countdownStarten(behaelter, sekunden) {
+            const feld = behaelter && behaelter.querySelector('.minispiel-countdown');
+            if (!feld) return;
+            const zahl = feld.querySelector('.zahl');
+            const ende = performance.now() + sekunden * 1000;
+            const takt = setInterval(() => {
+                // Mit dem Regelbild verschwindet auch der Countdown
+                if (!feld.isConnected) { clearInterval(takt); return; }
+                const rest = Math.max(0, Math.ceil((ende - performance.now()) / 1000));
+                if (zahl.textContent !== String(rest)) zahl.textContent = rest;
+                feld.classList.toggle('knapp', rest <= 3);
+                if (rest <= 0) clearInterval(takt);
+            }, 200);
+        }
+
         let minispiel = null;          // Lehrergeraet: { id, phase, zeiten, uhren }
         let minispielSchueler = null;  // Schuelergeraet: { id, phase, gruenAb, getippt }
 
@@ -2254,6 +2304,7 @@
                     class="minispiel-abbruch" title="Reaktionsspiel abbrechen (oder Esc)">✕</button>`;
             if (minispiel.phase === 'regeln') {
                 b.innerHTML = abbruch + minispielRegelnHtml();
+                countdownStarten(b, Math.round(MINISPIEL_REGELN_MS / 1000));
             } else if (minispiel.phase === 'rot') {
                 b.innerHTML = abbruch + `<div class="gross">WARTEN</div>
                     <div class="mittel">Noch nicht tippen!</div>
@@ -2311,7 +2362,8 @@
                 regel('2', 'Rot heißt warten', 1.1) +
                 regel('3', 'Grün heißt sofort tippen', 2.0) +
                 regel('!', 'Zu früh getippt – raus für diese Runde', 2.9, 'warnung') +
-                `<div class="klein">Die schnellsten drei bekommen 3 · 2 · 1 Punkte</div>`;
+                `<div class="klein">Die schnellsten drei bekommen 3 · 2 · 1 Punkte</div>` +
+                countdownHtml(Math.round(MINISPIEL_REGELN_MS / 1000));
         }
 
         /* Bonuspunkte fuer die ersten drei einer Siegerliste. Beide Minispiele
@@ -2375,7 +2427,10 @@
                        <div class="mittel">Abgeschickt!</div>`;
                 return;
             }
-            if (zustand.phase === 'regeln') b.innerHTML = minispielRegelnHtml();
+            if (zustand.phase === 'regeln') {
+                b.innerHTML = minispielRegelnHtml();
+                countdownStarten(b, Math.round(MINISPIEL_REGELN_MS / 1000));
+            }
             else if (zustand.phase === 'rot') b.innerHTML = `<div class="gross">WARTEN</div><div class="mittel">Noch nicht tippen!</div>`;
             else if (zustand.phase === 'gruen') b.innerHTML = `<div class="gross">TIPPEN!</div>`;
             else b.innerHTML = `<div class="minispiel-titel">⚡ Vorbei</div><div class="klein">Schau auf die Leinwand.</div>`;
@@ -2575,6 +2630,7 @@
 
             if (sammelspiel.phase === 'regeln') {
                 b.innerHTML = abbruch + sammelspielRegelnHtml(sammelspiel.art);
+                countdownStarten(b, Math.round(SAMMEL_REGELN_MS / 1000));
             } else if (sammelspiel.phase === 'spiel') {
                 const rest = Math.max(0, Math.ceil((sammelspiel.bis - Date.now()) / 1000));
                 const liste = sammelspielRangliste();
@@ -2583,12 +2639,25 @@
                         <span class="summe">${e.punkte}</span>
                         <span>${escapeHtml(e.team)}</span>
                         <span class="treffer">${e.extra} ${spiel.einheit}</span>
-                    </div>`).join('');
-                b.innerHTML = abbruch +
-                    `<div class="minispiel-titel">${spiel.titel}</div>
-                     <div class="gross katapult-uhr${rest <= 10 ? ' knapp' : ''}">${rest}</div>
-                     <div class="klein">Sekunden - spielt auf euren Geräten!</div>` +
-                    (zeilen || `<div class="klein">Noch kein Punkt</div>`);
+                    </div>`).join('') || `<div class="klein">Noch kein Punkt</div>`;
+                /* Dieses Bild wird jede Sekunde und bei jedem eingehenden Stand neu
+                   gezeichnet. Wuerde dabei alles neu gebaut, sprangen Titel und
+                   Restzeit im Sekundentakt erneut an - also nur nachtragen, was sich
+                   geaendert hat. Die Liste darf neu gebaut werden, sie ist ohne
+                   Animation. */
+                const uhr = b.querySelector('.katapult-uhr');
+                const feld = b.querySelector('.sammel-liste');
+                if (uhr && feld) {
+                    if (uhr.textContent !== String(rest)) uhr.textContent = rest;
+                    uhr.classList.toggle('knapp', rest <= 10);
+                    feld.innerHTML = zeilen;
+                } else {
+                    b.innerHTML = abbruch +
+                        `<div class="minispiel-titel">${spiel.titel}</div>
+                         <div class="gross katapult-uhr${rest <= 10 ? ' knapp' : ''}">${rest}</div>
+                         <div class="klein">Sekunden - spielt auf euren Geräten!</div>
+                         <div class="sammel-liste">${zeilen}</div>`;
+                }
             } else {
                 const liste = sammelspielRangliste().filter(e => e.punkte > 0);
                 const zeilen = liste.length
@@ -2621,7 +2690,8 @@
                 spiel.regeln.map(([nr, text, sorte], i) =>
                     `<div class="minispiel-regel ${sorte}" style="animation-delay: ${(0.2 + i * 0.9).toFixed(1)}s">` +
                     `<span class="nummer">${nr}</span> ${text}</div>`).join('') +
-                `<div class="klein">Die drei besten bekommen 3 · 2 · 1 Punkte</div>`;
+                `<div class="klein">Die drei besten bekommen 3 · 2 · 1 Punkte</div>` +
+                countdownHtml(Math.round(SAMMEL_REGELN_MS / 1000));
         }
 
         function sammelspielPunkteVergeben() {
@@ -2676,6 +2746,7 @@
             if (zustand.phase === 'regeln') {
                 if (sammelspielSchueler.spiel) { sammelspielSchueler.spiel.lauf = false; sammelspielSchueler.spiel = null; }
                 b.innerHTML = sammelspielRegelnHtml(zustand.art);
+                countdownStarten(b, Math.round(SAMMEL_REGELN_MS / 1000));
             } else if (zustand.phase === 'spiel') {
                 /* Ohne Teamnamen kommt kein Ergebnis beim Lehrergeraet an. Mitspielen
                    darf man trotzdem - nur wissen sollte man es. */
