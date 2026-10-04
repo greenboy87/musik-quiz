@@ -477,6 +477,48 @@
             text-shadow: 0 0 18px rgba(251,191,36,.8);
         }
         .snp-mitte { opacity: .5; }
+        /* Endstand am Beamer: drei Gruppen statt einer Paarliste */
+        .snp-gruppe {
+            width: min(74vw, 680px); max-width: 100%; box-sizing: border-box;
+            border-radius: 14px; padding: .5rem 1rem; margin-top: .4rem;
+            border-left: 6px solid rgba(255,255,255,.3);
+            background: linear-gradient(90deg, rgba(255,255,255,.1), rgba(255,255,255,.02));
+            opacity: 0; transform: translateY(14px);
+            animation: rangRein .45s ease-out forwards;
+        }
+        .snp-gruppe.sieg { border-left-color: #fbbf24; box-shadow: 0 0 30px rgba(251,191,36,.25); }
+        .snp-gruppe.remis { border-left-color: #7dd3fc; }
+        .snp-gruppe.nichts { border-left-color: rgba(248,250,252,.3); opacity: .85; }
+        .snp-gruppe-titel {
+            font-size: min(2.6vw, 22px); font-weight: 900; letter-spacing: .06em;
+            text-transform: uppercase; color: rgba(248,250,252,.75); text-align: left;
+        }
+        .snp-gruppe.sieg .snp-gruppe-titel { color: #fbbf24; }
+        .snp-gruppe-teams { display: flex; flex-wrap: wrap; gap: .5rem .9rem; margin-top: .2rem; }
+        .snp-gruppe-team {
+            display: flex; flex-direction: column; align-items: flex-start;
+            font-size: min(3vw, 26px); font-weight: 800;
+        }
+        .snp-gruppe-team .gegen { font-size: .55em; font-weight: 700; opacity: .6; }
+
+        .snp-eigen { display: flex; align-items: center; justify-content: center; gap: 1.2rem; margin: .4rem 0; }
+        .snp-seite { display: flex; flex-direction: column; align-items: center; gap: .2rem; }
+        .snp-rein { animation: snpRein .45s cubic-bezier(.2,1.4,.4,1) both; }
+        @keyframes snpRein { from { opacity: 0; transform: translateX(-40px) scale(.7); } }
+        .snp-zittert { animation: snpZittern .35s ease-in-out infinite; opacity: .7; }
+        @keyframes snpZittern { 0%,100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+        .snp-auf { animation: snpAufdecken .5s cubic-bezier(.2,1.4,.4,1) both; }
+        @keyframes snpAufdecken {
+            0% { transform: rotateY(90deg) scale(.6); opacity: 0; }
+            60% { transform: rotateY(0) scale(1.18); opacity: 1; }
+            100% { transform: none; }
+        }
+        .snp-spaet { opacity: 0; transition: opacity .3s ease; }
+        .snp-spaet.da { opacity: 1; }
+        @media (prefers-reduced-motion: reduce) {
+            .snp-rein, .snp-zittert, .snp-auf { animation: none; opacity: 1; }
+        }
+        .snp-eigen .gross-zeichen { font-size: min(18vw, 90px); line-height: 1; }
         .snp-stand {
             font-size: 1.15em; font-weight: 900; font-variant-numeric: tabular-nums;
             background: rgba(0,0,0,.35); border-radius: 999px; padding: .1em .6em;
@@ -2602,9 +2644,14 @@
                     sammel: sammelspiel ? { art: sammelspiel.art, id: sammelspiel.id, phase: sammelspiel.phase } : null,
                     /* Beim Gegnersuchen brauchen die Geraete die Teamnamen, beim Ziehen
                        die Paare - mehr nicht. Die Zuege bleiben beim Schiedsrichter. */
+                    /* Beim Aufdecken bekommt jedes Geraet alle Duelle mit - die Zuege
+                       stehen in dem Moment ohnehin auf der Leinwand. So sieht jedes
+                       Team sein eigenes Ergebnis vor sich und muss nicht hin und her
+                       schauen. */
                     snp: snp ? { id: snp.id, phase: snp.phase, runde: snp.runde, runden: snp.runden,
                                  namen: snp.phase === 'wahl' ? snp.namen : null,
-                                 paare: snp.phase === 'zug' ? snp.paare : null } : null,
+                                 paare: snp.phase === 'zug' ? snp.paare : null,
+                                 duelle: (snp.phase === 'aufdeckung' || snp.phase === 'ende') ? snpDuellstand() : null } : null,
                     // Nur Taktlaenge und erlaubte Bausteine - die Loesung bleibt hier
                     rhythmus: rhythmusRunde ? { soll: rhythmusRunde.soll, werte: rhythmusRunde.werte } : null,
                     songabgabe: songabgabeAn
@@ -3009,8 +3056,21 @@
                     if (snp.runde < snp.runden) { snpDuellStarten(); return; }
                     snp.phase = 'ende';
                     zeigeSnp(); broadcastControlState();
-                }, 1600 + snp.paare.length * 700));
+                    // Die Geraete spielen ihre Aufdeckung in gut drei Sekunden ab -
+                    // so lange muss die Leinwand mindestens stehen bleiben.
+                }, Math.max(3400, 1600 + snp.paare.length * 700)));
             }, SNP_ZUG_MS));
+        }
+
+        /* Was die Geraete beim Aufdecken brauchen: je Paar die beiden Zuege des
+           letzten Duells und den Stand im Match. */
+        function snpDuellstand() {
+            const letzte = snp.verlauf[snp.verlauf.length - 1] || [];
+            return snp.paare.map((pp, i) => {
+                const zug = letzte[i] || [null, null];
+                const st = snpStand(i);
+                return { a: pp[0], b: pp[1], za: zug[0], zb: zug[1], sa: st.links, sb: st.rechts };
+            });
         }
 
         /* Wie steht es im Match? Gibt je Paar die Zahl der gewonnenen Duelle. */
@@ -3179,8 +3239,45 @@
                     `<div class="snp-paare">` + snp.paare.map(([a, bb]) =>
                         `<div class="snp-paar"><span>${escapeHtml(a)}</span><span class="gegen">gegen</span>` +
                         `<span>${bb === null ? '🤖 Rechner' : escapeHtml(bb)}</span></div>`).join('') + `</div>`;
+            } else if (snp.phase === 'ende') {
+                /* Am Ende zaehlt nicht mehr, wer gegen wen gespielt hat, sondern wer
+                   was bekommt. Drei Gruppen, mehr muss die Klasse nicht lesen. */
+                const gruppen = { sieg: [], remis: [], nichts: [] };
+                snp.paare.forEach(([a, bb], i) => {
+                    const stand = snpStand(i);
+                    const eintrag = (name, gegen) => name === null ? null
+                        : { name: name, gegen: gegen === null ? '🤖 Rechner' : gegen, stand: stand };
+                    const links = eintrag(a, bb), rechts = eintrag(bb, a);
+                    if (stand.links === stand.rechts) {
+                        if (links) gruppen.remis.push(links);
+                        if (rechts) gruppen.remis.push(rechts);
+                    } else if (stand.links > stand.rechts) {
+                        if (links) gruppen.sieg.push(links);
+                        if (rechts) gruppen.nichts.push(rechts);
+                    } else {
+                        if (rechts) gruppen.sieg.push(rechts);
+                        if (links) gruppen.nichts.push(links);
+                    }
+                });
+                const block = (titel, liste, art, verzug) => !liste.length ? '' :
+                    `<div class="snp-gruppe ${art}" style="animation-delay:${verzug}s">
+                        <div class="snp-gruppe-titel">${titel}</div>
+                        <div class="snp-gruppe-teams">` +
+                        liste.map(e => `<span class="snp-gruppe-team">${escapeHtml(e.name)}` +
+                            `<span class="gegen">${e.stand.links}:${e.stand.rechts} gegen ${typeof e.gegen === 'string' && e.gegen.startsWith('🤖') ? e.gegen : escapeHtml(e.gegen)}</span></span>`).join('') +
+                        `</div></div>`;
+                b.innerHTML = `<div class="minispiel-titel">&#127942; Endstand</div>` +
+                    block(`${SNP_MATCH_SIEG} Punkte`, gruppen.sieg, 'sieg', 0.1) +
+                    block(`${SNP_MATCH_REMIS} Punkt`, gruppen.remis, 'remis', 0.5) +
+                    block('keine Punkte', gruppen.nichts, 'nichts', 0.9) +
+                    `<div class="minispiel-knopfreihe">
+                        <button type="button" onclick="event.stopPropagation(); snpPunkteVergeben();"
+                                class="minispiel-knopf gruen-knopf">Punkte vergeben</button>
+                        <button type="button" onclick="event.stopPropagation(); beendeSchereNote();"
+                                class="minispiel-knopf">Schließen ohne Punkte</button>
+                    </div>`;
             } else {
-                const fertig = snp.phase === 'ende';
+                const fertig = false;
                 const zeilen = snp.paare.map(([a, bb], i) => {
                     const stand = snpStand(i);
                     const letzte = snp.verlauf[snp.verlauf.length - 1];
@@ -3196,15 +3293,8 @@
                             ${fertig ? '' : zeichen(zug[1])} ${name(bb, hervor === -1)}
                         </div>`;
                 }).join('');
-                const knoepfe = fertig
-                    ? `<div class="minispiel-knopfreihe">
-                           <button type="button" onclick="event.stopPropagation(); snpPunkteVergeben();"
-                                   class="minispiel-knopf gruen-knopf">Punkte vergeben (Sieg ${SNP_MATCH_SIEG} · Gleichstand ${SNP_MATCH_REMIS})</button>
-                           <button type="button" onclick="event.stopPropagation(); beendeSchereNote();"
-                                   class="minispiel-knopf">Schließen ohne Punkte</button>
-                       </div>` : '';
-                b.innerHTML = (fertig ? '' : abbruch) +
-                    `<div class="minispiel-titel">✂️ ${fertig ? 'Endstand' : 'Duell ' + snp.runde + ' von ' + snp.runden}</div>${zeilen}${knoepfe}`;
+                b.innerHTML = abbruch +
+                    `<div class="minispiel-titel">✂️ Duell ${snp.runde} von ${snp.runden}</div>${zeilen}`;
             }
             updateSpielKnopf();
         }
@@ -3270,8 +3360,81 @@
                     `</div>`;
                 return;
             }
-            b.innerHTML = `<div class="minispiel-titel">✂️ Aufgedeckt</div>
-                <div class="klein">Schau auf die Leinwand</div>`;
+            /* Aufdeckung und Endstand: das eigene Duell gross vor Augen. */
+            const meins = (zustand.duelle || []).find(d => d.a === name || d.b === name);
+            if (!meins) {
+                b.innerHTML = `<div class="minispiel-titel">✂️ Aufgedeckt</div>
+                    <div class="klein">Schau auf die Leinwand</div>`;
+                return;
+            }
+            const linksIchs = meins.a === name;
+            const meinZug = linksIchs ? meins.za : meins.zb;
+            const seinZug = linksIchs ? meins.zb : meins.za;
+            const meinStand = linksIchs ? meins.sa : meins.sb;
+            const seinStand = linksIchs ? meins.sb : meins.sa;
+            const gegner = (linksIchs ? meins.b : meins.a);
+            const gegnerWort = gegner === null ? '🤖 Rechner' : escapeHtml(gegner);
+            const bild = (w) => w ? SNP_ZEICHEN[w].bild : '❔';
+            const fertig = zustand.phase === 'ende';
+            /* snpUrteil vergleicht den ersten Zug mit dem zweiten - hier steht der
+               eigene zuerst, das Urteil gilt also schon aus eigener Sicht. Es
+               zusaetzlich zu drehen, wenn man im Paar rechts steht, kehrte es
+               genau falsch herum um. */
+            const duellUrteil = snpUrteil(meinZug, seinZug);
+            const matchUrteil = meinStand === seinStand ? 0 : (meinStand > seinStand ? 1 : -1);
+            const urteil = fertig ? matchUrteil : duellUrteil;
+            const wort = fertig
+                ? (urteil === 1 ? 'Match gewonnen!' : urteil === 0 ? 'Unentschieden' : 'Match verloren')
+                : (urteil === 1 ? 'Punkt für dich!' : urteil === 0 ? 'Unentschieden' : `Punkt für ${gegnerWort}`);
+            const farbe = urteil === 1 ? '#34d399' : urteil === 0 ? '#fbbf24' : '#f87171';
+            const punkte = fertig
+                ? `<div class="klein">${urteil === 1 ? '+' + SNP_MATCH_SIEG + ' Punkte'
+                        : urteil === 0 ? '+' + SNP_MATCH_REMIS + ' Punkt' : 'keine Punkte'}</div>`
+                : '';
+            /* Nicht alles auf einmal hinwerfen: erst die eigene Wahl, dann das
+               Zittern vor der gegnerischen, dann das Aufdecken und zuletzt der
+               Punkt. Das macht aus einer Zahl einen Moment. */
+            (snpSchueler.uhren || []).forEach(clearTimeout);
+            snpSchueler.uhren = [];
+            b.innerHTML = `<div class="minispiel-titel">${fertig ? 'Endstand' : 'Aufgedeckt'}</div>
+                <div class="snp-eigen">
+                    <span class="snp-seite">
+                        <span class="snp-zeichen gross-zeichen snp-rein">${bild(meinZug)}</span>
+                        <span class="klein">du</span>
+                    </span>
+                    <span class="snp-stand snp-spaet">${meinStand} : ${seinStand}</span>
+                    <span class="snp-seite">
+                        <span class="snp-zeichen gross-zeichen snp-zittert" data-rolle="gegner">❔</span>
+                        <span class="klein">${gegnerWort}</span>
+                    </span>
+                </div>
+                <div class="mittel" data-rolle="text">Du hast ${meinZug ? SNP_ZEICHEN[meinZug].wort : 'nichts'} gewählt</div>`;
+            const gegnerFeld = b.querySelector('[data-rolle="gegner"]');
+            const textFeld = b.querySelector('[data-rolle="text"]');
+            snpSchueler.uhren.push(setTimeout(() => {
+                if (textFeld) textFeld.textContent = `${gegnerWort} hat gewählt …`;
+            }, 900));
+            snpSchueler.uhren.push(setTimeout(() => {
+                if (gegnerFeld) {
+                    gegnerFeld.textContent = bild(seinZug);
+                    gegnerFeld.classList.remove('snp-zittert');
+                    gegnerFeld.classList.add('snp-auf');
+                }
+            }, 2000));
+            snpSchueler.uhren.push(setTimeout(() => {
+                if (!textFeld) return;
+                textFeld.textContent = wort;
+                textFeld.style.color = farbe;
+                textFeld.style.textShadow = `0 0 18px ${farbe}`;
+                const stand = b.querySelector('.snp-stand');
+                if (stand) stand.classList.add('da');
+                if (punkte) {
+                    const zus = document.createElement('div');
+                    zus.className = 'klein';
+                    zus.innerHTML = punkte.replace(/<\/?div[^>]*>/g, '');
+                    b.appendChild(zus);
+                }
+            }, 2600));
         }
 
         function snpSenden(art, wert) {
