@@ -2248,7 +2248,15 @@
                     answerHistory: answerHistory
                 };
                 
-                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys', JSON.stringify(saveDataObj));
+                /* Nur eine echte Änderung zählt als Änderung: saveState() läuft auch
+                   dann, wenn nichts anders geworden ist - unter anderem ruft der
+                   Tresor es selbst auf, bevor er liest. Ohne diesen Vergleich sähe
+                   dieses Gerät deshalb immer frischer aus als die Cloud und würde
+                   nie etwas holen. */
+                const neuRoh = JSON.stringify(saveDataObj);
+                const altRoh = localStorage.getItem('quiz_scoreboard_master_data_v5_greenboys');
+                localStorage.setItem('quiz_scoreboard_master_data_v5_greenboys', neuRoh);
+                if (altRoh !== neuRoh) localStorage.setItem('cloud-sync-aenderung', String(Date.now()));
 
                 // Läuft der Cloud-Sync, wandert jede Änderung verzögert mit hoch.
                 if (window.CloudTresor && CloudTresor.active()) CloudTresor.scheduleUpload();
@@ -2283,6 +2291,7 @@
             MASTER_KEY: 'quiz_scoreboard_master_data_v5_greenboys',
             PASS_KEY: 'cloud-sync-passwort',
             STAND_KEY: 'cloud-sync-stand',
+            AENDER_KEY: 'cloud-sync-aenderung',
             PFAD: 'tresor',
             MIN_LAENGE: 12,
             ITERATIONEN: 250000,
@@ -2293,6 +2302,8 @@
             schluessel: null,
             timer: null,
             amLaufen: false,
+            horcht: false,
+            horchenAus: null,
 
             active() { return !!this.schluessel; },
 
@@ -2315,7 +2326,7 @@
 
                 if (this.active()) {
                     if (title) title.innerText = "Cloud-Sicherung läuft";
-                    if (desc) desc.innerText = `Nach jeder Änderung wird automatisch gesichert. Zuletzt: ${this.zeit(this.localStand())}.`;
+                    if (desc) desc.innerText = `Gleicht sich von allein ab: Änderungen gehen hoch, neuere Stände von anderen Geräten kommen herunter. Zuletzt: ${this.zeit(this.localStand())}.`;
                     if (connectSection) connectSection.classList.add('hidden');
                     if (actionsSection) actionsSection.classList.remove('hidden');
                 } else {
@@ -2364,6 +2375,8 @@
                     () => {
                         localStorage.removeItem(this.PASS_KEY);
                         clearTimeout(this.timer);
+                        if (this.horchenAus) { try { this.horchenAus(); } catch (e) {} this.horchenAus = null; }
+                        this.horcht = false;
                         this.passwort = this.id = this.salz = this.schluessel = null;
                         this.setStatus("nicht verbunden");
                         this.updateButton();
@@ -2409,13 +2422,51 @@
                     localStorage.setItem(this.PASS_KEY, pw);
                     this.updateButton();
                     this.setStatus("verbunden");
-                    // Kein automatischer Upload beim Verbinden: Läge hier ein frisch
-                    // aufgesetzter Browser, überschriebe er damit sofort die Sicherung,
-                    // die er eigentlich braucht. Hochgeladen wird erst bei einer
-                    // echten Änderung - und leer nie, siehe upload().
-                    if (!still) {
-                        showToast(`Verbunden. In der Cloud liegen ${this.zaehle(fern)} (${this.zeit(vorhanden.stand)}).`, "success");
+
+                    /* Abgleich in beide Richtungen, ohne dass jemand einen Knopf
+                       drücken muss. Entschieden wird über die Zeit: Die Cloud zählt
+                       als neuer, wenn sie jünger ist als alles, was dieses Gerät
+                       kennt - sowohl der letzte Abgleich als auch die letzte
+                       Änderung hier. Damit überschreibt ein Gerät, auf dem gerade
+                       gearbeitet wurde, nie seine eigene Arbeit mit einem alten
+                       Stand, und ein Gerät, das nur zuschaut, holt sich alles. */
+                    const fernStand = vorhanden.stand || 0;
+                    const meinStand = Math.max(this.localStand(), this.lokalGeaendert());
+                    if (this.gleicheKlassen(fern, this.localData())) {
+                        // Schon derselbe Inhalt - nur den Zeitstempel nachziehen,
+                        // sonst schiebt es beim nächsten Start sinnlos hin und her.
+                        localStorage.setItem(this.STAND_KEY, String(Math.max(fernStand, this.localStand())));
+                        this.setStatus("aktuell · " + this.zeit(fernStand));
+                        if (!still) showToast(`Alles im Gleichstand: ${this.zaehle(fern)}.`, "success");
+                    } else if (fernStand > meinStand && this.zaehlKlassen(fern) > 0) {
+                        /* Ein Gerät, das eigene Klassen hat und noch nie abgeglichen
+                           wurde, darf die Uhr nicht entscheiden lassen: Seine Daten
+                           sind vielleicht älter und trotzdem die richtigen. Einmal
+                           nachfragen, danach läuft es von allein. */
+                        if (this.zaehlKlassen(this.localData()) > 0 && !this.localStand()) {
+                            this.setStatus("Abgleich offen", true);
+                            showCustomConfirm(
+                                "Daten aus der Cloud holen?",
+                                `In der Cloud liegen ${this.zaehle(fern)} (${this.zeit(fernStand)}, ${vorhanden.geraet || 'anderes Gerät'}), auf diesem Gerät ${this.zaehle(this.localData())}. ` +
+                                `Mit OK ersetzt der Stand aus der Cloud den auf diesem Gerät. Mit Abbrechen bleibt dieses Gerät, wie es ist - und sichert seinen Stand bei der nächsten Änderung hoch.`,
+                                () => this.uebernehmen(fern, fernStand)
+                            );
+                            /* Hier bewusst kein Mithören: Der Horcher würde die
+                               Frage, die gerade auf dem Bildschirm steht, selbst
+                               beantworten und den Stand holen. */
+                            return;
+                        }
+                        this.uebernehmen(fern, fernStand,
+                            `Neuere Daten aus der Cloud geholt (${this.zaehle(fern)}, ${vorhanden.geraet || 'anderes Gerät'}) - Seite wird neu geladen.`);
+                        return;
+                    } else {
+                        // Hier liegt das Neuere: hochladen. Leer wird nie hochgeladen,
+                        // siehe upload() - ein frisch aufgesetzter Browser kann die
+                        // Sicherung also auch hier nicht leerräumen.
+                        await this.upload(false);
+                        if (!still) showToast(`Verbunden. Dieses Gerät ist das neuere - ${this.zaehle(this.localData())} werden gesichert.`, "success");
                     }
+                    this.beobachten();
                 } else {
                     // Unter diesem Passwort liegt nichts. Entweder erste Einrichtung - oder
                     // ein Tippfehler, der sonst still eine zweite, leere Sicherung anlegt
@@ -2426,6 +2477,7 @@
                         localStorage.setItem(this.PASS_KEY, pw);
                         this.updateButton();
                         await this.upload(false);
+                        this.beobachten();
                         showToast("Cloud-Sicherung eingerichtet. 🔒", "success");
                     };
                     if (still) { await weiter(); return; }
@@ -2544,11 +2596,46 @@
                 }
             },
 
-            async uebernehmen(daten, stand) {
+            async uebernehmen(daten, stand, hinweis) {
                 localStorage.setItem(this.MASTER_KEY, JSON.stringify(daten));
                 localStorage.setItem(this.STAND_KEY, String(stand));
-                showToast("Wiederhergestellt - Seite wird neu geladen.", "success");
-                setTimeout(() => location.reload(), 800);
+                /* Die Änderung kam von aussen, nicht von hier - sonst gälte dieses
+                   Gerät gleich wieder als das neuere und schriebe zurück. */
+                localStorage.setItem(this.AENDER_KEY, String(stand));
+                showToast(hinweis || "Wiederhergestellt - Seite wird neu geladen.", "success");
+                setTimeout(() => location.reload(), 1200);
+            },
+
+            /* Hört mit, solange die Lehrer-Ansicht offen ist: Sichert ein anderes
+               Gerät, kommt der neue Stand hier an. Geholt wird er von allein, aber
+               nur, wenn hier nichts verloren gehen kann - kein laufender Raum und
+               seit dem letzten Abgleich keine Änderung auf diesem Gerät. Sonst
+               bleibt es bei einem Hinweis; mitten in der Stunde neu zu laden wäre
+               schlimmer als ein veralteter Punktestand. */
+            beobachten() {
+                if (this.horcht || !window.fbOnValue) return;
+                this.horcht = true;
+                this.horchenAus = window.fbOnValue(window.fbRef(window.fbDb, `${this.PFAD}/${this.id}`), async (schnappschuss) => {
+                    const paket = schnappschuss.val();
+                    if (!paket || !this.active()) return;
+                    const stand = paket.stand || 0;
+                    if (stand <= this.localStand()) return;      // das war dieses Gerät selbst
+                    let fern;
+                    try { fern = await this.entschluesseln(paket); } catch (e) { return; }
+                    if (this.gleicheKlassen(fern, this.localData())) {
+                        localStorage.setItem(this.STAND_KEY, String(stand));
+                        return;
+                    }
+                    const raumLaeuft = typeof liveRoomCode !== 'undefined' && !!liveRoomCode;
+                    const eigeneArbeit = this.lokalGeaendert() > this.localStand();
+                    if (!raumLaeuft && !eigeneArbeit && this.zaehlKlassen(fern) > 0) {
+                        this.uebernehmen(fern, stand,
+                            `Von ${paket.geraet || 'einem anderen Gerät'} geholt: ${this.zaehle(fern)} - Seite wird neu geladen.`);
+                    } else {
+                        this.setStatus("neuer Stand liegt bereit", true);
+                        showToast(`Auf ${paket.geraet || 'einem anderen Gerät'} wurde gesichert (${this.zaehle(fern)}). Über die Cloud-Sicherung holst du den Stand.`, "info");
+                    }
+                });
             },
 
             /* ---------- Verschlüsselung ---------- */
@@ -2603,6 +2690,21 @@
 
             localStand() {
                 return parseInt(localStorage.getItem(this.STAND_KEY) || '0', 10) || 0;
+            },
+
+            /* Wann zuletzt auf diesem Gerät etwas geändert wurde - unabhängig davon,
+               ob es schon hochgeladen ist. Nur daran lässt sich erkennen, ob die
+               Cloud wirklich neuer ist oder ob hier Arbeit liegt, die noch keiner
+               kennt (etwa weil das Gerät offline war). */
+            lokalGeaendert() {
+                return parseInt(localStorage.getItem(this.AENDER_KEY) || '0', 10) || 0;
+            },
+
+            /* Verglichen werden nur die Klassen. Ob auf einem Gerät der Ton aus ist,
+               rechtfertigt kein Neuladen. */
+            gleicheKlassen(a, b) {
+                const norm = (d) => JSON.stringify((d && d.classes) || {});
+                return norm(a) === norm(b);
             },
 
             /* "Standard-Sitzung" ist der leere Vorgabeplatz, keine echte Klasse. */
