@@ -4696,7 +4696,7 @@
                     <span data-rolle="tempo" class="text-sm font-black text-violet-300 w-16 text-center">90 bpm</span>
                     <button type="button" class="rhy-knopf" data-rolle="plus">+</button>
                     ${kompakt ? '' : '<input type="range" min="40" max="200" value="90" step="1" data-rolle="regler" class="flex-1 min-w-[6rem] accent-violet-500">'}
-                    <span class="text-[11px] font-bold text-slate-400">Takte</span>
+                    <span class="text-[11px] font-bold text-slate-400" title="So viele Takte zählt das Metronom vor, bevor der Rhythmus kommt">Vorlauf</span>
                     <span data-rolle="takte" class="flex gap-1"></span>
                     <button type="button" data-rolle="mit" class="rhy-knopf"
                             title="Das Metronom klickt auch während des Vorklatschens weiter, statt nur einzuzählen">
@@ -4766,6 +4766,9 @@
                     b.type = 'button';
                     b.className = 'rhy-knopf';
                     b.textContent = wort;
+                    b.title = n
+                        ? `${n} ${n === 1 ? 'Takt' : 'Takte'} Vorlauf vor dem Vorklatschen; „Start" schlägt ebenso lang`
+                        : 'Metronom läuft mit „Start" durch, bis du es anhältst - vorgezählt wird dann ein Takt';
                     if (metronom.takte === n) b.style.cssText = 'background:rgba(139,92,246,.3); border-color:#a78bfa; color:#ede9fe';
                     b.addEventListener('click', () => { metronom.takte = n; metronomTakteZeichnen(); });
                     ziel.appendChild(b);
@@ -4883,7 +4886,12 @@
                praeziser zusammen als jeder nachtraegliche Timer, und der Stopp-Knopf
                raeumt sie ohnehin alle gemeinsam weg. */
             const stueckDauer = rhythmusDauer(noten) * viertel;
-            const zyklus = proTakt * schlagDauer + stueckDauer + (male > 1 ? VORKLATSCH_PAUSE : 0);
+            /* Wie viele Takte vorgezaehlt wird, steht in der Leiste. "∞" meint das
+               Metronom, das im Hintergrund durchlaeuft - als Vorlauf waere es
+               sinnlos, dort zaehlt ein Takt ein. */
+            const vorlaufTakte = metronom.takte || 1;
+            const vorlaufSchlaege = vorlaufTakte * proTakt;
+            const zyklus = vorlaufSchlaege * schlagDauer + stueckDauer + (male > 1 ? VORKLATSCH_PAUSE : 0);
             let t = start;
             for (let durchgang = 0; durchgang < male; durchgang++) {
                 const beginn = start + durchgang * zyklus;
@@ -4892,14 +4900,14 @@
                    Klatschens einen Puls. Die Pause zwischen zwei Durchgaengen
                    bleibt still: Sie ist kein ganzzahliges Vielfaches eines
                    Schlages, ein Weiterticken liefe gegen den naechsten Einzaehler. */
-                const schlaege = proTakt + (metronom.mit ? Math.round(stueckDauer / schlagDauer) : 0);
+                const schlaege = vorlaufSchlaege + (metronom.mit ? Math.round(stueckDauer / schlagDauer) : 0);
                 for (let i = 0; i < schlaege; i++) {
                     const wann = beginn + i * schlagDauer;
                     const imTakt = i % proTakt;
                     vorklatschKnoten.push(metronomKlick(ctx, wann, imTakt === 0));
                     vorklatschUhren.push(setTimeout(() => metronomPulsZeichnen(imTakt), Math.max(0, (wann - ctx.currentTime) * 1000)));
                 }
-                t = beginn + proTakt * schlagDauer;
+                t = beginn + vorlaufSchlaege * schlagDauer;
                 noten.forEach(b => b.teile.forEach(teil => {
                     if (!teil.p) vorklatschKnoten.push(klatschKlang(ctx, t));
                     t += teil.d * viertel;
@@ -4919,8 +4927,9 @@
                 metronomKnopf();
             }, Math.max(0, (t - ctx.currentTime) * 1000 + 200)));
             const mitHinweis = metronom.mit ? " Das Metronom zählt durch." : "";
-            showToast((male > 1 ? `Dreimal vorklatschen mit ${VORKLATSCH_PAUSE} Sekunden Pause - Einzähler läuft.`
-                                : "Einzähler läuft - danach kommt der Rhythmus.") + mitHinweis, "info");
+            const vorlaufWort = vorlaufTakte === 1 ? "Ein Takt" : `${vorlaufTakte} Takte`;
+            showToast((male > 1 ? `Dreimal vorklatschen mit ${VORKLATSCH_PAUSE} Sekunden Pause. ${vorlaufWort} Vorlauf.`
+                                : `${vorlaufWort} Vorlauf - danach kommt der Rhythmus.`) + mitHinweis, "info");
         }
 
         function metronomKlick(ctx, zeit, betont) {
