@@ -9183,33 +9183,33 @@
             pruefGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 2);
             pruefOsz.connect(pruefGain); pruefGain.connect(ctx.destination);
             pruefOsz.start(); pruefOsz.stop(ctx.currentTime + 2.05);
-            showToast("Prüfton läuft zwei Sekunden – schau jetzt in die Adressleiste: Erscheint dort ein Lautsprechersymbol?", "info");
+            showToast("Prüfton läuft zwei Sekunden …", "info");
             await new Promise(r => setTimeout(r, 2200));
             const uhrLaeuft = ctx.currentTime - startZeit > 0.2;
 
             /* Der Befund bleibt stehen, statt als Hinweis wegzuwischen: Wer ihn
                weitergeben soll, muss ihn in Ruhe ablesen koennen. */
-            /* Nach dem Weboberflaechen-Ton derselbe Ton noch einmal ueber ein
-               Audio-Element: Hoert man genau einen von beiden, wissen wir, welcher
-               Weg auf diesem Geraet klemmt. */
-            let zweiterWeg = 'nicht geprüft';
-            try {
-                const element = new Audio(baueWavTon(1.2, 880));
-                element.volume = 1;
-                await element.play();
-                zweiterWeg = 'gespielt';
-                await new Promise(r => setTimeout(r, 1300));
-            } catch (e) {
-                zweiterWeg = 'abgelehnt (' + (e && e.name ? e.name : 'Fehler') + ')';
-            }
-
             const befund = getEl('ton-befund');
             const zeigen = (text, farbe) => {
                 if (!befund) return;
                 befund.textContent = text;
                 befund.className = `flex-grow text-[10px] font-bold leading-tight ${farbe}`;
             };
-            const technik = `${ctx.state} · ${Math.round(ctx.sampleRate)} Hz · Uhr ${uhrLaeuft ? 'läuft' : 'steht'} · 2. Weg: ${zweiterWeg}`;
+            const technik = `${ctx.state} · ${Math.round(ctx.sampleRate)} Hz · Uhr ${uhrLaeuft ? 'läuft' : 'steht'}`;
+
+            /* Nur wenn etwas klemmt, kommt der zweite Tonweg dran: eine fertige
+               WAV-Datei ueber ein Audio-Element, derselbe Weg wie bei einem Video im
+               Netz. Hoert man dann genau diesen einen Ton, liegt es an der
+               Tonerzeugung des Browsers und nicht am Geraet. */
+            if (ctx.state !== 'running' || !uhrLaeuft) {
+                try {
+                    const element = new Audio(baueWavTon(1.2, 880));
+                    element.volume = 1;
+                    await element.play();
+                    await new Promise(r => setTimeout(r, 1300));
+                    showToast("Zweiter Versuch über einen anderen Tonweg gespielt - war der zu hören?", "info");
+                } catch (e) { /* abgelehnt: dann sagt schon die Meldung unten genug */ }
+            }
 
             if (ctx.state !== 'running') {
                 const text = `Ausgabe "${ctx.state}" – Safari lässt keinen Ton zu. Einmal auf die Seite klicken; bleibt es dabei, steht für diese Website „Auto-Play: Nie" (Safari ▸ Einstellungen für diese Website).`;
@@ -9219,8 +9219,11 @@
                 showToast("Tonausgabe steht still – meist übernimmt eine andere App die Ausgabe oder das Ausgabegerät hat gewechselt.", "danger");
                 zeigen(`❌ ${technik} – Ausgabe steht still`, 'text-rose-400');
             } else {
-                showToast("Du hast gerade zwei Töne gehört - erst einen langen, dann einen kurzen hohen. Hörst du nur den zweiten, klemmt in diesem Browser die Tonerzeugung der Seite; hörst du gar keinen, liegt es am Gerät. Sag mir, welchen du gehört hast.", "info");
-                zeigen(`✅ ${technik} – Ton wird erzeugt, Ausgabe freigeschaltet. Nichts gehört? Noch einmal testen.`, 'text-emerald-400');
+                /* Laeuft alles, bleibt nichts stehen: Der kurze Hinweis genuegt, und
+                   die Einstellungskarte bleibt aufgeraeumt. Der Befund bleibt nur
+                   dann sichtbar, wenn man ihn weitergeben soll. */
+                showToast("Tonausgabe läuft einwandfrei - der Prüfton kam zwei Sekunden lang. Kein Ton zu hören? Dann prüfe Lautstärke und Ausgabegerät am Mac.", "info");
+                zeigen('', '');
             }
         }
 
