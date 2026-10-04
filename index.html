@@ -477,6 +477,17 @@
             text-shadow: 0 0 18px rgba(251,191,36,.8);
         }
         .snp-mitte { opacity: .5; }
+        .snp-verlauf { display: flex; gap: .5rem; align-items: center; margin-left: .5rem; }
+        .snp-runde {
+            display: flex; align-items: center; gap: .25rem;
+            background: rgba(0,0,0,.35); border-radius: 12px; padding: .18rem .5rem;
+            font-size: .95em; border: 2px solid rgba(255,255,255,.14);
+        }
+        .snp-runde.neu { border-color: #fbbf24; background: rgba(251,191,36,.15); }
+        .snp-runde .nr { opacity: .55; font-size: .62em; font-weight: 900; margin-right: .1rem; }
+        .snp-runde .gewinnt { filter: drop-shadow(0 0 6px rgba(251,191,36,.7)); }
+        .snp-runde .verliert { opacity: .4; filter: grayscale(1); }
+        .snp-runde .remis { opacity: .75; }
         /* Endstand am Beamer: drei Gruppen statt einer Paarliste */
         .snp-gruppe {
             width: min(74vw, 680px); max-width: 100%; box-sizing: border-box;
@@ -3056,9 +3067,10 @@
                     if (snp.runde < snp.runden) { snpDuellStarten(); return; }
                     snp.phase = 'ende';
                     zeigeSnp(); broadcastControlState();
-                    // Die Geraete spielen ihre Aufdeckung in gut drei Sekunden ab -
-                    // so lange muss die Leinwand mindestens stehen bleiben.
-                }, Math.max(3400, 1600 + snp.paare.length * 700)));
+                    /* Die Geraete spielen ihre Aufdeckung in gut drei Sekunden ab, und
+                       danach will man den Ausgang noch lesen koennen - gerade bei
+                       mehreren Paaren. Deshalb grosszuegig stehen lassen. */
+                }, Math.max(5500, 2500 + snp.paare.length * 900)));
             }, SNP_ZUG_MS));
         }
 
@@ -3115,7 +3127,12 @@
                 if (!b || !offen.includes(a) || !offen.includes(b) || a === b) return;
                 nimm(a, b);
             });
-            offen.slice().forEach(a => { if (offen.includes(a)) nimm(a, null); });   // null = Rechner
+            /* Wer jetzt noch offen ist, hatte entweder keinen Wunsch oder sein
+               Wunschgegner war schon vergeben (A will B, B will C: A bekommt B, C
+               bleibt uebrig). Diese spielen gegeneinander - erst der letzte, der
+               allein uebrig bleibt, bekommt den Rechner. */
+            while (offen.length >= 2) nimm(offen[0], offen[1]);
+            if (offen.length === 1) nimm(offen[0], null);   // null = Rechner
             snp.paare = paare;
         }
 
@@ -3283,14 +3300,25 @@
                     const letzte = snp.verlauf[snp.verlauf.length - 1];
                     const zug = letzte ? letzte[i] : [null, null];
                     const urteil = snpUrteil(zug[0], zug[1]);
-                    const gewinntMatch = stand.links > stand.rechts ? 1 : stand.rechts > stand.links ? -1 : 0;
-                    const hervor = fertig ? gewinntMatch : urteil;
                     const zeichen = (w) => `<span class="snp-zeichen">${w ? SNP_ZEICHEN[w].bild : '❔'}</span>`;
                     const name = (n, gewinnt) => `<span class="snp-name${gewinnt ? ' sieger' : ''}">${n === null ? '🤖 Rechner' : escapeHtml(n)}</span>`;
+                    /* Jedes gespielte Duell bleibt sichtbar: Wer die Runde geholt hat,
+                       steht hell, der Verlierer blass. So sieht man am Ende eines
+                       Matches noch, wie es dazu kam. */
+                    const verlauf = snp.verlauf.map((runde, nr) => {
+                        const z = runde[i] || [null, null];
+                        const u = snpUrteil(z[0], z[1]);
+                        return `<span class="snp-runde${nr === snp.verlauf.length - 1 ? ' neu' : ''}">
+                                <span class="nr">${nr + 1}</span>
+                                <span class="${u === 1 ? 'gewinnt' : u === 0 ? 'remis' : 'verliert'}">${z[0] ? SNP_ZEICHEN[z[0]].bild : '❔'}</span>
+                                <span class="${u === -1 ? 'gewinnt' : u === 0 ? 'remis' : 'verliert'}">${z[1] ? SNP_ZEICHEN[z[1]].bild : '❔'}</span>
+                            </span>`;
+                    }).join('');
                     return `<div class="snp-duell" style="animation-delay:${(i * 0.4).toFixed(1)}s">
-                            ${name(a, hervor === 1)} ${fertig ? '' : zeichen(zug[0])}
+                            ${name(a, urteil === 1)}
                             <span class="snp-stand">${stand.links} : ${stand.rechts}</span>
-                            ${fertig ? '' : zeichen(zug[1])} ${name(bb, hervor === -1)}
+                            ${name(bb, urteil === -1)}
+                            <span class="snp-verlauf">${verlauf}</span>
                         </div>`;
                 }).join('');
                 b.innerHTML = abbruch +
