@@ -4841,14 +4841,16 @@
                 const ziel = teil('takte');
                 if (!ziel) return;
                 ziel.innerHTML = '';
-                [['1', 1], ['2', 2], ['3', 3], ['4', 4], ['∞', 0]].forEach(([wort, n]) => {
+                [['ohne', 0], ['1', 1], ['2', 2], ['3', 3], ['4', 4], ['∞', Infinity]].forEach(([wort, n]) => {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'rhy-knopf';
                     b.textContent = wort;
-                    b.title = n
-                        ? `${n} ${n === 1 ? 'Takt' : 'Takte'} Vorlauf vor dem Vorklatschen; „Start" schlägt ebenso lang`
-                        : 'Metronom läuft mit „Start" durch, bis du es anhältst - vorgezählt wird dann ein Takt';
+                    b.title = n === 0
+                        ? 'Kein Vorlauf - das Vorklatschen beginnt sofort mit dem Rhythmus'
+                        : (isFinite(n)
+                            ? `${n} ${n === 1 ? 'Takt' : 'Takte'} Vorlauf vor dem Vorklatschen; „Start" schlägt ebenso lang`
+                            : 'Metronom läuft mit „Start" durch, bis du es anhältst - vorgezählt wird dann ein Takt');
                     if (metronom.takte === n) b.className = 'rhy-knopf an';
                     b.addEventListener('click', () => { metronom.takte = n; metronomTakteZeichnen(); });
                     ziel.appendChild(b);
@@ -4916,12 +4918,19 @@
             messen();
         }
 
-        /* Was die Uhr sagt und was aus dem Lautsprecher kommt, liegt noch einmal
-           um die Ausgabeverzoegerung auseinander - bei Bluetooth sind das leicht
-            200 ms. Die Anzeige wartet sie mit ab. */
+        /* Was die Uhr sagt und was aus dem Lautsprecher kommt, liegt um die
+           Ausgabeverzoegerung auseinander. Bei den eingebauten Lautsprechern sind
+           das Millisekunden, bei Bluetooth ein bis zwei Zehntel - und bei AirPlay
+           an eine Box oder einen Beamer rund zwei Sekunden, also laenger als ein
+           ganzer Takt. Genau dann sieht man den Einzaehler blinken, hoert ihn erst
+           einen Takt spaeter, und die Markierung ist schon weitergewandert.
+
+           Hier wurde frueher bei 0,4 s abgeschnitten - damit war die Anzeige bei
+           AirPlay weiterhin anderthalb Sekunden voraus. Jetzt zaehlt der ganze
+           gemeldete Wert; nur voellig abwegige Angaben werden verworfen. */
         function audioAusgabeVerzug(ctx) {
-            const v = (typeof ctx.outputLatency === 'number' && ctx.outputLatency) || ctx.baseLatency || 0;
-            return Math.min(0.4, v);
+            const roh = (typeof ctx.outputLatency === 'number' && ctx.outputLatency) || ctx.baseLatency || 0;
+            return (roh > 0 && roh < 5) ? roh : 0;
         }
 
         /* Ein Klatschen: kurzes Rauschen mit scharfem Einsatz. Ein Sinuston klaenge
@@ -5050,7 +5059,7 @@
             /* Wie viele Takte vorgezaehlt wird, steht in der Leiste. "∞" meint das
                Metronom, das im Hintergrund durchlaeuft - als Vorlauf waere es
                sinnlos, dort zaehlt ein Takt ein. */
-            const vorlaufTakte = metronom.takte || 1;
+            const vorlaufTakte = isFinite(metronom.takte) ? Math.max(0, metronom.takte) : 1;
             const vorlaufSchlaege = vorlaufTakte * proTakt;
             const zyklus = vorlaufSchlaege * schlagDauer + stueckDauer + (male > 1 ? VORKLATSCH_PAUSE : 0);
             let t = start;
@@ -5100,9 +5109,10 @@
             });
             vorklatschAnzeigeStarten(ctx);
             const mitHinweis = metronom.mit ? " Das Metronom zählt durch." : "";
-            const vorlaufWort = vorlaufTakte === 1 ? "Ein Takt" : `${vorlaufTakte} Takte`;
-            showToast((male > 1 ? `Dreimal vorklatschen mit ${VORKLATSCH_PAUSE} Sekunden Pause. ${vorlaufWort} Vorlauf.`
-                                : `${vorlaufWort} Vorlauf - danach kommt der Rhythmus.`) + mitHinweis, "info");
+            const vorlaufWort = vorlaufTakte === 0 ? "Ohne Vorlauf"
+                              : vorlaufTakte === 1 ? "Ein Takt Vorlauf" : `${vorlaufTakte} Takte Vorlauf`;
+            showToast((male > 1 ? `Dreimal vorklatschen mit ${VORKLATSCH_PAUSE} Sekunden Pause. ${vorlaufWort}.`
+                                : `${vorlaufWort} - dann kommt der Rhythmus.`) + mitHinweis, "info");
         }
 
         function metronomKlick(ctx, zeit, betont) {
@@ -5134,6 +5144,10 @@
 
         function metronomLauf(ctx) {
             const proTakt = metronomSchlaege();
+            /* "ohne" meint den Vorlauf, nicht das Metronom: Wer hier auf Start
+               drueckt, will einen Takt hoeren und keine Stille. "∞" laeuft, bis
+               er wieder drueckt. */
+            const grenze = isFinite(metronom.takte) ? Math.max(1, metronom.takte) : 0;
             metronom.schlag = 0;
             metronom.takt = 0;
             metronom.naechste = ctx.currentTime + 0.12;
@@ -5153,7 +5167,7 @@
                 audioCtxZeitmarke = ctx.currentTime;
                 audioCtxWanduhr = Date.now();
                 while (metronom.naechste < ctx.currentTime + 0.15) {
-                    if (metronom.takte && metronom.takt >= metronom.takte) { metronomStoppen(); return; }
+                    if (grenze && metronom.takt >= grenze) { metronomStoppen(); return; }
                     const schlag = metronom.schlag, wann = metronom.naechste;
                     metronomKlick(ctx, wann, schlag === 0);
                     /* Die Anzeige wartet die Ausgabeverzoegerung mit ab, sonst
@@ -5216,6 +5230,10 @@
             }
             f.classList.remove('hidden');
             f.classList.add('flex');
+            /* Hier schon die Tonausgabe aufwecken: Der Klick, der dieses Fenster
+               oeffnet, ist die Nutzergeste, die der Browser dafuer verlangt. Bis
+               zum ersten Vorklatschen ist das Geraet dann laengst offen. */
+            try { const c = ensureAudioContext(); if (c) entsperreAudio(c); } catch (e) { /* dann eben spaeter */ }
             const klatschSchalter = getEl('rhythmus-klatsch');
             if (klatschSchalter) klatschSchalter.checked = rhythmusEntwurf.klatsch !== false;
             rhythmusTaktwahlZeichnen();
@@ -5392,7 +5410,10 @@
                 rhythmusRundeBeenden();
             } else if (p.befehl === 'metronom') {
                 if (p.bpm) metronomTempoSetzen(p.bpm);
-                if (p.takte !== undefined) { metronom.takte = Number(p.takte); metronomTakteZeichnen(); }
+                if (p.takte !== undefined) {
+                    metronom.takte = (String(p.takte) === 'Infinity') ? Infinity : Number(p.takte) || 0;
+                    metronomTakteZeichnen();
+                }
                 metronomUmschalten();
             } else if (p.befehl === 'vorklatsch') {
                 if (p.bpm) metronomTempoSetzen(p.bpm);
@@ -5457,7 +5478,9 @@
                 });
             });
             getEl('fern-beenden').addEventListener('click', () => fernSenden('beenden'));
-            getEl('fern-metronom').addEventListener('click', () => fernSenden('metronom', { bpm: fernMetronom.bpm, takte: fernMetronom.takte }));
+            /* Unendlich ueberlebt den Weg durch JSON nicht (es wird zu null),
+               deshalb geht die Taktzahl als Wort ueber die Leitung. */
+            getEl('fern-metronom').addEventListener('click', () => fernSenden('metronom', { bpm: fernMetronom.bpm, takte: String(fernMetronom.takte) }));
             getEl('fern-vorklatsch').addEventListener('click', () => {
                 fernEntwurf.loesung = fernEditor ? fernEditor.lesen() : '';
                 if (!fernEntwurf.loesung) { showToast("Trage erst einen Rhythmus ein.", "danger"); return; }
@@ -5505,7 +5528,7 @@
             const ziel = getEl('fern-takte');
             if (!ziel) return;
             ziel.innerHTML = '';
-            [['1', 1], ['2', 2], ['3', 3], ['4', 4], ['∞', 0]].forEach(([wort, n]) => {
+            [['ohne', 0], ['1', 1], ['2', 2], ['3', 3], ['4', 4], ['∞', Infinity]].forEach(([wort, n]) => {
                 const b = document.createElement('button');
                 b.type = 'button'; b.className = 'rhy-knopf'; b.textContent = wort;
                 if (fernMetronom.takte === n) b.className = 'rhy-knopf an';
@@ -9667,7 +9690,9 @@
            einwandfrei lief. */
         let audioEntsperrt = false;
         function entsperreAudio(ctx) {
-            if (!ctx || audioEntsperrt) return;
+            if (!ctx) return;
+            wachHalten(ctx);
+            if (audioEntsperrt) return;
             try {
                 const puffer = ctx.createBuffer(1, 1, 22050);
                 const quelle = ctx.createBufferSource();
@@ -9678,6 +9703,32 @@
             } catch (e) { /* dann eben beim naechsten Versuch */ }
         }
 
+        /* Haelt die Tonausgabe offen, solange die Seite benutzt wird.
+
+           Der Grund ist unangenehm: Solange das Ausgabegeraet noch nicht
+           geoeffnet ist, rendert der Browser den Ton ins Leere - die Uhr laeuft
+           dabei ganz normal weiter. Alles, was in diesem Fenster geplant wird,
+           ist also korrekt getaktet und trotzdem nicht zu hoeren, und wer sich
+           nach der Uhr richtet, laeuft dem Lautsprecher voraus. Genau so fehlte
+           der erste Takt des Einzaehlers, waehrend die Anzeige schon lief.
+
+           Ein unhoerbar leiser Dauerton haelt das Geraet offen: Ab der ersten
+           Beruehrung der Seite ist die Ausgabe wach, und der erste geplante
+           Klick ist auch der erste hoerbare. */
+        let wachKnoten = null, wachCtx = null;
+        function wachHalten(ctx) {
+            if (wachCtx === ctx && wachKnoten) return;
+            try {
+                const o = ctx.createOscillator(), g = ctx.createGain();
+                o.frequency.value = 30;
+                g.gain.value = 0.0000001;      // weit unter allem, was ein Ohr hoert
+                o.connect(g); g.connect(ctx.destination);
+                o.start();
+                wachKnoten = o;
+                wachCtx = ctx;
+            } catch (e) { /* ohne geht es auch, nur eben mit dem alten Problem */ }
+        }
+
         function baueAudioContextNeu(Ctor) {
             // Vorher schließen, sonst sammeln sich tote Contexts bis zum Browser-Limit.
             if (audioCtx) { try { audioCtx.close(); } catch (e) { /* schon zu, egal */ } }
@@ -9686,6 +9737,7 @@
             audioCtxWanduhr = 0;
             audioGeraeteWechsel = false;
             audioEntsperrt = false;      // die neue Ausgabe will erneut freigeschaltet werden
+            wachKnoten = null; wachCtx = null;
             entsperreAudio(audioCtx);
             return audioCtx;
         }
@@ -9800,7 +9852,9 @@
                 befund.textContent = text;
                 befund.className = `flex-grow text-[10px] font-bold leading-tight ${farbe}`;
             };
-            const technik = `${ctx.state} · ${Math.round(ctx.sampleRate)} Hz · Uhr ${uhrLaeuft ? 'läuft' : 'steht'}`;
+            const ms = (v) => (typeof v === 'number' ? Math.round(v * 1000) + ' ms' : '–');
+            const technik = `${ctx.state} · ${Math.round(ctx.sampleRate)} Hz · Uhr ${uhrLaeuft ? 'läuft' : 'steht'}` +
+                            ` · Verzug ${ms(ctx.outputLatency)}/${ms(ctx.baseLatency)}`;
 
             /* Nur wenn etwas klemmt, kommt der zweite Tonweg dran: eine fertige
                WAV-Datei ueber ein Audio-Element, derselbe Weg wie bei einem Video im
