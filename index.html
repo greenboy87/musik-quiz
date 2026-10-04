@@ -1761,7 +1761,7 @@
                         <input type="checkbox" id="sound-toggle" checked class="sr-only peer" onchange="handleSoundToggle()">
                         <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
                     </label>
-                    <span class="flex-grow"></span>
+                    <span id="ton-befund" class="flex-grow text-[10px] text-slate-400 font-semibold leading-tight"></span>
                     <button onclick="testeTon()" title="Ton neu aufbauen, abspielen und melden, woran es liegt"
                             class="w-24 bg-slate-900 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold text-[11px] rounded-lg px-3 py-1 transition-all active:scale-95">
                         Ton testen
@@ -9120,12 +9120,26 @@
             await new Promise(r => setTimeout(r, 700));
             const uhrLaeuft = ctx.currentTime - startZeit > 0.2;
 
+            /* Der Befund bleibt stehen, statt als Hinweis wegzuwischen: Wer ihn
+               weitergeben soll, muss ihn in Ruhe ablesen koennen. */
+            const befund = getEl('ton-befund');
+            const zeigen = (text, farbe) => {
+                if (!befund) return;
+                befund.textContent = text;
+                befund.className = `flex-grow text-[10px] font-bold leading-tight ${farbe}`;
+            };
+            const technik = `${ctx.state} · ${Math.round(ctx.sampleRate)} Hz · Uhr ${uhrLaeuft ? 'läuft' : 'steht'}`;
+
             if (ctx.state !== 'running') {
-                showToast(`Tonausgabe ist "${ctx.state}" – der Browser lässt keinen Ton zu. Einmal irgendwo auf die Seite klicken und erneut testen.`, "danger");
+                const text = `Ausgabe "${ctx.state}" – Safari lässt keinen Ton zu. Einmal auf die Seite klicken; bleibt es dabei, steht für diese Website „Auto-Play: Nie" (Safari ▸ Einstellungen für diese Website).`;
+                showToast(text, "danger");
+                zeigen(`❌ ${technik} – Browser blockiert`, 'text-rose-400');
             } else if (!uhrLaeuft) {
                 showToast("Tonausgabe steht still – meist übernimmt eine andere App die Ausgabe oder das Ausgabegerät hat gewechselt.", "danger");
+                zeigen(`❌ ${technik} – Ausgabe steht still`, 'text-rose-400');
             } else {
-                showToast("Tonausgabe läuft einwandfrei. Kein Ton hörbar? Dann prüfe: Ist der Tab stummgeschaltet (Lautsprechersymbol im Browser-Tab) und ist die Lautstärke am Mac und am Beamer aufgedreht?", "info");
+                showToast("Tonausgabe läuft einwandfrei. Kein Ton hörbar? Dann ist der Tab stummgeschaltet (Lautsprechersymbol in der Adressleiste) oder die Lautstärke ist unten.", "info");
+                zeigen(`✅ ${technik} – die Seite erzeugt Ton. Nichts hörbar? Tab stumm oder Lautstärke.`, 'text-emerald-400');
             }
         }
 
