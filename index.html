@@ -4660,6 +4660,38 @@
         let rhythmusRunde = null;      // laeuft: { soll, werte, loesung }
         let rhythmusEntwurf = { soll: 4, zeichen: '4/4', takte: 1, klatsch: true, werte: ['V', 'AA', 'Vp', 'H'], loesung: '' };
 
+        /* Der Entwurf ueberlebt das Neuladen. Eine vorbereitete Aufgabe ist
+           Arbeit von ein paar Minuten, und ein Neuladen passiert im Unterricht
+           staendig - sei es die neue Fassung, sei es ein verrutschter Finger. */
+        const RHYTHMUS_ENTWURF_KEY = 'rhythmus-entwurf';
+
+        function rhythmusEntwurfSichern() {
+            try {
+                if (rhythmusLoesungsEditor) rhythmusEntwurf.loesung = rhythmusLoesungsEditor.lesen();
+                localStorage.setItem(RHYTHMUS_ENTWURF_KEY, JSON.stringify(rhythmusEntwurf));
+            } catch (e) { /* voller Speicher ist kein Grund, die Stunde zu stoppen */ }
+        }
+
+        function rhythmusEntwurfLaden() {
+            try {
+                const roh = localStorage.getItem(RHYTHMUS_ENTWURF_KEY);
+                if (!roh) return;
+                const alt = JSON.parse(roh);
+                if (!alt || typeof alt !== 'object') return;
+                rhythmusEntwurf = {
+                    soll: Number(alt.soll) || 4,
+                    zeichen: alt.zeichen || '4/4',
+                    takte: Math.max(1, Math.min(4, Number(alt.takte) || 1)),
+                    klatsch: alt.klatsch !== false,
+                    /* Nur Bausteine, die es noch gibt: Eine aeltere Fassung kann
+                       Codes gespeichert haben, die inzwischen anders heissen. */
+                    werte: (Array.isArray(alt.werte) ? alt.werte.filter(c => RHYTHMUS_NACH_CODE[c]) : []),
+                    loesung: String(alt.loesung || '')
+                };
+                if (!rhythmusEntwurf.werte.length) rhythmusEntwurf.werte = ['V', 'AA', 'Vp', 'H'];
+            } catch (e) { /* kaputter Eintrag: dann eben von vorn */ }
+        }
+
         /* Wie viele Takte lang der vorgeklatschte Rhythmus ist. Mehr als vier
            kann sich kaum eine Klasse merken - und auf dem Schuelergeraet wuerden
            die Kaestchen zu schmal. */
@@ -4682,6 +4714,7 @@
             }
             rhythmusTaktzahlZeichnen();
             rhythmusEditorNeu();
+            rhythmusEntwurfSichern();
         }
 
         function rhythmusTaktzahlZeichnen() {
@@ -4893,12 +4926,42 @@
            hoerbar schwanken. */
         let vorklatschUhren = [], vorklatschKnoten = [], vorklatschLaeuft = false;
 
+        /* Anzeige und Ton muessen an derselben Uhr haengen. Ein setTimeout laeuft
+           auf der Wanduhr, die Toene liegen auf der Audiouhr - und die beiden
+           gehen auseinander, sobald die Tonausgabe frisch gebaut wurde: Ihr
+           Datenstrom braucht einen Moment, bis er laeuft, waehrend das Fenster
+           schon blinkt. Genau so sah man den Schlag, bevor man ihn hoerte.
+           Deshalb werden Puls und Mitlese-Markierung nicht mehr vorausgeplant,
+           sondern abgerufen, wenn die Audiouhr ihre Zeit erreicht hat. */
+        let vorklatschFolge = [], vorklatschTakt = null;
+
+        function vorklatschAnzeigePlanen(zeit, tat) { vorklatschFolge.push({ zeit, tat }); }
+
+        function vorklatschAnzeigeStarten(ctx) {
+            vorklatschFolge.sort((a, b) => a.zeit - b.zeit);
+            if (vorklatschTakt) clearInterval(vorklatschTakt);
+            vorklatschTakt = setInterval(() => {
+                const jetzt = ctx.currentTime;
+                while (vorklatschFolge.length && vorklatschFolge[0].zeit <= jetzt) {
+                    const naechster = vorklatschFolge.shift();
+                    try { naechster.tat(); } catch (e) { /* Anzeige ist nie der Grund zum Abbrechen */ }
+                }
+                if (!vorklatschFolge.length) { clearInterval(vorklatschTakt); vorklatschTakt = null; }
+            }, 20);
+        }
+
+        function vorklatschAnzeigeStoppen() {
+            if (vorklatschTakt) { clearInterval(vorklatschTakt); vorklatschTakt = null; }
+            vorklatschFolge = [];
+        }
+
         /* Bricht ein laufendes Vorklatschen ab: Die Toene liegen im Voraus auf der
            Audiouhr, also muss jeder einzeln gestoppt werden - ein Stopp-Knopf, der
            nur ein Flag umlegt, waere wirkungslos. */
         function vorklatschStoppen(leise) {
             vorklatschUhren.forEach(clearTimeout);
             vorklatschUhren = [];
+            vorklatschAnzeigeStoppen();
             vorklatschKnoten.forEach(k => { try { k.stop(0); } catch (e) { /* schon vorbei */ } });
             vorklatschKnoten = [];
             if (vorklatschLaeuft && !leise) showToast("Vorklatschen abgebrochen.", "info");
@@ -4920,7 +4983,7 @@
                 ? rhythmusLoesungsEditor : null;
             const noten = rhythmusLesen(code);
             if (!noten.length) { showToast("Trage erst einen Rhythmus ein, der vorgeklatscht werden soll.", "danger"); return; }
-            const ctx = tonBereit(() => rhythmusVorklatschen(vorgabe));
+            const ctx = tonBereit(() => rhythmusVorklatschen(vorgabe, wiederholungen));
             if (!ctx) return;
             metronomStoppen();
 
@@ -4928,7 +4991,7 @@
             const proTakt = metronomSchlaege();
             // In 6/8 schlaegt das Metronom Achtel - eine Viertel dauert dann zwei Schlaege
             const viertel = schlagDauer * (metronomSchlaege() === 6 ? 2 : 1);
-            const start = ctx.currentTime + 0.15;
+            const start = ctx.currentTime + (ctx.currentTime < 0.3 ? 0.35 : 0.15);
 
             vorklatschStoppen(true);
             vorklatschLaeuft = true;
@@ -4957,7 +5020,7 @@
                     const wann = beginn + i * schlagDauer;
                     const imTakt = i % proTakt;
                     vorklatschKnoten.push(metronomKlick(ctx, wann, imTakt === 0));
-                    vorklatschUhren.push(setTimeout(() => metronomPulsZeichnen(imTakt), Math.max(0, (wann - ctx.currentTime) * 1000)));
+                    vorklatschAnzeigePlanen(wann, () => metronomPulsZeichnen(imTakt));
                 }
                 t = beginn + vorlaufSchlaege * schlagDauer;
                 /* Je Viertel ein Leuchten - so wandert die Markierung im Takt des
@@ -4966,9 +5029,7 @@
                 if (mitleser) {
                     const viertelZahl = Math.round(rhythmusDauer(noten));
                     for (let v = 0; v < viertelZahl; v++) {
-                        const wann = t + v * viertel;
-                        vorklatschUhren.push(setTimeout(() => mitleser.markieren(v),
-                            Math.max(0, (wann - ctx.currentTime) * 1000)));
+                        vorklatschAnzeigePlanen(t + v * viertel, () => mitleser.markieren(v));
                     }
                 }
                 noten.forEach(b => b.teile.forEach(teil => {
@@ -4977,20 +5038,21 @@
                 }));
                 if (male > 1) {
                     const nr = durchgang + 1;
-                    vorklatschUhren.push(setTimeout(() => {
+                    vorklatschAnzeigePlanen(t, () => {
                         metronomPulsZeichnen(-1);
                         if (mitleser) mitleser.markieren(-1);
                         showToast(`Durchgang ${nr} von ${male}${nr < male ? ' - gleich kommt der nächste' : ''}`, "info");
-                    }, Math.max(0, (t - ctx.currentTime) * 1000)));
+                    });
                 }
             }
-            vorklatschUhren.push(setTimeout(() => {
+            vorklatschAnzeigePlanen(t + 0.2, () => {
                 vorklatschLaeuft = false;
                 vorklatschKnoten = [];
                 metronomPulsZeichnen(-1);
                 if (mitleser) mitleser.markieren(-1);
                 metronomKnopf();
-            }, Math.max(0, (t - ctx.currentTime) * 1000 + 200)));
+            });
+            vorklatschAnzeigeStarten(ctx);
             const mitHinweis = metronom.mit ? " Das Metronom zählt durch." : "";
             const vorlaufWort = vorlaufTakte === 1 ? "Ein Takt" : `${vorlaufTakte} Takte`;
             showToast((male > 1 ? `Dreimal vorklatschen mit ${VORKLATSCH_PAUSE} Sekunden Pause. ${vorlaufWort} Vorlauf.`
@@ -5021,7 +5083,10 @@
             metronom.laeuft = true;
             metronom.schlag = 0;
             metronom.takt = 0;
-            metronom.naechste = ctx.currentTime + 0.12;
+            /* Eine frisch gebaute Ausgabe braucht laenger, bis ihr Datenstrom
+               laeuft - mit zu wenig Vorlauf klingt der erste Schlag nach dem
+               ersten Blinken. */
+            metronom.naechste = ctx.currentTime + (ctx.currentTime < 0.3 ? 0.35 : 0.12);
             metronom.sichtbar = [];
             metronomKnopf();
             metronomPulsZeichnen(-1);
@@ -5092,6 +5157,8 @@
         function rhythmusFensterZeigen() {
             const f = getEl('rhythmus-fenster');
             if (!f) return;
+            /* Die laufende Runde geht vor - sonst der zuletzt gesicherte Entwurf. */
+            if (!rhythmusRunde && !rhythmusEntwurf.loesung) rhythmusEntwurfLaden();
             if (rhythmusRunde) {
                 rhythmusEntwurf = { soll: rhythmusRunde.soll, zeichen: rhythmusRunde.zeichen,
                                     takte: rhythmusRunde.takte || 1,
@@ -5111,6 +5178,7 @@
             fernQrZeichnen();
         }
         function rhythmusFensterSchliessen() {
+            rhythmusEntwurfSichern();
             /* Nur stoppen, wenn danach keine Bedienung mehr sichtbar ist: Laeuft eine
                Rhythmus-Runde, steht das Metronom unter dem Rundenmanager und darf
                ruhig weiterticken. Sonst tickte es hinter einem geschlossenen Fenster
@@ -5136,6 +5204,7 @@
                     rhythmusEntwurf.zeichen = wort;
                     rhythmusTaktwahlZeichnen();
                     rhythmusEditorNeu();
+                    rhythmusEntwurfSichern();
                     metronomPulsZeichnen(-1);
                 });
                 ziel.appendChild(b);
@@ -5165,6 +5234,7 @@
                         else rhythmusEntwurf.werte.push(w.code);
                         rhythmusWahlZeichnen();
                         rhythmusEditorNeu();
+                        rhythmusEntwurfSichern();
                     });
                     zeile.appendChild(b);
                 });
@@ -5472,6 +5542,7 @@
                     if (versuch < 200 && pausen * 2 > takt.length) continue;
                     if (versuch < 200 && nurPause(takt[0])) continue;   // Anfang muss hoerbar sein
                     rhythmusLoesungsEditor.setzen(rhythmusSchreiben(takt));
+                    rhythmusEntwurfSichern();
                     playSound('up');
                     return;
                 }
@@ -5479,9 +5550,17 @@
             showToast("Aus diesen Bausteinen geht der Takt nicht genau auf - nimm noch einen kürzeren dazu.", "danger");
         }
 
+        /* Neuladen, Tab wechseln, iPad weglegen: Alles drei kann die Seite
+           beenden, bevor irgendein Knopf gedrueckt wurde. */
+        window.addEventListener('beforeunload', () => rhythmusEntwurfSichern());
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') rhythmusEntwurfSichern();
+        });
+
         function rhythmusKlatschUmschalten() {
             const schalter = getEl('rhythmus-klatsch');
             rhythmusEntwurf.klatsch = schalter ? schalter.checked : true;
+            rhythmusEntwurfSichern();
             if (rhythmusRunde) {
                 rhythmusRunde.klatsch = rhythmusEntwurf.klatsch;
                 renderIncomingAnswersList();   // die Urteile aendern sich damit
@@ -5528,6 +5607,7 @@
                 showToast(`Achtung: Dein Rhythmus ist ${dauer} Viertel lang, ${rhythmusEntwurf.takte || 1} Takte haben ${gesamtSoll}.`, "info");
             }
             rhythmusEntwurf.loesung = loesung;
+            rhythmusEntwurfSichern();
             rhythmusRunde = { soll: rhythmusEntwurf.soll, zeichen: rhythmusEntwurf.zeichen || '4/4',
                               takte: rhythmusEntwurf.takte || 1,
                               klatsch: rhythmusEntwurf.klatsch !== false,
