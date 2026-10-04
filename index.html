@@ -371,6 +371,9 @@
         .rhy-platz.leer { border: 2px dashed rgba(148,163,184,.4); background: rgba(255,255,255,.03); }
         .rhy-platz.voll { border: 2px solid rgba(148,163,184,.35); background: rgba(255,255,255,.08); cursor: pointer; }
         .rhy-platz.ziel { border-color: #a78bfa; background: rgba(139,92,246,.25); }
+        /* Die Viertel, die gerade klingt - zum Mitlesen beim Vorklatschen */
+        .rhy-platz.jetzt { border-color: #fbbf24; background: rgba(251,191,36,.3); }
+        html[data-theme="light"] .rhy-platz.jetzt { border-color: #d97706; background: #fde68a; }
         /* Die Taktangabe vor dem ersten Kaestchen - zwei Zahlen uebereinander,
            wie im Heft. Flex 0, damit sie beim Verteilen der Breite nicht mitwaechst. */
         .rhy-zeichen {
@@ -4900,6 +4903,7 @@
             vorklatschKnoten = [];
             if (vorklatschLaeuft && !leise) showToast("Vorklatschen abgebrochen.", "info");
             vorklatschLaeuft = false;
+            if (rhythmusLoesungsEditor) rhythmusLoesungsEditor.markieren(-1);
             metronomPulsZeichnen(-1);
             metronomKnopf();
         }
@@ -4910,6 +4914,10 @@
             if (vorklatschLaeuft) { vorklatschStoppen(); return; }
             const male = Math.max(1, Number(wiederholungen) || 1);
             const code = vorgabe || rhythmusZumVorklatschen();
+            /* Mitlesen geht nur, wenn im Lehrerfeld auch genau das steht, was
+               gleich klingt - sonst leuchtete ein fremdes Kaestchen. */
+            const mitleser = (rhythmusLoesungsEditor && rhythmusLoesungsEditor.lesen() === code)
+                ? rhythmusLoesungsEditor : null;
             const noten = rhythmusLesen(code);
             if (!noten.length) { showToast("Trage erst einen Rhythmus ein, der vorgeklatscht werden soll.", "danger"); return; }
             const ctx = tonBereit(() => rhythmusVorklatschen(vorgabe));
@@ -4952,6 +4960,17 @@
                     vorklatschUhren.push(setTimeout(() => metronomPulsZeichnen(imTakt), Math.max(0, (wann - ctx.currentTime) * 1000)));
                 }
                 t = beginn + vorlaufSchlaege * schlagDauer;
+                /* Je Viertel ein Leuchten - so wandert die Markierung im Takt des
+                   Metronoms durch die Kaestchen, auch durch ein Zeichen, das
+                   laenger als eine Viertel ist. */
+                if (mitleser) {
+                    const viertelZahl = Math.round(rhythmusDauer(noten));
+                    for (let v = 0; v < viertelZahl; v++) {
+                        const wann = t + v * viertel;
+                        vorklatschUhren.push(setTimeout(() => mitleser.markieren(v),
+                            Math.max(0, (wann - ctx.currentTime) * 1000)));
+                    }
+                }
                 noten.forEach(b => b.teile.forEach(teil => {
                     if (!teil.p) vorklatschKnoten.push(klatschKlang(ctx, t));
                     t += teil.d * viertel;
@@ -4960,6 +4979,7 @@
                     const nr = durchgang + 1;
                     vorklatschUhren.push(setTimeout(() => {
                         metronomPulsZeichnen(-1);
+                        if (mitleser) mitleser.markieren(-1);
                         showToast(`Durchgang ${nr} von ${male}${nr < male ? ' - gleich kommt der nächste' : ''}`, "info");
                     }, Math.max(0, (t - ctx.currentTime) * 1000)));
                 }
@@ -4968,6 +4988,7 @@
                 vorklatschLaeuft = false;
                 vorklatschKnoten = [];
                 metronomPulsZeichnen(-1);
+                if (mitleser) mitleser.markieren(-1);
                 metronomKnopf();
             }, Math.max(0, (t - ctx.currentTime) * 1000 + 200)));
             const mitHinweis = metronom.mit ? " Das Metronom zählt durch." : "";
@@ -5984,6 +6005,7 @@
                     vielleichtStrich();
                     const kasten = document.createElement('div');
                     kasten.className = 'rhy-platz voll';
+                    kasten.dataset.dauer = b.dauer;
                     kasten.style.flex = `${b.dauer} 1 0`;
                     kasten.title = b.wort + ' (antippen zum Entfernen)';
                     kasten.innerHTML = rhythmusSvg([b], null, true);
@@ -5998,6 +6020,7 @@
                     const teil = Math.min(1, frei);
                     const kasten = document.createElement('div');
                     kasten.className = 'rhy-platz leer';
+                    kasten.dataset.dauer = teil;
                     kasten.style.flex = `${teil} 1 0`;
                     anzeige.appendChild(kasten);
                     frei -= teil;
@@ -6012,11 +6035,28 @@
                                          : `${zahl(dauer)} von ${zahl(gesamt)} Vierteln`;
             }
             zeichnen();
+            /* Beim Vorklatschen mitlesen: Das Kaestchen, in dem die gerade
+               gespielte Viertel steht, leuchtet. Gezaehlt wird in Vierteln vom
+               Anfang - ein Zeichen, das laenger ist als eine Viertel, bleibt
+               entsprechend mehrere Schlaege lang hell. */
+            function markieren(viertel) {
+                const kaesten = [...anzeige.querySelectorAll('.rhy-platz')];
+                kaesten.forEach(k => k.classList.remove('jetzt'));
+                if (viertel === null || viertel === undefined || viertel < 0) return;
+                let pos = 0;
+                for (const k of kaesten) {
+                    const d = Number(k.dataset.dauer) || 1;
+                    if (viertel < pos + d - 0.001) { k.classList.add('jetzt'); return; }
+                    pos += d;
+                }
+            }
+
             return {
                 lesen: () => rhythmusSchreiben(liste),
                 dauer: () => rhythmusDauer(liste),
                 setzen: (code) => { liste.length = 0; rhythmusLesen(code).forEach(w => liste.push(w)); zeichnen(); },
-                verdecken: (ja) => anzeige.classList.toggle('verdeckt', !!ja)
+                verdecken: (ja) => anzeige.classList.toggle('verdeckt', !!ja),
+                markieren: markieren
             };
         }
 
