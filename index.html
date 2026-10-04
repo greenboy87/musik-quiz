@@ -5425,8 +5425,11 @@
             { code: 'H',    dauer: 2,   wort: 'Halbe',          teile: [{ d: 2 }] },
             { code: 'V',    dauer: 1,   wort: 'Viertel',        teile: [{ d: 1 }] },
             { code: 'AA',   dauer: 1,   wort: 'Zwei Achtel',    teile: [{ d: .5 }, { d: .5 }] },
+            { code: 'AdS',  dauer: 1,   wort: 'Punktierte Achtel + Sechzehntel', teile: [{ d: .75 }, { d: .25 }] },
+            { code: 'SAd',  dauer: 1,   wort: 'Sechzehntel + punktierte Achtel',  teile: [{ d: .25 }, { d: .75 }] },
             { code: 'ASS',  dauer: 1,   wort: 'Achtel + 2 Sechzehntel', teile: [{ d: .5 }, { d: .25 }, { d: .25 }] },
             { code: 'SSA',  dauer: 1,   wort: '2 Sechzehntel + Achtel', teile: [{ d: .25 }, { d: .25 }, { d: .5 }] },
+            { code: 'SAS',  dauer: 1,   wort: 'Sechzehntel + Achtel + Sechzehntel', teile: [{ d: .25 }, { d: .5 }, { d: .25 }] },
             { code: 'SSSS', dauer: 1,   wort: 'Vier Sechzehntel',       teile: [{ d: .25 }, { d: .25 }, { d: .25 }, { d: .25 }] },
             /* Die einzelne Achtel gibt es, damit auch Synkopen ueber die Zaehlzeit
                hinweg aufschreibbar sind: Achtel - Viertel - Achtel. */
@@ -5437,6 +5440,11 @@
             { code: 'Vp',   dauer: 1,   wort: 'Viertelpause',   pausenreihe: true, teile: [{ d: 1, p: true }] },
             { code: 'pA',   dauer: 1,   wort: 'Pause + Achtel', pausenreihe: true, teile: [{ d: .5, p: true }, { d: .5 }] },
             { code: 'Ap',   dauer: 1,   wort: 'Achtel + Pause', pausenreihe: true, teile: [{ d: .5 }, { d: .5, p: true }] },
+            { code: 'pSSS', dauer: 1,   wort: 'Sechzehntelpause + 3 Sechzehntel', pausenreihe: true, teile: [{ d: .25, p: true }, { d: .25 }, { d: .25 }, { d: .25 }] },
+            { code: 'pSA',  dauer: 1,   wort: 'Sechzehntelpause + Sechzehntel + Achtel', pausenreihe: true, teile: [{ d: .25, p: true }, { d: .25 }, { d: .5 }] },
+            { code: 'pAS',  dauer: 1,   wort: 'Sechzehntelpause + Achtel + Sechzehntel', pausenreihe: true, teile: [{ d: .25, p: true }, { d: .5 }, { d: .25 }] },
+            { code: 'pAd',  dauer: 1,   wort: 'Sechzehntelpause + punktierte Achtel',    pausenreihe: true, teile: [{ d: .25, p: true }, { d: .75 }] },
+            { code: 'pdS',  dauer: 1,   wort: 'Punktierte Achtelpause + Sechzehntel',    pausenreihe: true, teile: [{ d: .75, p: true }, { d: .25 }] },
             { code: 'P',    dauer: .5,  wort: 'Achtelpause',    pausenreihe: true, teile: [{ d: .5, p: true }] }
         ];
         const RHYTHMUS_NACH_CODE = {};
@@ -5484,7 +5492,7 @@
            Vorher stand hier ein festes Hellgrau - auf weissem Grund unsichtbar. */
         function rhythmusSvg(liste, farbe, nackt, taktzeichen) {
             const tinte = farbe || 'currentColor';
-            const vorschub = { 4: 96, 2: 62, 1: 38, 0.5: 24, 0.25: 17 };
+            const vorschub = { 4: 96, 2: 62, 1: 38, 0.75: 30, 0.5: 24, 0.25: 17 };
             const links = 16, halsOben = 13, linie = 46, balkenDicke = 5;
             const teile = [];
             // Im Takt beginnt das erste Zeichen mit Abstand zum Taktstrich - sonst
@@ -5499,6 +5507,13 @@
             const ink = (von, bis, oben, unten) => {
                 inkVon = Math.min(inkVon, von); inkBis = Math.max(inkBis, bis);
                 if (oben !== undefined) { inkOben = Math.min(inkOben, oben); inkUnten = Math.max(inkUnten, unten); }
+            };
+            /* Der Punkt haengt nicht am Zeichen, sondern an seiner Dauer: Was
+               anderthalbmal so lang ist wie ein glatter Wert, ist punktiert. */
+            const punktiert = (d) => Math.abs(d - 0.75) < 0.001 || Math.abs(d - 1.5) < 0.001 || Math.abs(d - 3) < 0.001;
+            const punktSetzen = (dx) => {
+                teile.push(`<circle cx="${dx}" cy="${linie - 5}" r="2.9" fill="${tinte}"/>`);
+                ink(dx - 4, dx + 4, linie - 9, linie - 1);
             };
 
             if (!nackt) {
@@ -5526,14 +5541,30 @@
                     if (gruppe.length >= 2) {
                         const a = gruppe[0].hx, b = gruppe[gruppe.length - 1].hx;
                         teile.push(`<rect x="${a - 1.2}" y="${halsOben - 1}" width="${b - a + 2.4}" height="${balkenDicke}" fill="${tinte}"/>`);
-                        for (let i = 0; i < gruppe.length - 1; i++) {
-                            if (gruppe[i].d > 0.25 || gruppe[i + 1].d > 0.25) continue;
-                            teile.push(`<rect x="${gruppe[i].hx - 1.2}" y="${halsOben + balkenDicke + 1.5}" ` +
-                                       `width="${gruppe[i + 1].hx - gruppe[i].hx + 2.4}" height="${balkenDicke}" fill="${tinte}"/>`);
+                        /* Zweiter Balken: Jedes Sechzehntel braucht einen. Zwischen
+                           zwei Sechzehnteln laeuft er durch, am Rand einer laengeren
+                           Note bleibt ein Stummel stehen - zur Seite hin, auf der der
+                           Nachbar sitzt. So sieht "punktierte Achtel + Sechzehntel"
+                           aus wie im Heft und nicht wie zwei Achtel. */
+                        const stummel = 9;
+                        for (let i = 0; i < gruppe.length; i++) {
+                            if (gruppe[i].d > 0.25) continue;
+                            const nachbarRechts = i < gruppe.length - 1 && gruppe[i + 1].d <= 0.25;
+                            const nachbarLinks = i > 0 && gruppe[i - 1].d <= 0.25;
+                            let von, bis;
+                            if (nachbarRechts) { von = gruppe[i].hx; bis = gruppe[i + 1].hx; }
+                            else if (nachbarLinks) continue;              // schon vom Vorgaenger gezogen
+                            else if (i > 0) { von = gruppe[i].hx - stummel; bis = gruppe[i].hx; }
+                            else { von = gruppe[i].hx; bis = gruppe[i].hx + stummel; }
+                            teile.push(`<rect x="${von - 1.2}" y="${halsOben + balkenDicke + 1.5}" ` +
+                                       `width="${bis - von + 2.4}" height="${balkenDicke}" fill="${tinte}"/>`);
+                            ink(von - 2, bis + 2, halsOben - 1, linie + 7);
                         }
-                    } else if (gruppe.length === 1 && gruppe[0].d <= 0.5) {
+                    } else if (gruppe.length === 1 && gruppe[0].d <= 0.75) {
                         const hx = gruppe[0].hx;
                         teile.push(`<path d="M${hx} ${halsOben} q 11 5 9 16 q -2 -8 -9 -9" fill="${tinte}"/>`);
+                        // Ein Sechzehntel allein traegt zwei Faehnchen uebereinander.
+                        if (gruppe[0].d <= 0.25) teile.push(`<path d="M${hx} ${halsOben + 9} q 11 5 9 16 q -2 -8 -9 -9" fill="${tinte}"/>`);
                         ink(hx - 2, hx + 12, halsOben - 1, linie + 7);
                     }
                     gruppe.length = 0;
@@ -5561,10 +5592,19 @@
                             teile.push(`<path d="M${px + 5} ${linie + 10.5} c -7 -3.5 -11 2 -5.5 7.5"` +
                                        ` fill="none" stroke="${tinte}" stroke-width="3" stroke-linecap="round"/>`);
                             ink(px - 8, px + 8, linie - 16, linie + 19);
+                        } else if (t.d <= 0.25) {
+                            /* Sechzehntelpause: derselbe Schraegstrich wie die
+                               Achtelpause, aber mit zwei Haken - sonst waeren die
+                               beiden auf der Karte nicht zu unterscheiden. */
+                            teile.push(`<path d="M${px + 5} ${linie - 11} L${px - 4} ${linie + 12}" stroke="${tinte}" stroke-width="2.5" stroke-linecap="round" fill="none"/>` +
+                                       `<circle cx="${px}" cy="${linie - 9}" r="3.2" fill="${tinte}"/>` +
+                                       `<circle cx="${px - 3.5}" cy="${linie}" r="3.2" fill="${tinte}"/>`);
+                            ink(px - 7, px + 7, linie - 13, linie + 13);
                         } else {
                             teile.push(`<path d="M${px + 4} ${linie - 10} L${px - 3} ${linie + 10}" stroke="${tinte}" stroke-width="2.5" stroke-linecap="round" fill="none"/>` +
                                        `<circle cx="${px - 1}" cy="${linie - 8}" r="3.2" fill="${tinte}"/>`);
                             ink(px - 5, px + 6, linie - 12, linie + 11);
+                            if (punktiert(t.d)) punktSetzen(px + 9);
                         }
                         gruppeAbschliessen();   // eine Pause unterbricht den Balken
                         return;
@@ -5573,11 +5613,12 @@
                     teile.push(`<ellipse cx="${px}" cy="${linie}" rx="7.5" ry="5.4" transform="rotate(-18 ${px} ${linie})"` +
                                (hohl ? ` fill="none" stroke="${tinte}" stroke-width="2.6"/>` : ` fill="${tinte}"/>`));
                     ink(px - 9, px + 9, linie - 7, linie + 7);
+                    if (punktiert(t.d)) punktSetzen(px + 12.5);
                     if (t.d >= 4) return;                       // die Ganze steht ohne Hals
                     const hx = px + 6.6;
-                    ink(px - 9, hx + (t.d <= 0.5 ? 11 : 2), halsOben - 1, linie + 7);
+                    ink(px - 9, hx + (t.d <= 0.75 ? 11 : 2), halsOben - 1, linie + 7);
                     teile.push(`<line x1="${hx}" y1="${linie - 2}" x2="${hx}" y2="${halsOben}" stroke="${tinte}" stroke-width="2.4" stroke-linecap="round"/>`);
-                    if (t.d <= 0.5) gruppe.push({ hx: hx, d: t.d });
+                    if (t.d <= 0.75) gruppe.push({ hx: hx, d: t.d });
                 });
 
                 gruppeAbschliessen();
