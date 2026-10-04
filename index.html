@@ -9116,8 +9116,24 @@
             try { await ctx.resume(); } catch (e) { /* ohne Geste abgelehnt */ }
 
             const startZeit = ctx.currentTime;
-            playSound('up');
-            await new Promise(r => setTimeout(r, 700));
+            /* Ein langer, deutlicher Pruefton statt des kurzen Plings: Safari zeigt
+               sein Lautsprechersymbol in der Adressleiste nur, SOLANGE etwas klingt.
+               Bei einer Zehntelsekunde sieht man es nie - und genau dieses Symbol
+               verraet, ob der Tab stummgeschaltet ist. Zwei Sekunden reichen, um
+               hinzusehen und darauf zu klicken. */
+            const pruefOsz = ctx.createOscillator(), pruefGain = ctx.createGain();
+            pruefOsz.type = 'sine';
+            pruefOsz.frequency.setValueAtTime(660, ctx.currentTime);
+            pruefOsz.frequency.setValueAtTime(880, ctx.currentTime + 0.6);
+            pruefOsz.frequency.setValueAtTime(660, ctx.currentTime + 1.2);
+            pruefGain.gain.setValueAtTime(0.0001, ctx.currentTime);
+            pruefGain.gain.exponentialRampToValueAtTime(0.35, ctx.currentTime + 0.05);
+            pruefGain.gain.setValueAtTime(0.35, ctx.currentTime + 1.8);
+            pruefGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2);
+            pruefOsz.connect(pruefGain); pruefGain.connect(ctx.destination);
+            pruefOsz.start(); pruefOsz.stop(ctx.currentTime + 2.05);
+            showToast("Prüfton läuft zwei Sekunden – schau jetzt in die Adressleiste: Erscheint dort ein Lautsprechersymbol?", "info");
+            await new Promise(r => setTimeout(r, 2200));
             const uhrLaeuft = ctx.currentTime - startZeit > 0.2;
 
             /* Der Befund bleibt stehen, statt als Hinweis wegzuwischen: Wer ihn
@@ -9138,8 +9154,8 @@
                 showToast("Tonausgabe steht still – meist übernimmt eine andere App die Ausgabe oder das Ausgabegerät hat gewechselt.", "danger");
                 zeigen(`❌ ${technik} – Ausgabe steht still`, 'text-rose-400');
             } else {
-                showToast("Tonausgabe läuft einwandfrei. Kein Ton hörbar? Dann ist der Tab stummgeschaltet (Lautsprechersymbol in der Adressleiste) oder die Lautstärke ist unten.", "info");
-                zeigen(`✅ ${technik} – die Seite erzeugt Ton. Nichts hörbar? Tab stumm oder Lautstärke.`, 'text-emerald-400');
+                showToast("Die Seite hat zwei Sekunden lang Ton erzeugt. Nichts gehört? Dann hat Safari den Tab stummgeschaltet: Lautsprechersymbol in der Adressleiste anklicken (oder Rechtsklick auf den Tab ▸ Stummschaltung aufheben).", "info");
+                zeigen(`✅ ${technik} – Ton wird erzeugt. Nichts gehört? Safari hat den Tab stumm: Lautsprechersymbol in der Adressleiste anklicken.`, 'text-emerald-400');
             }
         }
 
