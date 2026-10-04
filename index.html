@@ -374,6 +374,9 @@
         /* Die Viertel, die gerade klingt - zum Mitlesen beim Vorklatschen */
         .rhy-platz.jetzt { border-color: #fbbf24; background: rgba(251,191,36,.3); }
         html[data-theme="light"] .rhy-platz.jetzt { border-color: #d97706; background: #fde68a; }
+        /* Die Viertel, die gerade klingt - zum Mitlesen beim Vorklatschen */
+        .rhy-platz.jetzt { border-color: #fbbf24; background: rgba(251,191,36,.3); }
+        html[data-theme="light"] .rhy-platz.jetzt { border-color: #d97706; background: #fde68a; }
         /* Die Taktangabe vor dem ersten Kaestchen - zwei Zahlen uebereinander,
            wie im Heft. Flex 0, damit sie beim Verteilen der Breite nicht mitwaechst. */
         .rhy-zeichen {
@@ -4938,6 +4941,7 @@
             vorklatschKnoten = [];
             if (vorklatschLaeuft && !leise) showToast("Vorklatschen abgebrochen.", "info");
             vorklatschLaeuft = false;
+            if (rhythmusLoesungsEditor) rhythmusLoesungsEditor.markieren(-1);
             metronomPulsZeichnen(-1);
             metronomKnopf();
         }
@@ -4948,6 +4952,10 @@
             if (vorklatschLaeuft) { vorklatschStoppen(); return; }
             const male = Math.max(1, Number(wiederholungen) || 1);
             const code = vorgabe || rhythmusZumVorklatschen();
+            /* Mitlesen geht nur, wenn im Lehrerfeld auch genau das steht, was
+               gleich klingt - sonst leuchtete ein fremdes Kaestchen. */
+            const mitleser = (rhythmusLoesungsEditor && rhythmusLoesungsEditor.lesen() === code)
+                ? rhythmusLoesungsEditor : null;
             const noten = rhythmusLesen(code);
             if (!noten.length) { showToast("Trage erst einen Rhythmus ein, der vorgeklatscht werden soll.", "danger"); return; }
             const ctx = tonBereit(() => rhythmusVorklatschen(vorgabe));
@@ -4991,6 +4999,17 @@
                     vorklatschUhren.push(setTimeout(() => metronomPulsZeichnen(imTakt), Math.max(0, (wann - ctx.currentTime) * 1000)));
                 }
                 t = beginn + vorlaufSchlaege * schlagDauer;
+                /* Je Viertel ein Leuchten - so wandert die Markierung im Takt des
+                   Metronoms durch die Kaestchen, auch durch ein Zeichen, das
+                   laenger als eine Viertel ist. */
+                if (mitleser) {
+                    const viertelZahl = Math.round(rhythmusDauer(noten));
+                    for (let v = 0; v < viertelZahl; v++) {
+                        const wann = t + v * viertel;
+                        vorklatschUhren.push(setTimeout(() => mitleser.markieren(v),
+                            Math.max(0, (wann - ctx.currentTime) * 1000)));
+                    }
+                }
                 noten.forEach(b => b.teile.forEach(teil => {
                     if (!teil.p) vorklatschKnoten.push(klatschKlang(ctx, t));
                     t += teil.d * viertel;
@@ -4999,6 +5018,7 @@
                     const nr = durchgang + 1;
                     vorklatschUhren.push(setTimeout(() => {
                         metronomPulsZeichnen(-1);
+                        if (mitleser) mitleser.markieren(-1);
                         showToast(`Durchgang ${nr} von ${male}${nr < male ? ' - gleich kommt der nächste' : ''}`, "info");
                     }, Math.max(0, (t - ctx.currentTime) * 1000)));
                 }
@@ -5007,6 +5027,7 @@
                 vorklatschLaeuft = false;
                 vorklatschKnoten = [];
                 metronomPulsZeichnen(-1);
+                if (mitleser) mitleser.markieren(-1);
                 metronomKnopf();
             }, Math.max(0, (t - ctx.currentTime) * 1000 + 200)));
             const mitHinweis = metronom.mit ? " Das Metronom zählt durch." : "";
@@ -6082,11 +6103,10 @@
                                          : `${zahl(dauer)} von ${zahl(gesamt)} Vierteln`;
             }
             zeichnen();
-            /* Mitlesen beim Vorklatschen: Das Kaestchen, in dem die gerade
-               gespielte Viertel steht, leuchtet. Zurzeit ruft das niemand auf -
-               die Markierung hing an der Taktung, die gerade geprueft wird. Die
-               Funktion bleibt stehen, damit sie sich wieder anschalten laesst,
-               sobald klar ist, woran der Versatz liegt. */
+            /* Beim Vorklatschen mitlesen: Das Kaestchen, in dem die gerade
+               gespielte Viertel steht, leuchtet. Gezaehlt wird in Vierteln vom
+               Anfang - ein Zeichen, das laenger ist als eine Viertel, bleibt
+               entsprechend mehrere Schlaege lang hell. */
             function markieren(viertel) {
                 const kaesten = [...anzeige.querySelectorAll('.rhy-platz')];
                 kaesten.forEach(k => k.classList.remove('jetzt'));

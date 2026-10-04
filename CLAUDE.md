@@ -37,3 +37,17 @@ Der verschlüsselte Spielstand liegt unter `tresor/<id>`, direkt neben `rooms` i
 selben Projekt. School-Tool hat ein eigenes Projekt (`school-tool-cbbf9`) und ist
 davon nicht berührt. Die nötige Regel-Freigabe steht in `firebase-regeln.md` —
 den `rooms`-Block dabei niemals ersetzen.
+
+## Tonprobleme: erst den Browser neu starten, dann suchen
+
+Die Tonausgabe des Browsers kann in einen Zustand geraten, aus dem ein
+Neuladen der Seite nicht herausführt — nur ein vollständiger Neustart des
+Browsers. Das ist hier zweimal passiert: einmal blieb Safari komplett stumm,
+obwohl `AudioContext.state` „running" meldete und die Uhr lief; einmal kam in
+Chrome alles Hörbare genau einen Takt nach der Anzeige, auch nach Reload und
+mit nachweislich aktueller Fassung (Zeitstempel in der Fußzeile geprüft).
+
+Beide Male war der Code nicht die Ursache. Bevor also an der Taktung
+geschraubt wird: Browser beenden und neu öffnen. Erst wenn der Fehler das
+überlebt, lohnt die Suche im Code — sonst jagt man einem Zustand hinterher,
+der sich beim nächsten Start von selbst erledigt.
