@@ -1238,6 +1238,10 @@
                         title="Startet das Vorklatschen am Beamer - noch einmal drücken hält es an">
                     <i class="fa-solid fa-hands-clapping mr-1"></i> Vorklatschen / Stopp
                 </button>
+                <button type="button" id="fern-autoplay" class="bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 px-3 rounded-xl text-xs active:scale-95"
+                        title="Dreimal vorklatschen mit fünf Sekunden Pause">
+                    <i class="fa-solid fa-repeat mr-1"></i> 3×
+                </button>
             </div>
         </div>
     </div>
@@ -4535,6 +4539,11 @@
                             title="Zählt einen Takt ein und klatscht den eingegebenen Rhythmus vor">
                         <i class="fa-solid fa-hands-clapping mr-1"></i> Vorklatschen
                     </button>
+                    <button type="button" data-rolle="autoplay"
+                            class="bg-amber-600 hover:bg-amber-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-all active:scale-95"
+                            title="Spielt den Rhythmus dreimal vor, mit fünf Sekunden Pause dazwischen">
+                        <i class="fa-solid fa-repeat mr-1"></i> 3×
+                    </button>
                     <button type="button" data-rolle="start"
                             class="bg-violet-600 hover:bg-violet-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs transition-all active:scale-95">
                         <i class="fa-solid fa-play mr-1"></i> Start
@@ -4545,6 +4554,7 @@
             teil('plus').addEventListener('click', () => metronomTempo(5));
             teil('start').addEventListener('click', () => metronomUmschalten());
             teil('vorklatsch').addEventListener('click', () => rhythmusVorklatschen());
+            teil('autoplay').addEventListener('click', () => rhythmusVorklatschen('', VORKLATSCH_WIEDERHOLUNGEN));
             const regler = teil('regler');
             if (regler) regler.addEventListener('input', (e) => metronomTempoSetzen(e.target.value));
             metronomAnsichten = metronomAnsichten.filter(a => a.isConnected && a !== wurzel);
@@ -4678,8 +4688,11 @@
             metronomKnopf();
         }
 
-        function rhythmusVorklatschen(vorgabe) {
+        const VORKLATSCH_WIEDERHOLUNGEN = 3, VORKLATSCH_PAUSE = 5;   // dreimal, fuenf Sekunden Pause
+
+        function rhythmusVorklatschen(vorgabe, wiederholungen) {
             if (vorklatschLaeuft) { vorklatschStoppen(); return; }
+            const male = Math.max(1, Number(wiederholungen) || 1);
             const code = vorgabe || rhythmusZumVorklatschen();
             const noten = rhythmusLesen(code);
             if (!noten.length) { showToast("Trage erst einen Rhythmus ein, der vorgeklatscht werden soll.", "danger"); return; }
@@ -4696,24 +4709,41 @@
             vorklatschStoppen(true);
             vorklatschLaeuft = true;
             metronomKnopf();
-            for (let i = 0; i < proTakt; i++) {
-                const wann = start + i * schlagDauer;
-                vorklatschKnoten.push(metronomKlick(ctx, wann, i === 0));
-                vorklatschUhren.push(setTimeout(() => metronomPulsZeichnen(i), Math.max(0, (wann - ctx.currentTime) * 1000)));
-            }
 
-            let t = start + proTakt * schlagDauer;
-            noten.forEach(b => b.teile.forEach(teil => {
-                if (!teil.p) vorklatschKnoten.push(klatschKlang(ctx, t));
-                t += teil.d * viertel;
-            }));
+            /* Alle Durchgaenge auf einen Schlag einplanen: Die Audiouhr haelt sie
+               praeziser zusammen als jeder nachtraegliche Timer, und der Stopp-Knopf
+               raeumt sie ohnehin alle gemeinsam weg. */
+            const stueckDauer = rhythmusDauer(noten) * viertel;
+            const zyklus = proTakt * schlagDauer + stueckDauer + (male > 1 ? VORKLATSCH_PAUSE : 0);
+            let t = start;
+            for (let durchgang = 0; durchgang < male; durchgang++) {
+                const beginn = start + durchgang * zyklus;
+                for (let i = 0; i < proTakt; i++) {
+                    const wann = beginn + i * schlagDauer;
+                    vorklatschKnoten.push(metronomKlick(ctx, wann, i === 0));
+                    vorklatschUhren.push(setTimeout(() => metronomPulsZeichnen(i), Math.max(0, (wann - ctx.currentTime) * 1000)));
+                }
+                t = beginn + proTakt * schlagDauer;
+                noten.forEach(b => b.teile.forEach(teil => {
+                    if (!teil.p) vorklatschKnoten.push(klatschKlang(ctx, t));
+                    t += teil.d * viertel;
+                }));
+                if (male > 1) {
+                    const nr = durchgang + 1;
+                    vorklatschUhren.push(setTimeout(() => {
+                        metronomPulsZeichnen(-1);
+                        showToast(`Durchgang ${nr} von ${male}${nr < male ? ' - gleich kommt der nächste' : ''}`, "info");
+                    }, Math.max(0, (t - ctx.currentTime) * 1000)));
+                }
+            }
             vorklatschUhren.push(setTimeout(() => {
                 vorklatschLaeuft = false;
                 vorklatschKnoten = [];
                 metronomPulsZeichnen(-1);
                 metronomKnopf();
             }, Math.max(0, (t - ctx.currentTime) * 1000 + 200)));
-            showToast("Einzähler läuft - danach kommt der Rhythmus.", "info");
+            showToast(male > 1 ? `Dreimal vorklatschen mit ${VORKLATSCH_PAUSE} Sekunden Pause - Einzähler läuft.`
+                                : "Einzähler läuft - danach kommt der Rhythmus.", "info");
         }
 
         function metronomKlick(ctx, zeit, betont) {
@@ -4783,6 +4813,8 @@
 
         function metronomKnopf() {
             metronomJedeAnsicht((wurzel, teil) => {
+                const a = teil('autoplay');
+                if (a) a.classList.toggle('hidden', vorklatschLaeuft);
                 const v = teil('vorklatsch');
                 if (v) {
                     v.innerHTML = vorklatschLaeuft
@@ -4989,7 +5021,7 @@
                 /* Der Rhythmus kommt mit: So kann man vom Handy vorhoeren, bevor man
                    ihn der Klasse gibt. Kommt keiner mit, gilt der der laufenden Runde. */
                 if (p.zeichen) rhythmusEntwurf.zeichen = p.zeichen;
-                rhythmusVorklatschen(p.loesung || '');
+                rhythmusVorklatschen(p.loesung || '', p.male);
             }
         }
 
@@ -5052,6 +5084,12 @@
                 fernEntwurf.loesung = fernEditor ? fernEditor.lesen() : '';
                 if (!fernEntwurf.loesung) { showToast("Trage erst einen Rhythmus ein.", "danger"); return; }
                 fernSenden('vorklatsch', { bpm: fernMetronom.bpm, loesung: fernEntwurf.loesung, zeichen: fernEntwurf.zeichen });
+            });
+            getEl('fern-autoplay').addEventListener('click', () => {
+                fernEntwurf.loesung = fernEditor ? fernEditor.lesen() : '';
+                if (!fernEntwurf.loesung) { showToast("Trage erst einen Rhythmus ein.", "danger"); return; }
+                fernSenden('vorklatsch', { bpm: fernMetronom.bpm, loesung: fernEntwurf.loesung,
+                                           zeichen: fernEntwurf.zeichen, male: VORKLATSCH_WIEDERHOLUNGEN });
             });
             getEl('fern-tempo-minus').addEventListener('click', () => { fernMetronom.bpm = Math.max(40, fernMetronom.bpm - 5); fernTempoAnzeigen(); });
             getEl('fern-tempo-plus').addEventListener('click', () => { fernMetronom.bpm = Math.min(200, fernMetronom.bpm + 5); fernTempoAnzeigen(); });
