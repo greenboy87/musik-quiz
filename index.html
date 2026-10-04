@@ -408,6 +408,8 @@
             background: rgba(255,255,255,.08); border: 1px solid rgba(148,163,184,.3); color: #e2e8f0;
         }
         .rhy-knopf:hover { background: rgba(255,255,255,.16); }
+        .rhy-knopf.an { background: rgba(139,92,246,.3); border-color: #a78bfa; color: #ede9fe; }
+        html[data-theme="light"] .rhy-knopf.an { background: #ddd6fe; border-color: #7c3aed; color: #4c1d95; }
         html[data-theme="light"] .rhy-knopf { background: #f1f5f9; border-color: #94a3b8; color: #1e293b; }
         html[data-theme="light"] .rhy-knopf:hover { background: #e2e8f0; }
         html[data-theme="light"] .rhy-stand { color: #475569; }
@@ -4650,7 +4652,20 @@
            Ein Timer im Browser verrutscht um zig Millisekunden, und ausgerechnet
            ein Metronom darf das nicht. */
         const METRONOM_SCHLAEGE = { '2/4': 2, '3/4': 3, '4/4': 4, '6/8': 6 };
-        let metronom = { bpm: 90, takte: 1, laeuft: false, uhr: null, naechste: 0, schlag: 0, takt: 0, sichtbar: [] };
+        let metronom = { bpm: 90, takte: 1, laeuft: false, uhr: null, naechste: 0, schlag: 0, takt: 0, sichtbar: [],
+                         /* Klickt das Metronom auch waehrend des Vorklatschens weiter?
+                            Eine Einstellung der Lehrkraft, keine der Runde - sie
+                            ueberlebt deshalb das Neuladen. */
+                         mit: localStorage.getItem('metronom-mitzaehlen') === '1' };
+
+        function metronomMitUmschalten() {
+            metronom.mit = !metronom.mit;
+            localStorage.setItem('metronom-mitzaehlen', metronom.mit ? '1' : '0');
+            metronomKnopf();
+            showToast(metronom.mit
+                ? "Das Metronom zählt jetzt durch - auch während vorgeklatscht wird."
+                : "Das Metronom zählt nur noch ein und ist dann still.", "info");
+        }
 
         function metronomSchlaege() {
             return METRONOM_SCHLAEGE[rhythmusEntwurf.zeichen] || rhythmusEntwurf.soll || 4;
@@ -4683,6 +4698,10 @@
                     ${kompakt ? '' : '<input type="range" min="40" max="200" value="90" step="1" data-rolle="regler" class="flex-1 min-w-[6rem] accent-violet-500">'}
                     <span class="text-[11px] font-bold text-slate-400">Takte</span>
                     <span data-rolle="takte" class="flex gap-1"></span>
+                    <button type="button" data-rolle="mit" class="rhy-knopf"
+                            title="Das Metronom klickt auch während des Vorklatschens weiter, statt nur einzuzählen">
+                        <i class="fa-solid fa-wave-square"></i> Mitzählen
+                    </button>
                     <button type="button" data-rolle="vorklatsch"
                             class="ml-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-1.5 px-3 rounded-lg text-xs transition-all active:scale-95"
                             title="Zählt einen Takt ein und klatscht den eingegebenen Rhythmus vor">
@@ -4702,6 +4721,7 @@
             teil('minus').addEventListener('click', () => metronomTempo(-5));
             teil('plus').addEventListener('click', () => metronomTempo(5));
             teil('start').addEventListener('click', () => metronomUmschalten());
+            teil('mit').addEventListener('click', () => metronomMitUmschalten());
             teil('vorklatsch').addEventListener('click', () => rhythmusVorklatschen());
             teil('autoplay').addEventListener('click', () => rhythmusVorklatschen('', VORKLATSCH_WIEDERHOLUNGEN));
             const regler = teil('regler');
@@ -4867,10 +4887,17 @@
             let t = start;
             for (let durchgang = 0; durchgang < male; durchgang++) {
                 const beginn = start + durchgang * zyklus;
-                for (let i = 0; i < proTakt; i++) {
+                /* Mit "Mitzählen" laeuft das Metronom ueber den Einzaehler hinaus
+                   durch das Stueck weiter - die Klasse hat dann waehrend des
+                   Klatschens einen Puls. Die Pause zwischen zwei Durchgaengen
+                   bleibt still: Sie ist kein ganzzahliges Vielfaches eines
+                   Schlages, ein Weiterticken liefe gegen den naechsten Einzaehler. */
+                const schlaege = proTakt + (metronom.mit ? Math.round(stueckDauer / schlagDauer) : 0);
+                for (let i = 0; i < schlaege; i++) {
                     const wann = beginn + i * schlagDauer;
-                    vorklatschKnoten.push(metronomKlick(ctx, wann, i === 0));
-                    vorklatschUhren.push(setTimeout(() => metronomPulsZeichnen(i), Math.max(0, (wann - ctx.currentTime) * 1000)));
+                    const imTakt = i % proTakt;
+                    vorklatschKnoten.push(metronomKlick(ctx, wann, imTakt === 0));
+                    vorklatschUhren.push(setTimeout(() => metronomPulsZeichnen(imTakt), Math.max(0, (wann - ctx.currentTime) * 1000)));
                 }
                 t = beginn + proTakt * schlagDauer;
                 noten.forEach(b => b.teile.forEach(teil => {
@@ -4891,8 +4918,9 @@
                 metronomPulsZeichnen(-1);
                 metronomKnopf();
             }, Math.max(0, (t - ctx.currentTime) * 1000 + 200)));
-            showToast(male > 1 ? `Dreimal vorklatschen mit ${VORKLATSCH_PAUSE} Sekunden Pause - Einzähler läuft.`
-                                : "Einzähler läuft - danach kommt der Rhythmus.", "info");
+            const mitHinweis = metronom.mit ? " Das Metronom zählt durch." : "";
+            showToast((male > 1 ? `Dreimal vorklatschen mit ${VORKLATSCH_PAUSE} Sekunden Pause - Einzähler läuft.`
+                                : "Einzähler läuft - danach kommt der Rhythmus.") + mitHinweis, "info");
         }
 
         function metronomKlick(ctx, zeit, betont) {
@@ -4962,6 +4990,8 @@
 
         function metronomKnopf() {
             metronomJedeAnsicht((wurzel, teil) => {
+                const m = teil('mit');
+                if (m) m.className = 'rhy-knopf' + (metronom.mit ? ' an' : '');
                 const a = teil('autoplay');
                 if (a) a.classList.toggle('hidden', vorklatschLaeuft);
                 const v = teil('vorklatsch');
