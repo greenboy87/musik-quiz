@@ -4890,49 +4890,6 @@
             return ctx;
         }
 
-        /* Eine frisch gebaute Tonausgabe meldet "running", bevor sie wirklich
-           Ton liefert: Auf dem Mac dauert es je nach Ausgabegeraet - HDMI zum
-           Beamer, Bluetooth-Box - bis zu einer Sekunde, bis der Datenstrom
-           steht. In dieser Zeit laeuft ctx.currentTime schon, die Toene in
-           diesem Fenster sind aber nicht zu hoeren, und alles, was sich nach
-           der Uhr richtet, geht dem Ton voraus. Genau so sah man den Einzaehler
-           blinken, bevor man ihn hoerte, und der erste Takt fehlte ganz.
-
-           Geprueft wird deshalb nicht der gemeldete Zustand, sondern ob die
-           Audiouhr im Gleichschritt mit der Wanduhr laeuft. Erst dann wird
-           geplant. */
-        function audioUhrBereit(ctx, dann) {
-            const angefangen = performance.now();
-            const messen = () => {
-                const a = ctx.currentTime, w = performance.now();
-                setTimeout(() => {
-                    const ctxDelta = ctx.currentTime - a;
-                    const wandDelta = (performance.now() - w) / 1000;
-                    /* Laeuft die Audiouhr mit mindestens 80 % der echten Zeit, steht
-                       der Strom. Nach anderthalb Sekunden wird so oder so gespielt -
-                       stumm bleiben waere schlimmer als ein schiefer Anfang. */
-                    if (ctxDelta > wandDelta * 0.8 || performance.now() - angefangen > 1500) dann();
-                    else messen();
-                }, 60);
-            };
-            messen();
-        }
-
-        /* Was die Uhr sagt und was aus dem Lautsprecher kommt, liegt um die
-           Ausgabeverzoegerung auseinander. Bei den eingebauten Lautsprechern sind
-           das Millisekunden, bei Bluetooth ein bis zwei Zehntel - und bei AirPlay
-           an eine Box oder einen Beamer rund zwei Sekunden, also laenger als ein
-           ganzer Takt. Genau dann sieht man den Einzaehler blinken, hoert ihn erst
-           einen Takt spaeter, und die Markierung ist schon weitergewandert.
-
-           Hier wurde frueher bei 0,4 s abgeschnitten - damit war die Anzeige bei
-           AirPlay weiterhin anderthalb Sekunden voraus. Jetzt zaehlt der ganze
-           gemeldete Wert; nur voellig abwegige Angaben werden verworfen. */
-        function audioAusgabeVerzug(ctx) {
-            const roh = (typeof ctx.outputLatency === 'number' && ctx.outputLatency) || ctx.baseLatency || 0;
-            return (roh > 0 && roh < 5) ? roh : 0;
-        }
-
         /* Ein Klatschen: kurzes Rauschen mit scharfem Einsatz. Ein Sinuston klaenge
            wie ein zweites Metronom - man soll Taktschlag und Rhythmus auseinander
            halten koennen. */
@@ -4971,48 +4928,16 @@
            hoerbar schwanken. */
         let vorklatschUhren = [], vorklatschKnoten = [], vorklatschLaeuft = false;
 
-        /* Anzeige und Ton muessen an derselben Uhr haengen. Ein setTimeout laeuft
-           auf der Wanduhr, die Toene liegen auf der Audiouhr - und die beiden
-           gehen auseinander, sobald die Tonausgabe frisch gebaut wurde: Ihr
-           Datenstrom braucht einen Moment, bis er laeuft, waehrend das Fenster
-           schon blinkt. Genau so sah man den Schlag, bevor man ihn hoerte.
-           Deshalb werden Puls und Mitlese-Markierung nicht mehr vorausgeplant,
-           sondern abgerufen, wenn die Audiouhr ihre Zeit erreicht hat. */
-        let vorklatschFolge = [], vorklatschTakt = null;
-
-        function vorklatschAnzeigePlanen(zeit, tat) { vorklatschFolge.push({ zeit, tat }); }
-
-        function vorklatschAnzeigeStarten(ctx) {
-            vorklatschFolge.sort((a, b) => a.zeit - b.zeit);
-            if (vorklatschTakt) clearInterval(vorklatschTakt);
-            const verzug = audioAusgabeVerzug(ctx);
-            vorklatschTakt = setInterval(() => {
-                const jetzt = ctx.currentTime - verzug;
-                while (vorklatschFolge.length && vorklatschFolge[0].zeit <= jetzt) {
-                    const naechster = vorklatschFolge.shift();
-                    try { naechster.tat(); } catch (e) { /* Anzeige ist nie der Grund zum Abbrechen */ }
-                }
-                if (!vorklatschFolge.length) { clearInterval(vorklatschTakt); vorklatschTakt = null; }
-            }, 20);
-        }
-
-        function vorklatschAnzeigeStoppen() {
-            if (vorklatschTakt) { clearInterval(vorklatschTakt); vorklatschTakt = null; }
-            vorklatschFolge = [];
-        }
-
         /* Bricht ein laufendes Vorklatschen ab: Die Toene liegen im Voraus auf der
            Audiouhr, also muss jeder einzeln gestoppt werden - ein Stopp-Knopf, der
            nur ein Flag umlegt, waere wirkungslos. */
         function vorklatschStoppen(leise) {
             vorklatschUhren.forEach(clearTimeout);
             vorklatschUhren = [];
-            vorklatschAnzeigeStoppen();
             vorklatschKnoten.forEach(k => { try { k.stop(0); } catch (e) { /* schon vorbei */ } });
             vorklatschKnoten = [];
             if (vorklatschLaeuft && !leise) showToast("Vorklatschen abgebrochen.", "info");
             vorklatschLaeuft = false;
-            if (rhythmusLoesungsEditor) rhythmusLoesungsEditor.markieren(-1);
             metronomPulsZeichnen(-1);
             metronomKnopf();
         }
@@ -5023,36 +4948,21 @@
             if (vorklatschLaeuft) { vorklatschStoppen(); return; }
             const male = Math.max(1, Number(wiederholungen) || 1);
             const code = vorgabe || rhythmusZumVorklatschen();
-            /* Mitlesen geht nur, wenn im Lehrerfeld auch genau das steht, was
-               gleich klingt - sonst leuchtete ein fremdes Kaestchen. */
-            const mitleser = (rhythmusLoesungsEditor && rhythmusLoesungsEditor.lesen() === code)
-                ? rhythmusLoesungsEditor : null;
             const noten = rhythmusLesen(code);
             if (!noten.length) { showToast("Trage erst einen Rhythmus ein, der vorgeklatscht werden soll.", "danger"); return; }
-            const ctx = tonBereit(() => rhythmusVorklatschen(vorgabe, wiederholungen));
+            const ctx = tonBereit(() => rhythmusVorklatschen(vorgabe));
             if (!ctx) return;
             metronomStoppen();
-            /* Nicht sofort losplanen: Steht der Datenstrom noch nicht, waere der
-               erste Takt stumm und die Anzeige dem Ton voraus. */
-            vorklatschLaeuft = true;
-            metronomKnopf();
-            audioUhrBereit(ctx, () => vorklatschPlanen(ctx, noten, male, mitleser));
-        }
 
-        function vorklatschPlanen(ctx, noten, male, mitleser) {
-            // Wer waehrend des Wartens auf Stopp gedrueckt hat, will nichts mehr hoeren
-            if (!vorklatschLaeuft) return;
-            vorklatschUhren.forEach(clearTimeout);
-            vorklatschUhren = [];
-            vorklatschKnoten = [];
-            vorklatschAnzeigeStoppen();
             const schlagDauer = 60 / metronom.bpm;
             const proTakt = metronomSchlaege();
             // In 6/8 schlaegt das Metronom Achtel - eine Viertel dauert dann zwei Schlaege
             const viertel = schlagDauer * (metronomSchlaege() === 6 ? 2 : 1);
-            // Frische Ausgabe: erst hinter ihrer Totzone anfangen, sonst ist der
-            // erste Takt stumm, obwohl die Anzeige ihn zeigt.
-            const start = ctx.currentTime + audioVorlaufBedarf();
+            const start = ctx.currentTime + 0.15;
+
+            vorklatschStoppen(true);
+            vorklatschLaeuft = true;
+            metronomKnopf();
 
             /* Alle Durchgaenge auf einen Schlag einplanen: Die Audiouhr haelt sie
                praeziser zusammen als jeder nachtraegliche Timer, und der Stopp-Knopf
@@ -5061,6 +4971,7 @@
             /* Wie viele Takte vorgezaehlt wird, steht in der Leiste. "∞" meint das
                Metronom, das im Hintergrund durchlaeuft - als Vorlauf waere es
                sinnlos, dort zaehlt ein Takt ein. */
+            // "ohne" meint 0 Takte, "∞" gehoert dem Dauerlauf und zaehlt einen ein
             const vorlaufTakte = isFinite(metronom.takte) ? Math.max(0, metronom.takte) : 1;
             const vorlaufSchlaege = vorlaufTakte * proTakt;
             const zyklus = vorlaufSchlaege * schlagDauer + stueckDauer + (male > 1 ? VORKLATSCH_PAUSE : 0);
@@ -5077,39 +4988,27 @@
                     const wann = beginn + i * schlagDauer;
                     const imTakt = i % proTakt;
                     vorklatschKnoten.push(metronomKlick(ctx, wann, imTakt === 0));
-                    vorklatschAnzeigePlanen(wann, () => metronomPulsZeichnen(imTakt));
+                    vorklatschUhren.push(setTimeout(() => metronomPulsZeichnen(imTakt), Math.max(0, (wann - ctx.currentTime) * 1000)));
                 }
                 t = beginn + vorlaufSchlaege * schlagDauer;
-                /* Je Viertel ein Leuchten - so wandert die Markierung im Takt des
-                   Metronoms durch die Kaestchen, auch durch ein Zeichen, das
-                   laenger als eine Viertel ist. */
-                if (mitleser) {
-                    const viertelZahl = Math.round(rhythmusDauer(noten));
-                    for (let v = 0; v < viertelZahl; v++) {
-                        vorklatschAnzeigePlanen(t + v * viertel, () => mitleser.markieren(v));
-                    }
-                }
                 noten.forEach(b => b.teile.forEach(teil => {
                     if (!teil.p) vorklatschKnoten.push(klatschKlang(ctx, t));
                     t += teil.d * viertel;
                 }));
                 if (male > 1) {
                     const nr = durchgang + 1;
-                    vorklatschAnzeigePlanen(t, () => {
+                    vorklatschUhren.push(setTimeout(() => {
                         metronomPulsZeichnen(-1);
-                        if (mitleser) mitleser.markieren(-1);
                         showToast(`Durchgang ${nr} von ${male}${nr < male ? ' - gleich kommt der nächste' : ''}`, "info");
-                    });
+                    }, Math.max(0, (t - ctx.currentTime) * 1000)));
                 }
             }
-            vorklatschAnzeigePlanen(t + 0.2, () => {
+            vorklatschUhren.push(setTimeout(() => {
                 vorklatschLaeuft = false;
                 vorklatschKnoten = [];
                 metronomPulsZeichnen(-1);
-                if (mitleser) mitleser.markieren(-1);
                 metronomKnopf();
-            });
-            vorklatschAnzeigeStarten(ctx);
+            }, Math.max(0, (t - ctx.currentTime) * 1000 + 200)));
             const mitHinweis = metronom.mit ? " Das Metronom zählt durch." : "";
             const vorlaufWort = vorlaufTakte === 0 ? "Ohne Vorlauf"
                               : vorlaufTakte === 1 ? "Ein Takt Vorlauf" : `${vorlaufTakte} Takte Vorlauf`;
@@ -5137,23 +5036,18 @@
             const ctx = tonBereit(metronomStarten);
             if (!ctx) return;
             vorklatschStoppen(true);   // beides zugleich waere nur Krach
-            metronom.laeuft = true;
-            metronomKnopf();
-            metronomPulsZeichnen(-1);
-            // Auch hier erst loslegen, wenn der Datenstrom wirklich steht
-            audioUhrBereit(ctx, () => { if (metronom.laeuft) metronomLauf(ctx); });
-        }
-
-        function metronomLauf(ctx) {
             const proTakt = metronomSchlaege();
             /* "ohne" meint den Vorlauf, nicht das Metronom: Wer hier auf Start
                drueckt, will einen Takt hoeren und keine Stille. "∞" laeuft, bis
                er wieder drueckt. */
             const grenze = isFinite(metronom.takte) ? Math.max(1, metronom.takte) : 0;
+            metronom.laeuft = true;
             metronom.schlag = 0;
             metronom.takt = 0;
-            metronom.naechste = ctx.currentTime + audioVorlaufBedarf();
+            metronom.naechste = ctx.currentTime + 0.12;
             metronom.sichtbar = [];
+            metronomKnopf();
+            metronomPulsZeichnen(-1);
             /* Vorausschauend planen: Alle 25 ms wird nachgesehen, was in den
                naechsten 150 ms zu klingen hat, und genau auf die Audiouhr gelegt. */
             metronom.uhr = setInterval(() => {
@@ -5172,9 +5066,8 @@
                     if (grenze && metronom.takt >= grenze) { metronomStoppen(); return; }
                     const schlag = metronom.schlag, wann = metronom.naechste;
                     metronomKlick(ctx, wann, schlag === 0);
-                    /* Die Anzeige wartet die Ausgabeverzoegerung mit ab, sonst
-                       blinkt der Punkt vor dem Klick - bei Bluetooth deutlich. */
-                    const verzug = Math.max(0, (wann + audioAusgabeVerzug(ctx) - ctx.currentTime) * 1000);
+                    // Die Anzeige laeuft hinterher - sie haengt an derselben Uhr
+                    const verzug = Math.max(0, (wann - ctx.currentTime) * 1000);
                     metronom.sichtbar.push(setTimeout(() => metronomPulsZeichnen(schlag), verzug));
                     metronom.naechste += 60 / metronom.bpm;
                     metronom.schlag++;
@@ -6189,10 +6082,11 @@
                                          : `${zahl(dauer)} von ${zahl(gesamt)} Vierteln`;
             }
             zeichnen();
-            /* Beim Vorklatschen mitlesen: Das Kaestchen, in dem die gerade
-               gespielte Viertel steht, leuchtet. Gezaehlt wird in Vierteln vom
-               Anfang - ein Zeichen, das laenger ist als eine Viertel, bleibt
-               entsprechend mehrere Schlaege lang hell. */
+            /* Mitlesen beim Vorklatschen: Das Kaestchen, in dem die gerade
+               gespielte Viertel steht, leuchtet. Zurzeit ruft das niemand auf -
+               die Markierung hing an der Taktung, die gerade geprueft wird. Die
+               Funktion bleibt stehen, damit sie sich wieder anschalten laesst,
+               sobald klar ist, woran der Versatz liegt. */
             function markieren(viertel) {
                 const kaesten = [...anzeige.querySelectorAll('.rhy-platz')];
                 kaesten.forEach(k => k.classList.remove('jetzt'));
@@ -9691,43 +9585,8 @@
            Seite in Safari komplett stumm, waehrend dieselbe Ausgabe laut Messung
            einwandfrei lief. */
         let audioEntsperrt = false;
-        let audioCtxGebaut = 0;       // wann die Ausgabe zuletzt neu gebaut wurde
-
-        /* Die Totzone: Zwischen dem Aufbau einer Tonausgabe und dem ersten
-           hoerbaren Ton liegt beim Mac je nach Ausgabegeraet bis zu zwei
-           Sekunden - das Geraet wird erst geoeffnet. Die Uhr laeuft derweil,
-           also klingt alles, was in dieses Fenster geplant wird, nach nichts.
-           Genau das war der "tote Takt" vor dem Einzaehler.
-
-           Zwei Griffe dagegen: Die Ausgabe wird bei der ersten Beruehrung der
-           Seite aufgebaut statt erst beim ersten Ton - bis jemand auf
-           Vorklatschen drueckt, ist sie laengst wach. Und ist sie doch frisch,
-           bekommt der erste Ton mehr Vorlauf, damit er hinter der Totzone
-           liegt. */
-        function audioVorlaufBedarf() {
-            const alter = audioCtxGebaut ? (Date.now() - audioCtxGebaut) / 1000 : 99;
-            return alter < 3 ? Math.max(0.15, 2.2 - alter) : 0.15;
-        }
-
-        /* Bei der ersten Geste die Ausgabe oeffnen und offen halten. Der Hoerer
-           bleibt haengen, bis sie wirklich laeuft - eine abgelehnte Geste (etwa
-           ein Tastendruck ohne Fokus) soll den Versuch nicht verbrauchen. */
-        function audioFrueherWecken() {
-            try {
-                const c = ensureAudioContext();
-                if (!c) return;
-                if (c.state !== 'running') { c.resume().catch(() => {}); return; }
-                entsperreAudio(c);
-                ['pointerdown', 'touchstart', 'keydown'].forEach(ev =>
-                    document.removeEventListener(ev, audioFrueherWecken, true));
-            } catch (e) { /* dann eben beim naechsten Mal */ }
-        }
-        ['pointerdown', 'touchstart', 'keydown'].forEach(ev =>
-            document.addEventListener(ev, audioFrueherWecken, true));
         function entsperreAudio(ctx) {
-            if (!ctx) return;
-            wachHalten(ctx);
-            if (audioEntsperrt) return;
+            if (!ctx || audioEntsperrt) return;
             try {
                 const puffer = ctx.createBuffer(1, 1, 22050);
                 const quelle = ctx.createBufferSource();
@@ -9738,42 +9597,14 @@
             } catch (e) { /* dann eben beim naechsten Versuch */ }
         }
 
-        /* Haelt die Tonausgabe offen, solange die Seite benutzt wird.
-
-           Der Grund ist unangenehm: Solange das Ausgabegeraet noch nicht
-           geoeffnet ist, rendert der Browser den Ton ins Leere - die Uhr laeuft
-           dabei ganz normal weiter. Alles, was in diesem Fenster geplant wird,
-           ist also korrekt getaktet und trotzdem nicht zu hoeren, und wer sich
-           nach der Uhr richtet, laeuft dem Lautsprecher voraus. Genau so fehlte
-           der erste Takt des Einzaehlers, waehrend die Anzeige schon lief.
-
-           Ein unhoerbar leiser Dauerton haelt das Geraet offen: Ab der ersten
-           Beruehrung der Seite ist die Ausgabe wach, und der erste geplante
-           Klick ist auch der erste hoerbare. */
-        let wachKnoten = null, wachCtx = null;
-        function wachHalten(ctx) {
-            if (wachCtx === ctx && wachKnoten) return;
-            try {
-                const o = ctx.createOscillator(), g = ctx.createGain();
-                o.frequency.value = 30;
-                g.gain.value = 0.0000001;      // weit unter allem, was ein Ohr hoert
-                o.connect(g); g.connect(ctx.destination);
-                o.start();
-                wachKnoten = o;
-                wachCtx = ctx;
-            } catch (e) { /* ohne geht es auch, nur eben mit dem alten Problem */ }
-        }
-
         function baueAudioContextNeu(Ctor) {
             // Vorher schließen, sonst sammeln sich tote Contexts bis zum Browser-Limit.
             if (audioCtx) { try { audioCtx.close(); } catch (e) { /* schon zu, egal */ } }
             audioCtx = new Ctor();
-            audioCtxGebaut = Date.now();
             audioCtxZeitmarke = 0;
             audioCtxWanduhr = 0;
             audioGeraeteWechsel = false;
             audioEntsperrt = false;      // die neue Ausgabe will erneut freigeschaltet werden
-            wachKnoten = null; wachCtx = null;
             entsperreAudio(audioCtx);
             return audioCtx;
         }
