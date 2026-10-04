@@ -4616,6 +4616,7 @@
                     .catch(() => showToast("Der Ton ist gesperrt - tippe einmal irgendwo auf die Seite.", "danger"));
                 return null;
             }
+            entsperreAudio(ctx);
             // Marken fuer die Haenger-Erkennung der App mitfuehren
             audioCtxZeitmarke = ctx.currentTime;
             audioCtxWanduhr = Date.now();
@@ -9053,6 +9054,25 @@
             return wandDelta > 500 && ctxDelta < 0.05;
         }
 
+        /* Safari rendert eine frische Ausgabe still, bis einmal ein echter Puffer
+           ueber sie gelaufen ist - selbst wenn sie "running" meldet und Safari oben
+           sogar sein Lautsprechersymbol zeigt. Ein einziger stummer Puffer, in einer
+           Nutzergeste abgespielt, schaltet sie frei. Ohne diesen Handgriff blieb die
+           Seite in Safari komplett stumm, waehrend dieselbe Ausgabe laut Messung
+           einwandfrei lief. */
+        let audioEntsperrt = false;
+        function entsperreAudio(ctx) {
+            if (!ctx || audioEntsperrt) return;
+            try {
+                const puffer = ctx.createBuffer(1, 1, 22050);
+                const quelle = ctx.createBufferSource();
+                quelle.buffer = puffer;
+                quelle.connect(ctx.destination);
+                quelle.start(0);
+                audioEntsperrt = true;
+            } catch (e) { /* dann eben beim naechsten Versuch */ }
+        }
+
         function baueAudioContextNeu(Ctor) {
             // Vorher schließen, sonst sammeln sich tote Contexts bis zum Browser-Limit.
             if (audioCtx) { try { audioCtx.close(); } catch (e) { /* schon zu, egal */ } }
@@ -9060,6 +9080,8 @@
             audioCtxZeitmarke = 0;
             audioCtxWanduhr = 0;
             audioGeraeteWechsel = false;
+            audioEntsperrt = false;      // die neue Ausgabe will erneut freigeschaltet werden
+            entsperreAudio(audioCtx);
             return audioCtx;
         }
 
@@ -9126,10 +9148,13 @@
             pruefOsz.frequency.setValueAtTime(660, ctx.currentTime);
             pruefOsz.frequency.setValueAtTime(880, ctx.currentTime + 0.6);
             pruefOsz.frequency.setValueAtTime(660, ctx.currentTime + 1.2);
-            pruefGain.gain.setValueAtTime(0.0001, ctx.currentTime);
-            pruefGain.gain.exponentialRampToValueAtTime(0.35, ctx.currentTime + 0.05);
+            /* Lineare Rampen statt exponentieller: Eine exponentielle Rampe, die bei
+               fast null anfaengt, rechnet Safari gelegentlich zu null - der Ton waere
+               dann wieder still, ohne dass man es der Messung ansieht. */
+            pruefGain.gain.setValueAtTime(0, ctx.currentTime);
+            pruefGain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.05);
             pruefGain.gain.setValueAtTime(0.35, ctx.currentTime + 1.8);
-            pruefGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2);
+            pruefGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 2);
             pruefOsz.connect(pruefGain); pruefGain.connect(ctx.destination);
             pruefOsz.start(); pruefOsz.stop(ctx.currentTime + 2.05);
             showToast("Prüfton läuft zwei Sekunden – schau jetzt in die Adressleiste: Erscheint dort ein Lautsprechersymbol?", "info");
@@ -9154,8 +9179,8 @@
                 showToast("Tonausgabe steht still – meist übernimmt eine andere App die Ausgabe oder das Ausgabegerät hat gewechselt.", "danger");
                 zeigen(`❌ ${technik} – Ausgabe steht still`, 'text-rose-400');
             } else {
-                showToast("Die Seite hat zwei Sekunden lang Ton erzeugt. Nichts gehört? Dann hat Safari den Tab stummgeschaltet: Lautsprechersymbol in der Adressleiste anklicken (oder Rechtsklick auf den Tab ▸ Stummschaltung aufheben).", "info");
-                zeigen(`✅ ${technik} – Ton wird erzeugt. Nichts gehört? Safari hat den Tab stumm: Lautsprechersymbol in der Adressleiste anklicken.`, 'text-emerald-400');
+                showToast("Die Seite hat zwei Sekunden lang Ton erzeugt und die Ausgabe dabei freigeschaltet. Nichts gehört? Dann nochmal testen - der erste Versuch nach dem Laden schaltet in Safari nur frei. Hilft auch das nicht: Lautsprechersymbol in der Adressleiste prüfen und die Seite einmal in Chrome öffnen.", "info");
+                zeigen(`✅ ${technik} – Ton wird erzeugt, Ausgabe freigeschaltet. Nichts gehört? Noch einmal testen.`, 'text-emerald-400');
             }
         }
 
@@ -9175,6 +9200,8 @@
            einem Intervall und zählen nicht als Geste, könnten sich also nicht selbst
            befreien. */
         document.addEventListener('pointerdown', () => {
+            // Jede Geste ist die Gelegenheit, die Ausgabe freizuschalten
+            if (audioCtx && audioCtx.state === 'running') entsperreAudio(audioCtx);
             if (audioCtx && audioCtx.state !== 'running' && audioCtx.state !== 'closed') {
                 ensureAudioContext();
             }
