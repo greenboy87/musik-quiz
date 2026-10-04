@@ -1559,6 +1559,13 @@
                         <i class="fa-solid fa-cloud-arrow-down"></i> Wiederherstellen
                     </button>
                 </div>
+                <button
+                    onclick="CloudTresor.inhalt()"
+                    class="w-full px-4 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-slate-300 rounded-2xl text-xs font-bold transition-all active:scale-95"
+                >
+                    <i class="fa-solid fa-list"></i> Was liegt drin? (nur ansehen)
+                </button>
+                <div id="cloud-inhalt" class="hidden text-xs leading-normal bg-slate-950/60 border border-slate-800 rounded-xl p-3 max-h-48 overflow-auto"></div>
                 <div class="flex gap-2">
                     <button
                         onclick="CloudTresor.disconnect()"
@@ -2473,6 +2480,46 @@
                     if (laut) showToast("Sichern fehlgeschlagen: " + this.fehlertext(e), "danger");
                 } finally {
                     this.amLaufen = false;
+                }
+            },
+
+            /* Zeigt an, was in der Sicherung steckt und was auf diesem Geraet liegt -
+               Sitzung fuer Sitzung, mit Teams und Punkten. Rein lesend: Wer wissen
+               will, warum nach dem Wiederherstellen andere Teams dastehen, sieht hier
+               sofort, ob die Sicherung sie ueberhaupt enthaelt. */
+            async inhalt() {
+                const ziel = getEl('cloud-inhalt');
+                if (!ziel) return;
+                ziel.classList.remove('hidden');
+                if (!this.active()) {
+                    ziel.innerHTML = '<span class="text-rose-400">Erst verbinden – ohne Passwort lässt sich die Sicherung nicht lesen.</span>';
+                    return;
+                }
+                ziel.innerHTML = '<span class="text-slate-400">Wird geladen …</span>';
+                const liste = (daten) => {
+                    const cls = (daten && daten.classes) || {};
+                    const namen = Object.keys(cls).filter(n => n !== 'Standard-Sitzung');
+                    if (!namen.length) return '<div class="text-slate-500">keine benannten Sitzungen</div>';
+                    return namen.map(n => {
+                        const teams = (cls[n] && cls[n].teams) || [];
+                        const punkte = teams.map(t => `${escapeHtml(t && t.name ? t.name : '?')} ${t && typeof t.score === 'number' ? t.score : 0}`).join(' · ');
+                        return `<div class="mb-1"><span class="font-black text-violet-300">${escapeHtml(n)}</span>` +
+                               ` <span class="text-slate-400">(Runde ${(cls[n] && cls[n].currentRound) || 1}, ${teams.length} ${teams.length === 1 ? 'Team' : 'Teams'})</span>` +
+                               (punkte ? `<div class="text-slate-400">${punkte}</div>` : '') + `</div>`;
+                    }).join('');
+                };
+                try {
+                    const snap = await window.fbGet(window.fbRef(window.fbDb, `${this.PFAD}/${this.id}`));
+                    const paket = snap.val();
+                    const fern = paket ? await this.entschluesseln(paket) : null;
+                    ziel.innerHTML =
+                        `<div class="font-black text-emerald-400 mb-1">In der Cloud` +
+                        (paket ? ` (${this.zeit(paket.stand)}, ${paket.geraet || 'unbekanntes Gerät'})` : '') + `:</div>` +
+                        (fern ? liste(fern) : '<div class="text-slate-500">nichts gesichert</div>') +
+                        `<div class="font-black text-sky-400 mt-2 mb-1">Auf diesem Gerät:</div>` +
+                        liste(this.localData());
+                } catch (e) {
+                    ziel.innerHTML = `<span class="text-rose-400">Konnte nicht gelesen werden: ${this.fehlertext(e)}</span>`;
                 }
             },
 
