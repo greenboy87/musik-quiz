@@ -373,10 +373,6 @@
         .rhy-platz.ziel { border-color: #a78bfa; background: rgba(139,92,246,.25); }
         /* Die Viertel, die gerade klingt - zum Mitlesen beim Vorklatschen */
         .rhy-platz.jetzt { border-color: #fbbf24; background: rgba(251,191,36,.3); }
-        html[data-theme="light"] .rhy-platz.jetzt { border-color: #d97706; background: #fde68a; }
-        /* Die Viertel, die gerade klingt - zum Mitlesen beim Vorklatschen */
-        .rhy-platz.jetzt { border-color: #fbbf24; background: rgba(251,191,36,.3); }
-        html[data-theme="light"] .rhy-platz.jetzt { border-color: #d97706; background: #fde68a; }
         /* Die Taktangabe vor dem ersten Kaestchen - zwei Zahlen uebereinander,
            wie im Heft. Flex 0, damit sie beim Verteilen der Breite nicht mitwaechst. */
         .rhy-zeichen {
@@ -389,6 +385,10 @@
         html[data-theme="light"] .rhy-anzeige { background: #fff; border-color: #cbd5e1; color: #0f172a; }
         html[data-theme="light"] .rhy-platz.leer { border-color: #cbd5e1; background: #f1f5f9; }
         html[data-theme="light"] .rhy-platz.voll { border-color: #94a3b8; background: #fff; }
+        /* Muss hinter den beiden Regeln darueber stehen: Sie sind genauso
+           spezifisch, also gewinnt die spaetere - vorher ueberschrieb ein volles
+           Kaestchen die Markierung, und im hellen Layout war sie unsichtbar. */
+        html[data-theme="light"] .rhy-platz.jetzt { border-color: #d97706; background: #fde68a; }
         /* Das Fragment, das gerade am Finger haengt */
         .rhy-geist {
             position: fixed; z-index: 9999; pointer-events: none; opacity: .9;
