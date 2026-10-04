@@ -1240,7 +1240,7 @@
                         title="Startet das Vorklatschen am Beamer - noch einmal drücken hält es an">
                     <i class="fa-solid fa-hands-clapping mr-1"></i> Vorklatschen / Stopp
                 </button>
-                <button type="button" id="fern-autoplay" class="bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 px-3 rounded-xl text-xs active:scale-95"
+                <button type="button" id="fern-autoplay" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 px-3 rounded-xl text-xs active:scale-95"
                         title="Dreimal vorklatschen mit fünf Sekunden Pause">
                     <i class="fa-solid fa-repeat mr-1"></i> 3×
                 </button>
@@ -1974,7 +1974,7 @@
                 <div class="flex gap-1.5">
                     <button
                         onclick="undoLastScoring()"
-                        class="text-[11px] bg-amber-600 hover:bg-amber-500 text-slate-950 px-3 py-1 rounded-lg transition-all font-black font-sans active:scale-95"
+                        class="text-[11px] bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-1 rounded-lg transition-all font-black font-sans active:scale-95"
                         title="Letzte Bewertung zurücknehmen - das Antwort-Kärtchen kommt zurück in die Liste"
                     >
                         <i class="fa-solid fa-rotate-left mr-1"></i> Bewertung zurück
@@ -4708,7 +4708,7 @@
                         <i class="fa-solid fa-hands-clapping mr-1"></i> Vorklatschen
                     </button>
                     <button type="button" data-rolle="autoplay"
-                            class="bg-amber-600 hover:bg-amber-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-all active:scale-95"
+                            class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-1.5 px-3 rounded-lg text-xs transition-all active:scale-95"
                             title="Spielt den Rhythmus dreimal vor, mit fünf Sekunden Pause dazwischen">
                         <i class="fa-solid fa-repeat mr-1"></i> 3×
                     </button>
@@ -4769,7 +4769,7 @@
                     b.title = n
                         ? `${n} ${n === 1 ? 'Takt' : 'Takte'} Vorlauf vor dem Vorklatschen; „Start" schlägt ebenso lang`
                         : 'Metronom läuft mit „Start" durch, bis du es anhältst - vorgezählt wird dann ein Takt';
-                    if (metronom.takte === n) b.style.cssText = 'background:rgba(139,92,246,.3); border-color:#a78bfa; color:#ede9fe';
+                    if (metronom.takte === n) b.className = 'rhy-knopf an';
                     b.addEventListener('click', () => { metronom.takte = n; metronomTakteZeichnen(); });
                     ziel.appendChild(b);
                 });
@@ -5062,9 +5062,7 @@
             [['2/4', 2], ['3/4', 3], ['4/4', 4], ['6/8', 3]].forEach(([wort, viertel], i) => {
                 const b = document.createElement('button');
                 b.type = 'button';
-                b.className = 'rhy-knopf' + (rhythmusEntwurf.soll === viertel && rhythmusEntwurf.zeichen === wort ? ' an' : '');
-                b.style.cssText = rhythmusEntwurf.zeichen === wort
-                    ? 'background:rgba(139,92,246,.3); border-color:#a78bfa; color:#ede9fe' : '';
+                b.className = 'rhy-knopf' + (rhythmusEntwurf.zeichen === wort ? ' an' : '');
                 b.textContent = wort;
                 b.addEventListener('click', () => {
                     rhythmusEntwurf.soll = viertel;
@@ -5318,7 +5316,7 @@
             [['1', 1], ['2', 2], ['3', 3], ['4', 4], ['∞', 0]].forEach(([wort, n]) => {
                 const b = document.createElement('button');
                 b.type = 'button'; b.className = 'rhy-knopf'; b.textContent = wort;
-                if (fernMetronom.takte === n) b.style.cssText = 'background:rgba(139,92,246,.3); border-color:#a78bfa; color:#ede9fe';
+                if (fernMetronom.takte === n) b.className = 'rhy-knopf an';
                 b.addEventListener('click', () => { fernMetronom.takte = n; fernTakteZeichnen(); });
                 ziel.appendChild(b);
             });
@@ -5330,7 +5328,7 @@
             [['2/4', 2], ['3/4', 3], ['4/4', 4], ['6/8', 3]].forEach(([wort, viertel]) => {
                 const b = document.createElement('button');
                 b.type = 'button'; b.className = 'rhy-knopf'; b.textContent = wort;
-                if (fernEntwurf.zeichen === wort) b.style.cssText = 'background:rgba(139,92,246,.3); border-color:#a78bfa; color:#ede9fe';
+                if (fernEntwurf.zeichen === wort) b.className = 'rhy-knopf an';
                 b.addEventListener('click', () => {
                     fernEntwurf.soll = viertel; fernEntwurf.zeichen = wort;
                     fernTaktwahlZeichnen(); fernEditorNeu();
