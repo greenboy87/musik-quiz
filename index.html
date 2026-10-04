@@ -4888,6 +4888,42 @@
             return ctx;
         }
 
+        /* Eine frisch gebaute Tonausgabe meldet "running", bevor sie wirklich
+           Ton liefert: Auf dem Mac dauert es je nach Ausgabegeraet - HDMI zum
+           Beamer, Bluetooth-Box - bis zu einer Sekunde, bis der Datenstrom
+           steht. In dieser Zeit laeuft ctx.currentTime schon, die Toene in
+           diesem Fenster sind aber nicht zu hoeren, und alles, was sich nach
+           der Uhr richtet, geht dem Ton voraus. Genau so sah man den Einzaehler
+           blinken, bevor man ihn hoerte, und der erste Takt fehlte ganz.
+
+           Geprueft wird deshalb nicht der gemeldete Zustand, sondern ob die
+           Audiouhr im Gleichschritt mit der Wanduhr laeuft. Erst dann wird
+           geplant. */
+        function audioUhrBereit(ctx, dann) {
+            const angefangen = performance.now();
+            const messen = () => {
+                const a = ctx.currentTime, w = performance.now();
+                setTimeout(() => {
+                    const ctxDelta = ctx.currentTime - a;
+                    const wandDelta = (performance.now() - w) / 1000;
+                    /* Laeuft die Audiouhr mit mindestens 80 % der echten Zeit, steht
+                       der Strom. Nach anderthalb Sekunden wird so oder so gespielt -
+                       stumm bleiben waere schlimmer als ein schiefer Anfang. */
+                    if (ctxDelta > wandDelta * 0.8 || performance.now() - angefangen > 1500) dann();
+                    else messen();
+                }, 60);
+            };
+            messen();
+        }
+
+        /* Was die Uhr sagt und was aus dem Lautsprecher kommt, liegt noch einmal
+           um die Ausgabeverzoegerung auseinander - bei Bluetooth sind das leicht
+            200 ms. Die Anzeige wartet sie mit ab. */
+        function audioAusgabeVerzug(ctx) {
+            const v = (typeof ctx.outputLatency === 'number' && ctx.outputLatency) || ctx.baseLatency || 0;
+            return Math.min(0.4, v);
+        }
+
         /* Ein Klatschen: kurzes Rauschen mit scharfem Einsatz. Ein Sinuston klaenge
            wie ein zweites Metronom - man soll Taktschlag und Rhythmus auseinander
            halten koennen. */
@@ -4940,8 +4976,9 @@
         function vorklatschAnzeigeStarten(ctx) {
             vorklatschFolge.sort((a, b) => a.zeit - b.zeit);
             if (vorklatschTakt) clearInterval(vorklatschTakt);
+            const verzug = audioAusgabeVerzug(ctx);
             vorklatschTakt = setInterval(() => {
-                const jetzt = ctx.currentTime;
+                const jetzt = ctx.currentTime - verzug;
                 while (vorklatschFolge.length && vorklatschFolge[0].zeit <= jetzt) {
                     const naechster = vorklatschFolge.shift();
                     try { naechster.tat(); } catch (e) { /* Anzeige ist nie der Grund zum Abbrechen */ }
@@ -4986,16 +5023,25 @@
             const ctx = tonBereit(() => rhythmusVorklatschen(vorgabe, wiederholungen));
             if (!ctx) return;
             metronomStoppen();
+            /* Nicht sofort losplanen: Steht der Datenstrom noch nicht, waere der
+               erste Takt stumm und die Anzeige dem Ton voraus. */
+            vorklatschLaeuft = true;
+            metronomKnopf();
+            audioUhrBereit(ctx, () => vorklatschPlanen(ctx, noten, male, mitleser));
+        }
 
+        function vorklatschPlanen(ctx, noten, male, mitleser) {
+            // Wer waehrend des Wartens auf Stopp gedrueckt hat, will nichts mehr hoeren
+            if (!vorklatschLaeuft) return;
+            vorklatschUhren.forEach(clearTimeout);
+            vorklatschUhren = [];
+            vorklatschKnoten = [];
+            vorklatschAnzeigeStoppen();
             const schlagDauer = 60 / metronom.bpm;
             const proTakt = metronomSchlaege();
             // In 6/8 schlaegt das Metronom Achtel - eine Viertel dauert dann zwei Schlaege
             const viertel = schlagDauer * (metronomSchlaege() === 6 ? 2 : 1);
-            const start = ctx.currentTime + (ctx.currentTime < 0.3 ? 0.35 : 0.15);
-
-            vorklatschStoppen(true);
-            vorklatschLaeuft = true;
-            metronomKnopf();
+            const start = ctx.currentTime + 0.15;
 
             /* Alle Durchgaenge auf einen Schlag einplanen: Die Audiouhr haelt sie
                praeziser zusammen als jeder nachtraegliche Timer, und der Stopp-Knopf
@@ -5079,17 +5125,19 @@
             const ctx = tonBereit(metronomStarten);
             if (!ctx) return;
             vorklatschStoppen(true);   // beides zugleich waere nur Krach
-            const proTakt = metronomSchlaege();
             metronom.laeuft = true;
-            metronom.schlag = 0;
-            metronom.takt = 0;
-            /* Eine frisch gebaute Ausgabe braucht laenger, bis ihr Datenstrom
-               laeuft - mit zu wenig Vorlauf klingt der erste Schlag nach dem
-               ersten Blinken. */
-            metronom.naechste = ctx.currentTime + (ctx.currentTime < 0.3 ? 0.35 : 0.12);
-            metronom.sichtbar = [];
             metronomKnopf();
             metronomPulsZeichnen(-1);
+            // Auch hier erst loslegen, wenn der Datenstrom wirklich steht
+            audioUhrBereit(ctx, () => { if (metronom.laeuft) metronomLauf(ctx); });
+        }
+
+        function metronomLauf(ctx) {
+            const proTakt = metronomSchlaege();
+            metronom.schlag = 0;
+            metronom.takt = 0;
+            metronom.naechste = ctx.currentTime + 0.12;
+            metronom.sichtbar = [];
             /* Vorausschauend planen: Alle 25 ms wird nachgesehen, was in den
                naechsten 150 ms zu klingen hat, und genau auf die Audiouhr gelegt. */
             metronom.uhr = setInterval(() => {
@@ -5108,8 +5156,9 @@
                     if (metronom.takte && metronom.takt >= metronom.takte) { metronomStoppen(); return; }
                     const schlag = metronom.schlag, wann = metronom.naechste;
                     metronomKlick(ctx, wann, schlag === 0);
-                    // Die Anzeige laeuft hinterher - sie haengt an derselben Uhr
-                    const verzug = Math.max(0, (wann - ctx.currentTime) * 1000);
+                    /* Die Anzeige wartet die Ausgabeverzoegerung mit ab, sonst
+                       blinkt der Punkt vor dem Klick - bei Bluetooth deutlich. */
+                    const verzug = Math.max(0, (wann + audioAusgabeVerzug(ctx) - ctx.currentTime) * 1000);
                     metronom.sichtbar.push(setTimeout(() => metronomPulsZeichnen(schlag), verzug));
                     metronom.naechste += 60 / metronom.bpm;
                     metronom.schlag++;
