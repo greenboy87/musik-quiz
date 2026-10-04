@@ -2665,7 +2665,9 @@
                                  duelle: (snp.phase === 'aufdeckung' || snp.phase === 'ende') ? snpDuellstand() : null } : null,
                     // Nur Taktlaenge und erlaubte Bausteine - die Loesung bleibt hier
                     rhythmus: rhythmusRunde ? { soll: rhythmusRunde.soll, werte: rhythmusRunde.werte } : null,
-                    songabgabe: songabgabeAn
+                    songabgabe: songabgabeAn,
+                    // Wessen Antwort verworfen wurde, darf noch einmal abgeben
+                    freigabe: letzteFreigabe
                 });
             } catch(e) {
                 console.error("Fehler beim Senden des Updates:", e);
@@ -5239,6 +5241,27 @@
             }
         }
 
+        /* Wurde meine Antwort verworfen? Dann Feld leeren und wieder freigeben.
+           Die Marke merkt sich das Geraet, damit dieselbe Freigabe nach einem
+           Neuladen oder beim naechsten Rundensignal nicht erneut zuschlaegt. */
+        function freigabePruefen(freigabe) {
+            if (!freigabe || !freigabe.team) return;
+            const meinName = (localStorage.getItem('student_team_name') || '').toLowerCase();
+            if (!meinName || String(freigabe.team).toLowerCase() !== meinName) return;
+            const raum = localStorage.getItem('student_room_code');
+            const marke = String(freigabe.marke || '');
+            if (localStorage.getItem(`freigabe_${raum}`) === marke) return;
+            localStorage.setItem(`freigabe_${raum}`, marke);
+
+            localStorage.removeItem(`last_sub_round_${raum}`);
+            const feld = getEl('student-answer-input');
+            if (feld) { feld.value = ''; feld.disabled = false; }
+            if (rhythmusSchuelerEditor) rhythmusSchuelerEditor.setzen('');
+            updateStudentRound(studentCurrentRound, null);
+            showToast("Deine Antwort wurde verworfen - du kannst noch einmal abgeben.", "info");
+            playSound('down');
+        }
+
         /* ---------- Schuelergeraet ---------- */
         function rhythmusSchuelerZeigen(stand) {
             const kasten = getEl('rhythmus-eingabe'), text = getEl('text-eingabe');
@@ -7097,6 +7120,7 @@
                     sammelspielSchuelerZeigen(payload.sammel || null);
                     snpSchuelerZeigen(payload.snp || null);
                     rhythmusSchuelerZeigen(payload.rhythmus || null);
+                    freigabePruefen(payload.freigabe);
                     /* Fehlt das Feld (aeltere Sitzung), gilt "an" - so verhaelt sich
                        ein alter Raum wie bisher. */
                     songabgabeSchuelerZeigen(payload.songabgabe !== false);
@@ -8531,12 +8555,24 @@
             });
         }
 
+        /* Eine verworfene Antwort soll kein Team ausschliessen: Wer im Papierkorb
+           landet, bekommt sein Eingabefeld zurueck - leer - und darf in derselben
+           Runde noch einmal abgeben. Der Zeitstempel sorgt dafuer, dass jede
+           Freigabe genau einmal wirkt, auch wenn das Rundensignal mehrfach kommt. */
+        let letzteFreigabe = null;
+
         function removeLiveAnswerByIndex(idx) {
             // Schutz vor -1: sonst würde splice die letzte Antwort löschen, wenn die
             // angeklickte Karte in der Zwischenzeit schon verschwunden ist.
             if (idx < 0 || idx >= incomingAnswers.length) return;
+            const verworfen = incomingAnswers[idx];
             incomingAnswers.splice(idx, 1);
             renderIncomingAnswersList();
+            if (verworfen && verworfen.team) {
+                letzteFreigabe = { team: verworfen.team, runde: currentRound, marke: Date.now() };
+                broadcastControlState();
+                showToast(`Antwort von „${verworfen.team}" verworfen - das Team kann neu abgeben.`, "info");
+            }
         }
 
         function clearIncomingAnswers() {
