@@ -4601,6 +4601,27 @@
         }
         function metronomTempo(schritt) { metronomTempoSetzen(metronom.bpm + schritt); }
 
+        /* Holt eine Ausgabe, die wirklich spielt - und nicht nur eine, die es
+           verspricht. Safari startet eine frisch gebaute Ausgabe als 'suspended';
+           wer dann sofort Toene einplant, legt sie in eine schlafende Uhr, und es
+           bleibt still. Deshalb hier aufwecken und den Aufruf danach wiederholen,
+           genau wie es playSound seit jeher macht. */
+        function tonBereit(nochmal) {
+            const ctx = ensureAudioContext();
+            if (!ctx) { showToast("Dieses Gerät gibt keinen Ton aus.", "danger"); return null; }
+            if (ctx.state !== 'running') {
+                const wartender = ctx;
+                wartender.resume()
+                    .then(() => { if (wartender.state === 'running' && typeof nochmal === 'function') nochmal(); })
+                    .catch(() => showToast("Der Ton ist gesperrt - tippe einmal irgendwo auf die Seite.", "danger"));
+                return null;
+            }
+            // Marken fuer die Haenger-Erkennung der App mitfuehren
+            audioCtxZeitmarke = ctx.currentTime;
+            audioCtxWanduhr = Date.now();
+            return ctx;
+        }
+
         /* Ein Klatschen: kurzes Rauschen mit scharfem Einsatz. Ein Sinuston klaenge
            wie ein zweites Metronom - man soll Taktschlag und Rhythmus auseinander
            halten koennen. */
@@ -4641,9 +4662,8 @@
             const code = vorgabe || rhythmusZumVorklatschen();
             const noten = rhythmusLesen(code);
             if (!noten.length) { showToast("Trage erst einen Rhythmus ein, der vorgeklatscht werden soll.", "danger"); return; }
-            const ctx = ensureAudioContext();
-            if (!ctx) { showToast("Dieses Gerät gibt keinen Ton aus.", "danger"); return; }
-            if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+            const ctx = tonBereit(() => rhythmusVorklatschen(vorgabe));
+            if (!ctx) return;
             metronomStoppen();
 
             const schlagDauer = 60 / metronom.bpm;
@@ -4685,9 +4705,8 @@
         }
 
         function metronomStarten() {
-            const ctx = ensureAudioContext();
-            if (!ctx) { showToast("Dieses Gerät gibt keinen Ton aus.", "danger"); return; }
-            if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+            const ctx = tonBereit(metronomStarten);
+            if (!ctx) return;
             const proTakt = metronomSchlaege();
             metronom.laeuft = true;
             metronom.schlag = 0;
@@ -4700,6 +4719,16 @@
                naechsten 150 ms zu klingen hat, und genau auf die Audiouhr gelegt. */
             metronom.uhr = setInterval(() => {
                 if (!metronom.laeuft) return;
+                /* Faellt die Ausgabe im Betrieb weg - anderes Programm, Kopfhoerer,
+                   Beamer per HDMI -, tickt es sonst stumm weiter. Dann lieber
+                   anhalten und es sagen. */
+                if (ctx.state !== 'running') {
+                    metronomStoppen();
+                    showToast("Der Ton ist weggebrochen - Metronom gestoppt. Noch einmal starten.", "danger");
+                    return;
+                }
+                audioCtxZeitmarke = ctx.currentTime;
+                audioCtxWanduhr = Date.now();
                 while (metronom.naechste < ctx.currentTime + 0.15) {
                     if (metronom.takte && metronom.takt >= metronom.takte) { metronomStoppen(); return; }
                     const schlag = metronom.schlag, wann = metronom.naechste;
