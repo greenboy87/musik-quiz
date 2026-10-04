@@ -1234,8 +1234,9 @@
                 <button type="button" id="fern-metronom" class="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-bold py-2 rounded-xl text-xs active:scale-95">
                     <i class="fa-solid fa-play mr-1"></i> Metronom
                 </button>
-                <button type="button" id="fern-vorklatsch" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded-xl text-xs active:scale-95">
-                    <i class="fa-solid fa-hands-clapping mr-1"></i> Vorklatschen
+                <button type="button" id="fern-vorklatsch" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded-xl text-xs active:scale-95"
+                        title="Startet das Vorklatschen am Beamer - noch einmal drücken hält es an">
+                    <i class="fa-solid fa-hands-clapping mr-1"></i> Vorklatschen / Stopp
                 </button>
             </div>
         </div>
@@ -4646,6 +4647,7 @@
             g.gain.setValueAtTime(0.9, zeit);
             quelle.connect(filter); filter.connect(g); g.connect(ctx.destination);
             quelle.start(zeit);
+            return quelle;   // damit sich ein laufendes Vorklatschen abbrechen laesst
         }
 
         /* Welcher Rhythmus wird vorgeklatscht? Steht das Fenster offen, das, was
@@ -4660,8 +4662,24 @@
         /* Einzaehlen und vorklatschen: ein Takt Metronom, dann der Rhythmus selbst.
            Alles im Voraus auf die Audiouhr gelegt - nachtraeglich getaktet wuerde es
            hoerbar schwanken. */
-        let vorklatschUhren = [];
+        let vorklatschUhren = [], vorklatschKnoten = [], vorklatschLaeuft = false;
+
+        /* Bricht ein laufendes Vorklatschen ab: Die Toene liegen im Voraus auf der
+           Audiouhr, also muss jeder einzeln gestoppt werden - ein Stopp-Knopf, der
+           nur ein Flag umlegt, waere wirkungslos. */
+        function vorklatschStoppen(leise) {
+            vorklatschUhren.forEach(clearTimeout);
+            vorklatschUhren = [];
+            vorklatschKnoten.forEach(k => { try { k.stop(0); } catch (e) { /* schon vorbei */ } });
+            vorklatschKnoten = [];
+            if (vorklatschLaeuft && !leise) showToast("Vorklatschen abgebrochen.", "info");
+            vorklatschLaeuft = false;
+            metronomPulsZeichnen(-1);
+            metronomKnopf();
+        }
+
         function rhythmusVorklatschen(vorgabe) {
+            if (vorklatschLaeuft) { vorklatschStoppen(); return; }
             const code = vorgabe || rhythmusZumVorklatschen();
             const noten = rhythmusLesen(code);
             if (!noten.length) { showToast("Trage erst einen Rhythmus ein, der vorgeklatscht werden soll.", "danger"); return; }
@@ -4675,20 +4693,26 @@
             const viertel = schlagDauer * (metronomSchlaege() === 6 ? 2 : 1);
             const start = ctx.currentTime + 0.15;
 
-            vorklatschUhren.forEach(clearTimeout);
-            vorklatschUhren = [];
+            vorklatschStoppen(true);
+            vorklatschLaeuft = true;
+            metronomKnopf();
             for (let i = 0; i < proTakt; i++) {
                 const wann = start + i * schlagDauer;
-                metronomKlick(ctx, wann, i === 0);
+                vorklatschKnoten.push(metronomKlick(ctx, wann, i === 0));
                 vorklatschUhren.push(setTimeout(() => metronomPulsZeichnen(i), Math.max(0, (wann - ctx.currentTime) * 1000)));
             }
 
             let t = start + proTakt * schlagDauer;
             noten.forEach(b => b.teile.forEach(teil => {
-                if (!teil.p) klatschKlang(ctx, t);
+                if (!teil.p) vorklatschKnoten.push(klatschKlang(ctx, t));
                 t += teil.d * viertel;
             }));
-            vorklatschUhren.push(setTimeout(() => metronomPulsZeichnen(-1), Math.max(0, (t - ctx.currentTime) * 1000 + 200)));
+            vorklatschUhren.push(setTimeout(() => {
+                vorklatschLaeuft = false;
+                vorklatschKnoten = [];
+                metronomPulsZeichnen(-1);
+                metronomKnopf();
+            }, Math.max(0, (t - ctx.currentTime) * 1000 + 200)));
             showToast("Einzähler läuft - danach kommt der Rhythmus.", "info");
         }
 
@@ -4701,6 +4725,7 @@
             g.gain.exponentialRampToValueAtTime(0.0001, zeit + 0.05);
             o.connect(g); g.connect(ctx.destination);
             o.start(zeit); o.stop(zeit + 0.07);
+            return o;
         }
 
         function metronomUmschalten() {
@@ -4710,6 +4735,7 @@
         function metronomStarten() {
             const ctx = tonBereit(metronomStarten);
             if (!ctx) return;
+            vorklatschStoppen(true);   // beides zugleich waere nur Krach
             const proTakt = metronomSchlaege();
             metronom.laeuft = true;
             metronom.schlag = 0;
@@ -4757,6 +4783,16 @@
 
         function metronomKnopf() {
             metronomJedeAnsicht((wurzel, teil) => {
+                const v = teil('vorklatsch');
+                if (v) {
+                    v.innerHTML = vorklatschLaeuft
+                        ? '<i class="fa-solid fa-stop mr-1"></i> Stopp'
+                        : '<i class="fa-solid fa-hands-clapping mr-1"></i> Vorklatschen';
+                    v.className = (vorklatschLaeuft
+                        ? 'ml-auto bg-rose-600 hover:bg-rose-500 text-white'
+                        : 'ml-auto bg-amber-500 hover:bg-amber-400 text-slate-950') +
+                        ' font-bold py-1.5 px-3 rounded-lg text-xs transition-all active:scale-95';
+                }
                 const b = teil('start');
                 if (!b) return;
                 b.innerHTML = metronom.laeuft ? '<i class="fa-solid fa-stop mr-1"></i> Stopp'
