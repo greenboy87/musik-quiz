@@ -371,6 +371,14 @@
         .rhy-platz.leer { border: 2px dashed rgba(148,163,184,.4); background: rgba(255,255,255,.03); }
         .rhy-platz.voll { border: 2px solid rgba(148,163,184,.35); background: rgba(255,255,255,.08); cursor: pointer; }
         .rhy-platz.ziel { border-color: #a78bfa; background: rgba(139,92,246,.25); }
+        /* Die Taktangabe vor dem ersten Kaestchen - zwei Zahlen uebereinander,
+           wie im Heft. Flex 0, damit sie beim Verteilen der Breite nicht mitwaechst. */
+        .rhy-zeichen {
+            flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center;
+            align-items: center; line-height: 1; font-weight: 900; font-size: 1.15rem;
+            padding: 0 .35rem; letter-spacing: -.02em;
+        }
+        .rhy-strich { flex: 0 0 auto; width: 3px; border-radius: 2px; background: currentColor; opacity: .55; margin: .25rem .1rem; }
         .rhy-platz svg { height: 3rem; width: auto; pointer-events: none; }
         html[data-theme="light"] .rhy-anzeige { background: #fff; border-color: #cbd5e1; color: #0f172a; }
         html[data-theme="light"] .rhy-platz.leer { border-color: #cbd5e1; background: #f1f5f9; }
@@ -1083,6 +1091,12 @@
             <div class="flex items-center gap-2 text-[11px] font-bold text-slate-300">
                 <span>Taktart:</span>
                 <span id="rhythmus-taktwahl" class="flex gap-1"></span>
+                <span title="So viele Takte lang ist der Rhythmus - mehr Takte heißt mehr zum Vorspielen">Takte:</span>
+                <span class="flex items-center gap-1">
+                    <button type="button" class="rhy-knopf" onclick="rhythmusTakteAendern(-1)" title="Einen Takt wegnehmen">−</button>
+                    <span id="rhythmus-taktzahl" class="font-black text-violet-300 w-4 text-center">1</span>
+                    <button type="button" class="rhy-knopf" onclick="rhythmusTakteAendern(1)" title="Einen Takt anhängen">+</button>
+                </span>
                 <label class="flex items-center gap-1.5 cursor-pointer" title="An: Eine Viertel mit folgender Pause gilt wie eine Halbe - beim Klatschen klingt beides gleich">
                     <input type="checkbox" id="rhythmus-klatsch" class="sr-only peer" onchange="rhythmusKlatschUmschalten()">
                     <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600 relative"></div>
@@ -2820,7 +2834,8 @@
                                  paare: snp.phase === 'zug' ? snp.paare : null,
                                  duelle: (snp.phase === 'aufdeckung' || snp.phase === 'ende') ? snpDuellstand() : null } : null,
                     // Nur Taktlaenge und erlaubte Bausteine - die Loesung bleibt hier
-                    rhythmus: rhythmusRunde ? { soll: rhythmusRunde.soll, werte: rhythmusRunde.werte } : null,
+                    rhythmus: rhythmusRunde ? { soll: rhythmusRunde.soll, werte: rhythmusRunde.werte,
+                                                takte: rhythmusRunde.takte || 1, zeichen: rhythmusRunde.zeichen } : null,
                     songabgabe: songabgabeAn,
                     // Wessen Antwort verworfen wurde, darf noch einmal abgeben
                     freigabe: letzteFreigabe
@@ -4640,7 +4655,36 @@
         }
 
         let rhythmusRunde = null;      // laeuft: { soll, werte, loesung }
-        let rhythmusEntwurf = { soll: 4, zeichen: '4/4', klatsch: true, werte: ['V', 'AA', 'Vp', 'H'], loesung: '' };
+        let rhythmusEntwurf = { soll: 4, zeichen: '4/4', takte: 1, klatsch: true, werte: ['V', 'AA', 'Vp', 'H'], loesung: '' };
+
+        /* Wie viele Takte lang der vorgeklatschte Rhythmus ist. Mehr als vier
+           kann sich kaum eine Klasse merken - und auf dem Schuelergeraet wuerden
+           die Kaestchen zu schmal. */
+        function rhythmusTakteAendern(schritt) {
+            const neu = Math.max(1, Math.min(4, (rhythmusEntwurf.takte || 1) + schritt));
+            if (neu === rhythmusEntwurf.takte) return;
+            rhythmusEntwurf.takte = neu;
+            /* Einen Takt wegnehmen heisst auch: Was in ihm stand, ist weg. Sonst
+               bliebe ein Rhythmus stehen, der laenger ist als sein eigener Takt -
+               und niemand sieht mehr, wo er aufhoeren soll. */
+            if (rhythmusLoesungsEditor) {
+                const gesamt = rhythmusEntwurf.soll * neu;
+                const noten = rhythmusLesen(rhythmusLoesungsEditor.lesen());
+                let weg = 0;
+                while (noten.length && rhythmusDauer(noten) > gesamt + 0.001) { noten.pop(); weg++; }
+                if (weg) {
+                    rhythmusLoesungsEditor.setzen(rhythmusSchreiben(noten));
+                    showToast(`Takt entfernt - ${weg} ${weg === 1 ? 'Fragment ist' : 'Fragmente sind'} mit weggefallen.`, "info");
+                }
+            }
+            rhythmusTaktzahlZeichnen();
+            rhythmusEditorNeu();
+        }
+
+        function rhythmusTaktzahlZeichnen() {
+            const z = getEl('rhythmus-taktzahl');
+            if (z) z.textContent = rhythmusEntwurf.takte || 1;
+        }
         let rhythmusLoesungsEditor = null;
         let rhythmusVerdeckt = false;
         let rhythmusSchuelerEditor = null;
@@ -5029,6 +5073,7 @@
             if (!f) return;
             if (rhythmusRunde) {
                 rhythmusEntwurf = { soll: rhythmusRunde.soll, zeichen: rhythmusRunde.zeichen,
+                                    takte: rhythmusRunde.takte || 1,
                                     klatsch: rhythmusRunde.klatsch !== false,
                                     werte: rhythmusRunde.werte.slice(), loesung: rhythmusRunde.loesung };
             }
@@ -5037,6 +5082,7 @@
             const klatschSchalter = getEl('rhythmus-klatsch');
             if (klatschSchalter) klatschSchalter.checked = rhythmusEntwurf.klatsch !== false;
             rhythmusTaktwahlZeichnen();
+            rhythmusTaktzahlZeichnen();
             rhythmusWahlZeichnen();
             rhythmusEditorNeu();
             rhythmusKnoepfeAktualisieren();
@@ -5112,7 +5158,8 @@
             const feld = getEl('rhythmus-loesung-feld');
             if (!feld) return;
             const alt = rhythmusLoesungsEditor ? rhythmusLoesungsEditor.lesen() : rhythmusEntwurf.loesung;
-            rhythmusLoesungsEditor = rhythmusEditor(feld, rhythmusEntwurf.soll, rhythmusEntwurf.werte);
+            rhythmusLoesungsEditor = rhythmusEditor(feld, rhythmusEntwurf.soll, rhythmusEntwurf.werte,
+                                                    rhythmusEntwurf.takte, rhythmusEntwurf.zeichen);
             const gerettet = rhythmusLesen(alt).filter(w => rhythmusEntwurf.werte.includes(w.code));
             if (gerettet.length) rhythmusLoesungsEditor.setzen(rhythmusSchreiben(gerettet));
             rhythmusLoesungsEditor.verdecken(rhythmusVerdeckt);
@@ -5185,8 +5232,13 @@
                     loesung: String(p.loesung || '')
                 };
                 if (!rhythmusEntwurf.loesung) { showToast("Vom Handy kam ein leerer Rhythmus.", "danger"); return; }
+                /* Das Handy kennt keine Taktzahl - sie steckt in der Laenge: Wer
+                   dort acht Viertel eingibt, meint zwei Viervierteltakte. */
+                const laenge = rhythmusDauer(rhythmusLesen(rhythmusEntwurf.loesung));
+                rhythmusEntwurf.takte = Math.max(1, Math.min(4, Math.round(laenge / rhythmusEntwurf.soll) || 1));
                 rhythmusRunde = {
                     soll: rhythmusEntwurf.soll, zeichen: rhythmusEntwurf.zeichen,
+                    takte: rhythmusEntwurf.takte,
                     klatsch: rhythmusEntwurf.klatsch, werte: rhythmusEntwurf.werte.slice(),
                     loesung: rhythmusEntwurf.loesung
                 };
@@ -5363,7 +5415,7 @@
             const feld = getEl('fern-editor');
             if (!feld) return;
             const alt = fernEditor ? fernEditor.lesen() : '';
-            fernEditor = rhythmusEditor(feld, fernEntwurf.soll, fernEntwurf.werte);
+            fernEditor = rhythmusEditor(feld, fernEntwurf.soll, fernEntwurf.werte, 1, fernEntwurf.zeichen);
             const gerettet = rhythmusLesen(alt).filter(w => fernEntwurf.werte.includes(w.code));
             if (gerettet.length) fernEditor.setzen(rhythmusSchreiben(gerettet));
         }
@@ -5376,7 +5428,7 @@
         function rhythmusZufall() {
             const erlaubt = RHYTHMUS_BAUSTEINE.filter(b => rhythmusEntwurf.werte.includes(b.code));
             if (!erlaubt.length) { showToast("Wähle erst Bausteine aus, aus denen gewürfelt werden soll.", "danger"); return; }
-            const soll = rhythmusEntwurf.soll;
+            const soll = rhythmusEntwurf.soll * (rhythmusEntwurf.takte || 1);
             for (let versuch = 0; versuch < 400; versuch++) {
                 const takt = [];
                 let rest = soll;
@@ -5448,13 +5500,15 @@
             if (!rhythmusEntwurf.werte.length) { showToast("Wähle mindestens einen Baustein aus.", "danger"); return; }
             if (!loesung) { showToast("Trage erst ein, was du geklatscht hast.", "danger"); return; }
             const dauer = rhythmusLoesungsEditor.dauer();
-            if (Math.abs(dauer - rhythmusEntwurf.soll) > 0.001) {
+            const gesamtSoll = rhythmusEntwurf.soll * (rhythmusEntwurf.takte || 1);
+            if (Math.abs(dauer - gesamtSoll) > 0.001) {
                 /* Nur ein Hinweis, keine Sperre: Vielleicht klatscht er ja wirklich
-                   einen halben Takt vor oder zwei Takte am Stueck. */
-                showToast(`Achtung: Dein Rhythmus ist ${dauer} Viertel lang, der Takt hat ${rhythmusEntwurf.soll}.`, "info");
+                   nur einen halben Takt vor. */
+                showToast(`Achtung: Dein Rhythmus ist ${dauer} Viertel lang, ${rhythmusEntwurf.takte || 1} Takte haben ${gesamtSoll}.`, "info");
             }
             rhythmusEntwurf.loesung = loesung;
             rhythmusRunde = { soll: rhythmusEntwurf.soll, zeichen: rhythmusEntwurf.zeichen || '4/4',
+                              takte: rhythmusEntwurf.takte || 1,
                               klatsch: rhythmusEntwurf.klatsch !== false,
                               werte: rhythmusEntwurf.werte.slice(), loesung: loesung };
             metronomLeisteZeigen(true);
@@ -5537,10 +5591,11 @@
             text.classList.add('hidden');
             // Nur neu bauen, wenn sich wirklich etwas geaendert hat - sonst waere die
             // halb fertige Eingabe bei jedem Rundensignal weg.
-            const schluessel = stand.soll + ':' + (stand.werte || []).join(',');
+            const schluessel = [stand.soll, stand.takte || 1, stand.zeichen || '', (stand.werte || []).join(',')].join(':');
             if (schluessel !== rhythmusSchuelerSchluessel) {
                 rhythmusSchuelerSchluessel = schluessel;
-                rhythmusSchuelerEditor = rhythmusEditor(getEl('rhythmus-eingabe-feld'), stand.soll, stand.werte);
+                rhythmusSchuelerEditor = rhythmusEditor(getEl('rhythmus-eingabe-feld'), stand.soll, stand.werte,
+                                                        stand.takte, stand.zeichen);
             }
         }
 
@@ -5629,7 +5684,7 @@
         /* Gezeichnet wird in currentColor: Die Noten nehmen damit die Textfarbe
            ihres Kastens an und sind im hellen wie im dunklen Theme zu sehen.
            Vorher stand hier ein festes Hellgrau - auf weissem Grund unsichtbar. */
-        function rhythmusSvg(liste, farbe, nackt, taktzeichen) {
+        function rhythmusSvg(liste, farbe, nackt, taktzeichen, taktLaenge) {
             const tinte = farbe || 'currentColor';
             const vorschub = { 4: 96, 2: 62, 1: 38, 0.75: 30, 0.5: 24, 0.25: 17 };
             const links = 16, halsOben = 13, linie = 46, balkenDicke = 5;
@@ -5668,7 +5723,21 @@
             }
             const linieVon = x - 12;
 
-            liste.forEach(baustein => {
+            /* Mehrtaktige Rhythmen bekommen ihre Taktstriche dort, wo der Takt
+               voll ist - sonst stuende alles in einer Reihe und niemand saehe,
+               wo der zweite Takt anfaengt. */
+            let gelaufen = 0;
+            liste.forEach((baustein, nr) => {
+                if (taktLaenge && gelaufen > 0.001 && nr > 0) {
+                    const rest = gelaufen % taktLaenge;
+                    if (Math.min(rest, taktLaenge - rest) < 0.001) {
+                        x += 7;
+                        teile.push(`<line x1="${x}" y1="${linie - 17}" x2="${x}" y2="${linie + 15}" stroke="${tinte}" stroke-width="3"/>`);
+                        ink(x - 2, x + 2, linie - 17, linie + 15);
+                        x += 13;
+                    }
+                }
+                gelaufen += baustein.dauer;
                 // Haelse und Koepfe eines Fragments merken, um danach die Balken zu ziehen
                 const gruppe = [];
                 /* Schliesst die offene Gruppe ab: zwei und mehr bekommen Balken, eine
@@ -5791,9 +5860,11 @@
            kommen per Tipper ans Ende oder per Ziehen an eine bestimmte Stelle -
            gezogen wird mit Zeigerereignissen und nicht mit HTML-Drag-and-Drop,
            weil letzteres auf einem iPad nicht ausgeloest wird. */
-        function rhythmusEditor(wurzel, soll, werte) {
+        function rhythmusEditor(wurzel, soll, werte, takte, zeichen) {
             const erlaubt = (werte && werte.length ? RHYTHMUS_BAUSTEINE.filter(w => werte.includes(w.code)) : RHYTHMUS_BAUSTEINE);
             const liste = [];
+            const taktZahl = Math.max(1, Number(takte) || 1);
+            const gesamt = soll * taktZahl;
             wurzel.innerHTML = `<div class="rhy-anzeige"></div>
                 <div class="rhy-stand"></div>
                 <div class="rhy-leiste"></div>
@@ -5866,7 +5937,7 @@
             function stelleAn(x, y) {
                 const r = anzeige.getBoundingClientRect();
                 if (x < r.left - 30 || x > r.right + 30 || y < r.top - 40 || y > r.bottom + 40) return null;
-                const kaesten = [...anzeige.children];
+                const kaesten = [...anzeige.querySelectorAll('.rhy-platz')];
                 for (let i = 0; i < kaesten.length; i++) {
                     const k = kaesten[i].getBoundingClientRect();
                     if (x < k.left + k.width / 2) return Math.min(i, liste.length);
@@ -5877,16 +5948,40 @@
                 zielLoeschen();
                 const stelle = stelleAn(x, y);
                 if (stelle === null) return;
-                const kasten = anzeige.children[stelle] || anzeige.children[anzeige.children.length - 1];
+                const kaesten = [...anzeige.querySelectorAll('.rhy-platz')];
+                const kasten = kaesten[stelle] || kaesten[kaesten.length - 1];
                 if (kasten) kasten.classList.add('ziel');
             }
             function zielLoeschen() {
-                [...anzeige.children].forEach(k => k.classList.remove('ziel'));
+                anzeige.querySelectorAll('.rhy-platz').forEach(k => k.classList.remove('ziel'));
             }
 
             function zeichnen() {
                 anzeige.innerHTML = '';
+                /* Die Taktangabe steht vorn, wie im Heft - sonst muss man raten,
+                   ob die vier Kaestchen ein Viervierteltakt sind oder vier
+                   Viertel in irgendeinem anderen. */
+                if (zeichen) {
+                    const z = document.createElement('div');
+                    z.className = 'rhy-zeichen';
+                    const [oben, unten] = String(zeichen).split('/');
+                    z.innerHTML = `<span>${oben}</span><span>${unten || ''}</span>`;
+                    z.title = zeichen + '-Takt';
+                    anzeige.appendChild(z);
+                }
+                let gelaufen = 0;
+                /* Ein Taktstrich kommt immer vor das Element, das nach einem
+                   vollen Takt folgt - so steht nie einer am Ende in der Luft. */
+                const vielleichtStrich = () => {
+                    if (taktZahl < 2 || gelaufen < 0.001) return;
+                    const rest = gelaufen % soll;
+                    if (Math.min(rest, soll - rest) > 0.001) return;
+                    const strich = document.createElement('div');
+                    strich.className = 'rhy-strich';
+                    anzeige.appendChild(strich);
+                };
                 liste.forEach((b, i) => {
+                    vielleichtStrich();
                     const kasten = document.createElement('div');
                     kasten.className = 'rhy-platz voll';
                     kasten.style.flex = `${b.dauer} 1 0`;
@@ -5894,23 +5989,27 @@
                     kasten.innerHTML = rhythmusSvg([b], null, true);
                     kasten.addEventListener('click', () => { liste.splice(i, 1); zeichnen(); });
                     anzeige.appendChild(kasten);
+                    gelaufen += b.dauer;
                 });
-                // Der Rest des Taktes steht als leere Kaestchen da - eines je Viertel
-                let frei = Math.max(0, soll - rhythmusDauer(liste));
+                // Der Rest steht als leere Kaestchen da - eines je Viertel
+                let frei = Math.max(0, gesamt - rhythmusDauer(liste));
                 while (frei > 0.001) {
+                    vielleichtStrich();
                     const teil = Math.min(1, frei);
                     const kasten = document.createElement('div');
                     kasten.className = 'rhy-platz leer';
                     kasten.style.flex = `${teil} 1 0`;
                     anzeige.appendChild(kasten);
                     frei -= teil;
+                    gelaufen += teil;
                 }
                 const dauer = rhythmusDauer(liste);
-                const voll = Math.abs(dauer - soll) < 0.001;
-                stand.className = 'rhy-stand' + (voll ? ' voll' : dauer > soll ? ' zuviel' : '');
+                const voll = Math.abs(dauer - gesamt) < 0.001;
+                stand.className = 'rhy-stand' + (voll ? ' voll' : dauer > gesamt ? ' zuviel' : '');
                 const zahl = (x) => Number.isInteger(x) ? x : x.toFixed(2).replace(/0$/, '').replace('.', ',');
-                stand.textContent = voll ? `Takt voll: ${zahl(soll)} Viertel`
-                                         : `${zahl(dauer)} von ${zahl(soll)} Vierteln`;
+                const wieViel = taktZahl > 1 ? `${taktZahl} Takte, ${zahl(gesamt)} Viertel` : `${zahl(gesamt)} Viertel`;
+                stand.textContent = voll ? `Voll: ${wieViel}`
+                                         : `${zahl(dauer)} von ${zahl(gesamt)} Vierteln`;
             }
             zeichnen();
             return {
@@ -8493,7 +8592,7 @@
                             <i class="fa-solid fa-drum"></i> Deine Vorgabe - so war es geklatscht
                         </div>
                         <div class="text-slate-100">
-                            ${rhythmusSvg(rhythmusLesen(rhythmusRunde.loesung), null, false, rhythmusRunde.zeichen)}
+                            ${rhythmusSvg(rhythmusLesen(rhythmusRunde.loesung), null, false, rhythmusRunde.zeichen, rhythmusRunde.soll)}
                         </div>
                     </div>`;
                 list.appendChild(loesungsKarte);
@@ -8580,7 +8679,7 @@
                         }
                         answerTextContent = `
                             <div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
-                                ${noten.length ? rhythmusSvg(noten, null, false, rhythmusRunde && rhythmusRunde.zeichen) : '<span class="text-xs text-slate-500">leer</span>'}
+                                ${noten.length ? rhythmusSvg(noten, null, false, rhythmusRunde && rhythmusRunde.zeichen, rhythmusRunde && rhythmusRunde.soll) : '<span class="text-xs text-slate-500">leer</span>'}
                                 <div class="text-center mt-1">${urteil}</div>
                             </div>
                         `;
