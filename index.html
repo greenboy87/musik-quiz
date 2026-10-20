@@ -1213,6 +1213,22 @@
                     <button type="button" class="rhy-knopf" onclick="zaehlTakteAendern(1)" title="Einen Takt mehr">+</button>
                 </span>
             </div>
+            <!-- Dieselbe Fernbedienung wie im Rhythmus-Fenster (gleicher Schluessel),
+                 nur dass sie auf dem Handy gleich bei den Zaehlzeiten aufgeht. -->
+            <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 flex items-center gap-3">
+                <div id="fern-qr-zaehl" class="w-24 h-24 bg-white rounded-lg flex items-center justify-center shrink-0 transition-all" style="filter: blur(7px)"></div>
+                <div class="flex-1">
+                    <div class="text-[11px] font-bold text-slate-300">Fernbedienung fürs Handy</div>
+                    <div class="text-[10px] text-slate-500 leading-normal mt-0.5">
+                        Scannen, und du hast Taktart, Bausteine und Würfel in der Hand.
+                        Den Rhythmus samt Lösung siehst nur du - auf dem Beamer erscheint nichts davon.
+                    </div>
+                    <button type="button" id="fern-qr-zaehl-knopf" onclick="fernQrUmschalten('fern-qr-zaehl', 'fern-qr-zaehl-knopf')"
+                            class="mt-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[10px] font-bold rounded-lg px-2 py-1">
+                        <i class="fa-solid fa-eye"></i> Kurz zeigen
+                    </button>
+                </div>
+            </div>
             <div>
                 <div class="text-[11px] font-bold text-slate-300 mb-1">Diese Noten- und Pausenwerte dürfen vorkommen:</div>
                 <div id="zaehl-wahl" class="rhy-wahl"></div>
@@ -1285,13 +1301,18 @@
          und dort liegt der Spielstand. -->
     <div id="fern-view" class="hidden container mx-auto px-3 py-4 max-w-lg flex-grow font-sans">
         <div class="flex items-center justify-between mb-3">
-            <h1 class="text-base font-black text-violet-300"><i class="fa-solid fa-drum mr-1"></i> Rhythmus-Fernbedienung</h1>
+            <h1 class="text-base font-black text-violet-300"><i class="fa-solid fa-drum mr-1"></i> Fernbedienung</h1>
             <span id="fern-raum" class="text-[11px] font-bold text-slate-400"></span>
+        </div>
+        <div id="fern-modus" class="flex gap-1 mb-2">
+            <button type="button" data-modus="rhythmus" class="rhy-knopf an" onclick="fernModusWaehlen('rhythmus')"><i class="fa-solid fa-hands-clapping mr-1"></i> Rhythmus</button>
+            <button type="button" data-modus="zaehl" class="rhy-knopf" onclick="fernModusWaehlen('zaehl')"><span class="font-black">1 e +</span> Zählzeiten</button>
         </div>
         <div id="fern-stand" class="text-[11px] mb-2 flex items-center gap-1.5 flex-wrap"></div>
         <div id="fern-hinweis" class="text-[11px] text-slate-400 mb-3 leading-normal">
             Was du hier einstellst, führt das Gerät am Beamer aus.
         </div>
+        <div id="fern-rhythmus-teil">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl p-3 space-y-3">
             <div class="flex items-center gap-2 flex-wrap text-[11px] font-bold text-slate-300">
                 <span>Taktart:</span>
@@ -1343,6 +1364,47 @@
                         title="Dreimal vorklatschen mit fünf Sekunden Pause">
                     <i class="fa-solid fa-repeat mr-1"></i> 3×
                 </button>
+            </div>
+        </div>
+        </div>
+
+        <!-- Zaehlzeiten-Runde: Gewuerfelt wird hier auf dem Handy, die Loesung
+             bleibt hier. Zum Beamer geht erst beim Start nur der Rhythmus. -->
+        <div id="fern-zaehl-teil" class="hidden">
+            <div class="bg-slate-900 border border-slate-700 rounded-2xl p-3 space-y-3">
+                <div class="flex items-center gap-2 flex-wrap text-[11px] font-bold text-slate-300">
+                    <span>Taktart:</span>
+                    <span id="fern-zaehl-taktwahl" class="flex gap-1"></span>
+                    <span>Takte:</span>
+                    <span class="flex items-center gap-1">
+                        <button type="button" class="rhy-knopf" onclick="zaehlTakteAendern(-1)" title="Einen Takt weniger">−</button>
+                        <span id="fern-zaehl-taktzahl" class="font-black text-violet-300 w-4 text-center">1</span>
+                        <button type="button" class="rhy-knopf" onclick="zaehlTakteAendern(1)" title="Einen Takt mehr">+</button>
+                    </span>
+                </div>
+                <div>
+                    <div class="text-[11px] font-bold text-slate-300 mb-1">Diese Werte dürfen vorkommen:</div>
+                    <div id="fern-zaehl-wahl" class="rhy-wahl"></div>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-[11px] font-bold text-slate-300">Rhythmus mit Lösung:</span>
+                    <button type="button" onclick="zaehlWuerfeln()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] rounded-lg px-3 py-1 active:scale-95">
+                        <i class="fa-solid fa-dice"></i> Würfeln
+                    </button>
+                </div>
+                <div id="fern-zaehl-vorschau" class="bg-slate-950/60 border border-slate-800 rounded-xl p-2 text-slate-100"></div>
+                <div class="flex gap-2">
+                    <button type="button" id="fern-zaehl-starten" onclick="fernZaehlStarten()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs active:scale-95">
+                        <i class="fa-solid fa-paper-plane mr-1"></i> An die Klasse geben
+                    </button>
+                    <button type="button" id="fern-zaehl-beenden" onclick="fernSenden('zaehl-beenden')" class="hidden bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold py-2 px-3 rounded-xl text-xs active:scale-95">
+                        Beenden
+                    </button>
+                </div>
+            </div>
+            <div id="fern-zaehl-laeuft" class="hidden bg-slate-900 border border-slate-700 rounded-2xl p-3 mt-2 space-y-2">
+                <div class="text-[11px] font-bold text-slate-300"><i class="fa-solid fa-eye-slash mr-1"></i> Läuft gerade – Lösung nur für dich</div>
+                <div id="fern-zaehl-laeuft-bild" class="bg-slate-950/60 border border-slate-800 rounded-xl p-2 text-slate-100"></div>
             </div>
         </div>
     </div>
@@ -5361,8 +5423,9 @@
             return fernSchluessel;
         }
 
-        function fernQrZeichnen() {
-            const ziel = getEl('fern-qr');
+        // modus 'zaehl': das Handy geht gleich bei den Zaehlzeiten auf
+        function fernQrZeichnen(zielId, modus) {
+            const ziel = getEl(zielId || 'fern-qr');
             if (!ziel || typeof QRCode === 'undefined') return;
             const raum = liveRoomCode || (getEl('room-code-input') ? normalisiereRaumCode(getEl('room-code-input').value) : '');
             ziel.innerHTML = '';
@@ -5372,13 +5435,13 @@
             }
             const adresse = window.location.href.split('?')[0];
             new QRCode(ziel, {
-                text: `${adresse}?fern=${encodeURIComponent(raum)}&s=${fernSchluesselHolen()}`,
+                text: `${adresse}?fern=${encodeURIComponent(raum)}&s=${fernSchluesselHolen()}${modus ? '&m=' + modus : ''}`,
                 width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M
             });
         }
 
-        function fernQrUmschalten() {
-            const ziel = getEl('fern-qr'), knopf = getEl('fern-qr-knopf');
+        function fernQrUmschalten(zielId, knopfId) {
+            const ziel = getEl(zielId || 'fern-qr'), knopf = getEl(knopfId || 'fern-qr-knopf');
             if (!ziel) return;
             const verwischt = ziel.style.filter !== 'none';
             ziel.style.filter = verwischt ? 'none' : 'blur(7px)';
@@ -5405,6 +5468,7 @@
                    dort acht Viertel eingibt, meint zwei Viervierteltakte. */
                 const laenge = rhythmusDauer(rhythmusLesen(rhythmusEntwurf.loesung));
                 rhythmusEntwurf.takte = Math.max(1, Math.min(4, Math.round(laenge / rhythmusEntwurf.soll) || 1));
+                if (zaehlRunde) { zaehlRunde = null; zaehlKnoepfeAktualisieren(); }   // nur eine Sonderrunde zur Zeit
                 rhythmusRunde = {
                     soll: rhythmusEntwurf.soll, zeichen: rhythmusEntwurf.zeichen,
                     takte: rhythmusEntwurf.takte,
@@ -5432,6 +5496,21 @@
                    ihn der Klasse gibt. Kommt keiner mit, gilt der der laufenden Runde. */
                 if (p.zeichen) rhythmusEntwurf.zeichen = p.zeichen;
                 rhythmusVorklatschen(p.loesung || '', p.male);
+            } else if (p.befehl === 'zaehl-starten') {
+                /* Gewuerfelt wurde auf dem Handy. Hier kommt nur der Rhythmus an -
+                   die Loesung ergibt sich daraus, und der Beamer zeigt sie nicht. */
+                const zeichen = ['2/4', '3/4', '4/4'].includes(p.zeichen) ? p.zeichen : null;
+                const aufgabe = String(p.aufgabe || '');
+                const takte = zaehlTakte(aufgabe);
+                const passt = zeichen && takte.length >= 1 && takte.length <= 2 &&
+                    takte.every(t => t.length && Math.abs(rhythmusDauer(t) - zaehlSchlaege(zeichen)) < 0.001);
+                if (!passt) { showToast("Vom Handy kam kein passender Zählzeiten-Rhythmus.", "danger"); return; }
+                Object.assign(zaehlEntwurf, { zeichen, takte: takte.length, aufgabe });
+                if (Array.isArray(p.werte) && p.werte.length) zaehlEntwurf.werte = p.werte.slice();
+                zaehlEntwurfSichern();
+                zaehlRundeStarten();
+            } else if (p.befehl === 'zaehl-beenden') {
+                if (zaehlRunde) zaehlRundeBeenden();
             }
         }
 
@@ -5454,7 +5533,7 @@
             }
         }
 
-        function fernModusStarten(raum, schluessel) {
+        function fernModusStarten(raum, schluessel, modus) {
             fernRaum = normalisiereRaumCode(raum);
             fernSchluessel = schluessel;
             document.querySelectorAll('#student-view, #teacher-view').forEach(el => el.classList.add('hidden'));
@@ -5469,6 +5548,8 @@
             fernEditorNeu();
             fernTakteZeichnen();
             fernTempoAnzeigen();
+            zaehlFensterZeichnen();   // zeichnet auf dem Handy in den Zaehlteil
+            fernModusWaehlen(modus === 'zaehl' ? 'zaehl' : 'rhythmus');
 
             getEl('fern-zufall').addEventListener('click', () => {
                 const alt = rhythmusEntwurf;
@@ -5507,6 +5588,19 @@
             getEl('fern-tempo-plus').addEventListener('click', () => { fernMetronom.bpm = Math.min(200, fernMetronom.bpm + 5); fernTempoAnzeigen(); });
         }
 
+        function fernModusWaehlen(modus) {
+            getEl('fern-rhythmus-teil').classList.toggle('hidden', modus !== 'rhythmus');
+            getEl('fern-zaehl-teil').classList.toggle('hidden', modus !== 'zaehl');
+            document.querySelectorAll('#fern-modus [data-modus]').forEach(b =>
+                b.classList.toggle('an', b.dataset.modus === modus));
+        }
+
+        function fernZaehlStarten() {
+            if (!zaehlEntwurf.aufgabe && !zaehlWuerfeln()) return;
+            fernSenden('zaehl-starten', { zeichen: zaehlEntwurf.zeichen, werte: zaehlEntwurf.werte,
+                                          aufgabe: zaehlEntwurf.aufgabe });
+        }
+
         /* Das Handy hoert am selben Kanal mit wie die Schuelergeraete - nur um
            anzuzeigen, in welcher Runde man gerade ist und ob der Rhythmusmodus
            laeuft. Ohne das verliert man beim Hin und Her zwischen Beamer und Hand
@@ -5519,16 +5613,31 @@
                     const anzeige = getEl('fern-stand');
                     if (!anzeige) return;
                     const runde = stand.round !== undefined ? stand.round : '–';
-                    const laeuft = !!stand.rhythmus;
+                    const laeuft = stand.rhythmus ? 'Rhythmus läuft' : stand.zaehl ? 'Zählzeiten laufen' : '';
                     anzeige.innerHTML = `<span class="bg-violet-500/25 text-violet-200 border border-violet-500/40 px-2 py-0.5 rounded-lg font-black">Runde ${runde}</span>` +
                         (laeuft
-                            ? ` <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-lg font-bold">Rhythmus läuft</span>`
-                            : ` <span class="text-slate-500">kein Rhythmus aktiv</span>`) +
+                            ? ` <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-lg font-bold">${laeuft}</span>`
+                            : ` <span class="text-slate-500">keine Sonderrunde aktiv</span>`) +
                         (stand.locked ? ` <span class="text-rose-300 font-bold">gesperrt</span>` : '');
+                    fernZaehlStandZeigen(stand.zaehl || null);
                 });
             } catch (e) {
                 console.error("Fernbedienung konnte den Raum nicht mithören:", e);
             }
+        }
+
+        /* Die laufende Zaehlrunde mit Loesung: Der Rhythmus steht ohnehin auf
+           allen Schuelergeraeten, die Loesung rechnet das Handy selbst aus. */
+        function fernZaehlStandZeigen(zaehl) {
+            const kasten = getEl('fern-zaehl-laeuft'), bild = getEl('fern-zaehl-laeuft-bild');
+            const start = getEl('fern-zaehl-starten'), stop = getEl('fern-zaehl-beenden');
+            if (kasten) kasten.classList.toggle('hidden', !zaehl);
+            if (bild) bild.innerHTML = zaehl && zaehl.aufgabe
+                ? zaehlSvg(zaehl, zaehlLoesung(zaehl.aufgabe).map(w => ({ wert: w, klasse: 'loesung' }))) : '';
+            if (stop) stop.classList.toggle('hidden', !zaehl);
+            if (start) start.innerHTML = zaehl
+                ? '<i class="fa-solid fa-rotate mr-1"></i> Diesen Rhythmus übernehmen'
+                : '<i class="fa-solid fa-paper-plane mr-1"></i> An die Klasse geben';
         }
 
         function fernTempoAnzeigen() {
@@ -5894,6 +6003,7 @@
             f.classList.remove('hidden');
             f.classList.add('flex');
             zaehlFensterZeichnen();
+            fernQrZeichnen('fern-qr-zaehl', 'zaehl');
         }
         function zaehlFensterSchliessen() {
             zaehlEntwurfSichern();
@@ -5902,36 +6012,40 @@
             f.classList.add('hidden');
             f.classList.remove('flex');
         }
+        // Zeichnet das Fenster am Beamer und den Zaehlteil der Handy-Fernbedienung
+        // (gleiche Bausteine, Vorsilbe 'fern-'); auf jedem Geraet ist nur eins sichtbar.
         function zaehlFensterZeichnen() {
-            const wahl = getEl('zaehl-taktwahl');
-            if (wahl) wahl.innerHTML = ['2/4', '3/4', '4/4'].map(z =>
-                `<button type="button" class="rhy-knopf${z === zaehlEntwurf.zeichen ? ' an' : ''}" onclick="zaehlTaktartSetzen('${z}')">${z}</button>`).join('');
-            const zahl = getEl('zaehl-taktzahl');
-            if (zahl) zahl.textContent = zaehlEntwurf.takte || 1;
-            const ziel = getEl('zaehl-wahl');
-            if (ziel) {
-                ziel.innerHTML = '';
-                [['Noten', false], ['Pausen', true]].forEach(([titel, pausen]) => {
-                    const zeile = document.createElement('div');
-                    zeile.className = 'rhy-wahl-zeile';
-                    zeile.innerHTML = `<span class="rhy-wahl-titel">${titel}</span>`;
-                    RHYTHMUS_BAUSTEINE.filter(w => !!w.pausenreihe === pausen).forEach(w => {
-                        const b = document.createElement('button');
-                        b.type = 'button';
-                        b.className = 'rhy-chip' + (zaehlEntwurf.werte.includes(w.code) ? ' an' : '');
-                        b.title = w.wort;
-                        b.innerHTML = rhythmusSvg([w], null, true);
-                        b.addEventListener('click', () => {
-                            const i = zaehlEntwurf.werte.indexOf(w.code);
-                            if (i >= 0) zaehlEntwurf.werte.splice(i, 1); else zaehlEntwurf.werte.push(w.code);
-                            zaehlEntwurfSichern();
-                            zaehlFensterZeichnen();
+            ['zaehl', 'fern-zaehl'].forEach(vor => {
+                const wahl = getEl(vor + '-taktwahl');
+                if (wahl) wahl.innerHTML = ['2/4', '3/4', '4/4'].map(z =>
+                    `<button type="button" class="rhy-knopf${z === zaehlEntwurf.zeichen ? ' an' : ''}" onclick="zaehlTaktartSetzen('${z}')">${z}</button>`).join('');
+                const zahl = getEl(vor + '-taktzahl');
+                if (zahl) zahl.textContent = zaehlEntwurf.takte || 1;
+                const ziel = getEl(vor + '-wahl');
+                if (ziel) {
+                    ziel.innerHTML = '';
+                    [['Noten', false], ['Pausen', true]].forEach(([titel, pausen]) => {
+                        const zeile = document.createElement('div');
+                        zeile.className = 'rhy-wahl-zeile';
+                        zeile.innerHTML = `<span class="rhy-wahl-titel">${titel}</span>`;
+                        RHYTHMUS_BAUSTEINE.filter(w => !!w.pausenreihe === pausen).forEach(w => {
+                            const b = document.createElement('button');
+                            b.type = 'button';
+                            b.className = 'rhy-chip' + (zaehlEntwurf.werte.includes(w.code) ? ' an' : '');
+                            b.title = w.wort;
+                            b.innerHTML = rhythmusSvg([w], null, true);
+                            b.addEventListener('click', () => {
+                                const i = zaehlEntwurf.werte.indexOf(w.code);
+                                if (i >= 0) zaehlEntwurf.werte.splice(i, 1); else zaehlEntwurf.werte.push(w.code);
+                                zaehlEntwurfSichern();
+                                zaehlFensterZeichnen();
+                            });
+                            zeile.appendChild(b);
                         });
-                        zeile.appendChild(b);
+                        ziel.appendChild(zeile);
                     });
-                    ziel.appendChild(zeile);
-                });
-            }
+                }
+            });
             zaehlVorschauZeichnen();
             zaehlKnoepfeAktualisieren();
         }
@@ -5943,14 +6057,15 @@
             zaehlFensterZeichnen();
         }
         function zaehlVorschauZeichnen() {
-            const feld = getEl('zaehl-vorschau');
-            if (!feld) return;
             // Passt der gemerkte Rhythmus nicht mehr zur Taktart/Taktzahl, neu wuerfeln
             const takte = zaehlTakte(zaehlEntwurf.aufgabe);
             const soll = zaehlSchlaege(zaehlEntwurf.zeichen);
             const passt = takte.length === (zaehlEntwurf.takte || 1) && takte.every(t => Math.abs(rhythmusDauer(t) - soll) < 0.001);
-            if (!passt) { feld.innerHTML = '<p class="text-[11px] text-slate-500 text-center py-3">Noch kein Rhythmus – auf „Würfeln“ tippen.</p>'; zaehlEntwurf.aufgabe = ''; return; }
-            feld.innerHTML = zaehlSvg(zaehlEntwurf, zaehlLoesung(zaehlEntwurf.aufgabe).map(w => ({ wert: w, klasse: 'loesung' })));
+            if (!passt) zaehlEntwurf.aufgabe = '';
+            const html = passt
+                ? zaehlSvg(zaehlEntwurf, zaehlLoesung(zaehlEntwurf.aufgabe).map(w => ({ wert: w, klasse: 'loesung' })))
+                : '<p class="text-[11px] text-slate-500 text-center py-3">Noch kein Rhythmus – auf „Würfeln“ tippen.</p>';
+            ['zaehl-vorschau', 'fern-zaehl-vorschau'].forEach(id => { const feld = getEl(id); if (feld) feld.innerHTML = html; });
         }
         function zaehlKnoepfeAktualisieren() {
             const start = getEl('zaehl-start-btn'), stop = getEl('zaehl-stop-btn'), knopf = getEl('zaehl-btn');
@@ -7757,7 +7872,7 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get('fern') && urlParams.get('s')) {
                     // Fernbedienung: nur der Rhythmusteil, alles andere bleibt aus
-                    fernModusStarten(urlParams.get('fern'), urlParams.get('s'));
+                    fernModusStarten(urlParams.get('fern'), urlParams.get('s'), urlParams.get('m'));
                 } else if (urlParams.get('k')) {
                     // Geheimer Direktlink: Prüfung passiert asynchron, daher erst
                     // die Schüleransicht zeigen und bei Erfolg umschalten.
