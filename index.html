@@ -1976,13 +1976,13 @@
                      zugeklappt, und genau dann fiel das Versäumnis nicht mehr auf. -->
                 <button id="live-warning" onclick="connectLiveRoom(false)"
                         class="hidden items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg px-2.5 py-1 text-[11px] font-black transition-all active:scale-95 warnung-blinkt"
-                        title="Ohne Live-Empfang kommen keine Teams und keine Antworten an. Klicken, um den Raum zu starten.">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Raum noch nicht gestartet – hier klicken
+                        title="Raum noch nicht gestartet - ohne Live-Empfang kommen keine Teams und keine Antworten an. Klicken, um den Raum zu starten.">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Raum starten
                 </button>
 
                 <!-- Spannungs-Modus: verdeckt Punkte UND Rangfolge vor der letzten Runde -->
-                <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px]" title="Punkte, Plätze und Sortierung verdecken - für ein spannendes Finale">
-                    <span class="text-slate-300 font-bold flex items-center gap-1"><i class="fa-solid fa-eye-slash text-violet-400"></i> Punkte verdeckt:</span>
+                <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-700/50 rounded-lg px-2.5 py-1 text-[11px]" title="Punkte verdecken: Punkte, Plätze und Sortierung ausblenden - für ein spannendes Finale">
+                    <span class="text-slate-300 font-bold flex items-center gap-1"><i class="fa-solid fa-eye-slash text-violet-400"></i> Punkte</span>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="hide-scores-toggle" class="sr-only peer" onchange="toggleScoreHiding()">
                         <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-violet-600"></div>
@@ -2058,14 +2058,14 @@
                     title="Gehe eine Spielrunde zurück"
                 >
                     <i class="fa-solid fa-arrow-left"></i>
-                    <span>Runde zurück</span>
+                    <span>Runde</span>
                 </button>
                 <button 
                     onclick="nextRound()" 
                     class="bg-emerald-600 hover:bg-emerald-500 text-white font-black py-1.5 px-4.5 rounded-lg text-[11px] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 flex items-center gap-1.5 font-sans"
                     title="Punkte für diese Runde gutschreiben und nächste Runde starten"
                 >
-                    <span>Nächste Runde</span>
+                    <span>Runde</span>
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </div>
