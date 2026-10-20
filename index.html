@@ -455,6 +455,34 @@
             60% { box-shadow: 0 0 0 9px rgba(167,139,250,0); }
         }
         .rhy-aktiv { animation: rhyPuls 1.5s ease-out infinite; }
+
+        /* Zaehlzeiten-Runde: Kaestchen ueber den Noten (rhythmusSvg mit
+           "kaestchen") und das Zahlenfeld auf dem Schuelergeraet */
+        .zz-feld rect { fill: rgba(255,255,255,.06); stroke: rgba(148,163,184,.55); stroke-width: 1.4; }
+        .zz-feld text { fill: #f8fafc; font-weight: 800; font-family: 'DM Sans', sans-serif; pointer-events: none; }
+        .zz-feld[data-feld] { cursor: pointer; }
+        .zz-feld.aktiv rect { stroke: #a78bfa; stroke-width: 2.6; fill: rgba(139,92,246,.22); }
+        .zz-feld.richtig rect, .zz-feld.loesung rect { stroke: #34d399; fill: rgba(16,185,129,.16); }
+        .zz-feld.richtig text, .zz-feld.loesung text { fill: #34d399; }
+        .zz-feld.falsch rect { stroke: #fb7185; stroke-width: 2.2; fill: rgba(244,63,94,.16); }
+        .zz-feld.falsch text { fill: #fb7185; }
+        html[data-theme="light"] .zz-feld rect { fill: #fff; stroke: #94a3b8; }
+        html[data-theme="light"] .zz-feld text { fill: #0f172a; }
+        html[data-theme="light"] .zz-feld.aktiv rect { stroke: #7c3aed; fill: #ede9fe; }
+        html[data-theme="light"] .zz-feld.richtig text, html[data-theme="light"] .zz-feld.loesung text { fill: #047857; }
+        html[data-theme="light"] .zz-feld.falsch text { fill: #be123c; }
+        .zz-pad { display: grid; grid-template-columns: repeat(5, 1fr); gap: .45rem; max-width: 26rem; margin: .7rem auto 0; }
+        .zz-pad button {
+            min-height: 3.3rem; border-radius: 12px; font-size: 1.4rem; font-weight: 800; font-family: inherit;
+            background: rgba(255,255,255,.07); border: 1px solid rgba(148,163,184,.35); color: #f8fafc;
+            touch-action: manipulation; user-select: none; -webkit-user-select: none;
+        }
+        .zz-pad button:active { transform: scale(.94); background: rgba(139,92,246,.45); }
+        .zz-pad button.silbe { color: #c4b5fd; }
+        .zz-pad button.klein { font-size: 1rem; color: #94a3b8; }
+        .zz-pad .leer { visibility: hidden; }
+        html[data-theme="light"] .zz-pad button { background: #f1f5f9; border-color: #94a3b8; color: #0f172a; }
+        html[data-theme="light"] .zz-pad button.silbe { color: #6d28d9; }
         @media (prefers-reduced-motion: reduce) { .rhy-aktiv { animation: none; } }
 
         /* Schere, Note, Notenpapier */
@@ -1164,6 +1192,57 @@
         </div>
     </div>
 
+    <!-- Zaehlzeiten-Runde: die Klasse schreibt die Zaehlzeiten ueber einen Rhythmus -->
+    <div id="zaehl-fenster" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/92 p-4" onclick="if (event.target === this) zaehlFensterSchliessen();">
+        <div class="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3 font-sans">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-black text-violet-300"><span class="font-black">1 e +</span> Zählzeiten-Runde</h3>
+                <button onclick="zaehlFensterSchliessen()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-normal">
+                Alle Teams sehen denselben Rhythmus mit einem Kästchen über jeder Note und tragen die Zählzeiten ein
+                (1, e, +, e …). Die Antworten werden automatisch mit der Lösung verglichen – die Punkte vergibst du wie immer.
+            </p>
+            <div class="flex items-center gap-2 text-[11px] font-bold text-slate-300">
+                <span>Taktart:</span>
+                <span id="zaehl-taktwahl" class="flex gap-1"></span>
+                <span>Takte:</span>
+                <span class="flex items-center gap-1">
+                    <button type="button" class="rhy-knopf" onclick="zaehlTakteAendern(-1)" title="Einen Takt weniger">−</button>
+                    <span id="zaehl-taktzahl" class="font-black text-violet-300 w-4 text-center">1</span>
+                    <button type="button" class="rhy-knopf" onclick="zaehlTakteAendern(1)" title="Einen Takt mehr">+</button>
+                </span>
+            </div>
+            <div>
+                <div class="text-[11px] font-bold text-slate-300 mb-1">Diese Noten- und Pausenwerte dürfen vorkommen:</div>
+                <div id="zaehl-wahl" class="rhy-wahl"></div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] font-bold text-slate-300">Rhythmus (mit Lösung – nur für dich):</span>
+                <button type="button" onclick="zaehlWuerfeln()"
+                        class="ml-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] rounded-lg px-3 py-1 transition-all active:scale-95"
+                        title="Würfelt einen kniffligen Rhythmus aus deinen Bausteinen">
+                    <i class="fa-solid fa-dice"></i> Würfeln
+                </button>
+            </div>
+            <div id="zaehl-vorschau" class="bg-slate-950/60 border border-slate-800 rounded-xl p-2 text-slate-100"></div>
+            <div class="flex gap-2 pt-1">
+                <button onclick="zaehlRundeStarten()" id="zaehl-start-btn"
+                        class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">
+                    <i class="fa-solid fa-play mr-1"></i> Zählzeiten-Runde starten
+                </button>
+                <button onclick="zaehlRundeBeenden()" id="zaehl-stop-btn"
+                        class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold py-2 px-3 rounded-xl text-xs transition-all active:scale-95">
+                    Beenden
+                </button>
+            </div>
+            <p class="text-[10px] text-slate-500 leading-normal">
+                Solange die Runde läuft, sehen die Teams statt des Antwortfeldes die Noten mit Kästchen und ein Zahlenfeld.
+                Abgeben geht erst, wenn alle Kästchen ausgefüllt sind.
+            </p>
+        </div>
+    </div>
+
     <!-- Sammelspiele: eigene Buehne, gleiche Optik. Hier wird nicht getippt,
          sondern gezielt und gezogen - deshalb kein onclick auf der ganzen Flaeche. -->
     <div id="sammel-buehne" class="minispiel-buehne"></div>
@@ -1400,6 +1479,11 @@
                 <div id="rhythmus-eingabe" class="hidden">
                     <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Dein Rhythmus:</label>
                     <div id="rhythmus-eingabe-feld"></div>
+                </div>
+                <!-- Zaehlzeiten-Runde: Kaestchen ueber den Noten, Zahlenfeld darunter -->
+                <div id="zaehl-eingabe" class="hidden">
+                    <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Schreib die Zählzeiten über die Noten:</label>
+                    <div id="zaehl-eingabe-feld"></div>
                 </div>
                 <div id="text-eingabe">
                     <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Deine Antwort:</label>
@@ -1929,6 +2013,15 @@
                     aria-label="Rhythmus-Runde"
                 >
                     <i class="fa-solid fa-drum"></i>
+                </button>
+                <button
+                    id="zaehl-btn"
+                    onclick="zaehlFensterZeigen()"
+                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
+                    title="Zählzeiten-Runde: Die Klasse schreibt die Zählzeiten über die Noten"
+                    aria-label="Zählzeiten-Runde"
+                >
+                    <span class="font-black">1 e +</span>
                 </button>
                 <!-- Ein Knopf fuer alle Minispiele: Die Auswahl steht auf der Buehne.
                      Drei Knoepfe nebeneinander haetten die Rundenleiste gesprengt. -->
@@ -2842,6 +2935,8 @@
                     // Nur Taktlaenge und erlaubte Bausteine - die Loesung bleibt hier
                     rhythmus: rhythmusRunde ? { soll: rhythmusRunde.soll, werte: rhythmusRunde.werte,
                                                 takte: rhythmusRunde.takte || 1, zeichen: rhythmusRunde.zeichen } : null,
+                    // Zaehlzeiten-Runde: der Rhythmus selbst ist die Aufgabe (die Loesung ergibt sich daraus)
+                    zaehl: zaehlRunde ? { zeichen: zaehlRunde.zeichen, aufgabe: zaehlRunde.aufgabe } : null,
                     songabgabe: songabgabeAn,
                     // Wessen Antwort verworfen wurde, darf noch einmal abgeben
                     freigabe: letzteFreigabe
@@ -5596,6 +5691,8 @@
             }
             rhythmusEntwurf.loesung = loesung;
             rhythmusEntwurfSichern();
+            // Nur eine Sonderrunde zur Zeit - beide ersetzen dasselbe Antwortfeld
+            if (zaehlRunde) { zaehlRunde = null; zaehlKnoepfeAktualisieren(); }
             rhythmusRunde = { soll: rhythmusEntwurf.soll, zeichen: rhythmusEntwurf.zeichen || '4/4',
                               takte: rhythmusEntwurf.takte || 1,
                               klatsch: rhythmusEntwurf.klatsch !== false,
@@ -5660,6 +5757,7 @@
             const feld = getEl('student-answer-input');
             if (feld) { feld.value = ''; feld.disabled = false; }
             if (rhythmusSchuelerEditor) rhythmusSchuelerEditor.setzen('');
+            if (zaehlSchueler) { zaehlSchueler.werte = zaehlSchueler.werte.map(() => ''); zaehlSchueler.aktiv = 0; zaehlSchuelerZeichnen(); }
             updateStudentRound(studentCurrentRound, null);
             showToast("Deine Antwort wurde verworfen - du kannst noch einmal abgeben.", "info");
             playSound('down');
@@ -5686,6 +5784,279 @@
                 rhythmusSchuelerEditor = rhythmusEditor(getEl('rhythmus-eingabe-feld'), stand.soll, stand.werte,
                                                         stand.takte, stand.zeichen);
             }
+        }
+
+        /* ============================================================ */
+        /* ZAEHLZEITEN-RUNDE                                              */
+        /* Wie die Rhythmus-Runde ein Ersatz fuer das Antwortfeld: Alle   */
+        /* Teams sehen denselben Rhythmus, ueber jeder Note ein Kaestchen,*/
+        /* und tragen mit einem Zahlenfeld die Zaehlzeiten ein (1 e + e). */
+        /* Die Antwort geht als "ZZ:1 + e 2 ..." durch den normalen Kanal */
+        /* - Joker, Sperre, Timer, Zaehler und Punkteknoepfe bleiben.     */
+        /* Die Antwortkarte vergleicht automatisch mit der Loesung.        */
+        /* Wuerfeln wie im Zaehl-Training der Rhythmus-Werkstatt          */
+        /* (js/zaehlkern.js dort): viele Kandidaten, einer der kniffligen.*/
+        /* ============================================================ */
+        const ZAEHL_ENTWURF_KEY = 'zaehl-entwurf';
+        let zaehlRunde = null;     // { zeichen, soll, aufgabe: 'V-AA_H-H', loesung: ['1','+', ...] }
+        let zaehlEntwurf = { zeichen: '4/4', takte: 1, werte: ['V', 'AA', 'H', 'Vp', 'ASS', 'SSA', 'SSSS', 'pA'], aufgabe: '' };
+        let zaehlSchueler = null;  // { schluessel, stand, werte: [], aktiv }
+        try { const d = JSON.parse(localStorage.getItem(ZAEHL_ENTWURF_KEY) || 'null'); if (d) Object.assign(zaehlEntwurf, d); } catch (e) { /* egal */ }
+        function zaehlEntwurfSichern() { try { localStorage.setItem(ZAEHL_ENTWURF_KEY, JSON.stringify(zaehlEntwurf)); } catch (e) { /* egal */ } }
+
+        const zaehlSchlaege = (zeichen) => Number(String(zeichen || '4/4').split('/')[0]) || 4;
+        // Silbe fuer eine Position (in Vierteln ab Taktanfang): 1 e + e 2 e + e ...
+        function zaehlSilbe(v) {
+            const puls = Math.floor(v + 1e-6);
+            const stufe = Math.round((v - puls) / 0.25) % 4;
+            return stufe === 0 ? String(puls + 1) : ['', 'e', '+', 'e'][stufe];
+        }
+        const zaehlTakte = (aufgabe) => String(aufgabe || '').split('_').filter(Boolean).map(t => rhythmusLesen(t));
+        function zaehlLoesung(aufgabe) {
+            const l = [];
+            zaehlTakte(aufgabe).forEach(takt => { let v = 0; takt.forEach(b => b.teile.forEach(t => { if (!t.p) l.push(zaehlSilbe(v)); v += t.d; })); });
+            return l;
+        }
+        // Notenbild einer Aufgabe ({zeichen, aufgabe}) mit Kaestchen. faktor =
+        // hoechstens so viel groesser als die Zeichnung (Schuelergeraet 2,2, auf
+        // den Antwortkarten kleiner, sonst schneidet die Karte unten ab).
+        function zaehlSvg(stand, kaestchen, faktor) {
+            const flach = [].concat(...zaehlTakte(stand.aufgabe));
+            const svg = rhythmusSvg(flach, null, false, stand.zeichen, zaehlSchlaege(stand.zeichen), kaestchen);
+            return faktor ? svg.replace(/max-width:(\d+)px/, (m, w) => `max-width:${Math.round(w / 2.2 * faktor)}px`) : svg;
+        }
+
+        /* ---------- Wuerfeln ---------- */
+        function zaehlTaktBewerten(takt, soll) {
+            const punktiert = (d) => Math.abs(d - 0.75) < 0.001 || Math.abs(d - 1.5) < 0.001 || Math.abs(d - 3) < 0.001;
+            let v = 0, punkte = 0, daneben = 0, noten = 0, pausen = 0;
+            takt.forEach(b => b.teile.forEach(t => {
+                const silbe = zaehlSilbe(v), aufSchlag = /^\d$/.test(silbe);
+                if (t.p) { pausen++; if (aufSchlag) punkte += 1.5; }
+                else {
+                    noten++;
+                    if (!aufSchlag) daneben += silbe === 'e' ? 1.5 : 1;
+                    if (t.d > 1 || punktiert(t.d)) punkte += 1.5;
+                }
+                v += t.d;
+            }));
+            punkte += Math.min(daneben, soll * 1.5);
+            if (noten > soll * 3) punkte -= (noten - soll * 3) * 1.5;
+            const arten = new Set(takt.map(b => b.code)).size;
+            punkte += arten * 1.5 - (takt.length - arten) * 1.5;
+            if (pausen > 1) punkte -= (pausen - 1) * 1.5;
+            return { punkte, noten, pausen };
+        }
+        function zaehlTaktWuerfeln(erlaubt, soll, vorher) {
+            const kandidaten = [];
+            for (let versuch = 0; versuch < 200 && kandidaten.length < 40; versuch++) {
+                const takt = [];
+                let rest = soll;
+                while (rest > 0.001) {
+                    const moeglich = erlaubt.filter(b => b.dauer <= rest + 0.001);
+                    if (!moeglich.length) break;
+                    takt.push(moeglich[Math.floor(Math.random() * moeglich.length)]);
+                    rest -= takt[takt.length - 1].dauer;
+                }
+                if (Math.abs(rest) > 0.001) continue;
+                const w = zaehlTaktBewerten(takt, soll);
+                if (w.noten < 2 && soll > 1) continue;
+                if (w.pausen > w.noten) continue;
+                const kuerzel = rhythmusSchreiben(takt);
+                if (kuerzel === vorher) continue;
+                kandidaten.push({ kuerzel, punkte: w.punkte + Math.random() * 4 });
+            }
+            if (!kandidaten.length) return null;
+            kandidaten.sort((a, b) => b.punkte - a.punkte);
+            return kandidaten[Math.floor(Math.random() * Math.min(6, kandidaten.length))].kuerzel;
+        }
+        function zaehlWuerfeln() {
+            const erlaubt = RHYTHMUS_BAUSTEINE.filter(b => zaehlEntwurf.werte.includes(b.code));
+            if (!erlaubt.length) { showToast("Wähle mindestens einen Baustein aus.", "danger"); return false; }
+            const soll = zaehlSchlaege(zaehlEntwurf.zeichen);
+            const takte = [];
+            for (let t = 0; t < (zaehlEntwurf.takte || 1); t++) {
+                const k = zaehlTaktWuerfeln(erlaubt, soll, takte[takte.length - 1]);
+                if (!k) { showToast("Aus dieser Auswahl geht kein Takt genau auf - nimm noch einen kürzeren Baustein dazu.", "danger"); return false; }
+                takte.push(k);
+            }
+            zaehlEntwurf.aufgabe = takte.join('_');
+            zaehlEntwurfSichern();
+            zaehlVorschauZeichnen();
+            return true;
+        }
+
+        /* ---------- Fenster (Lehrkraft) ---------- */
+        function zaehlFensterZeigen() {
+            const f = getEl('zaehl-fenster');
+            if (!f) return;
+            if (zaehlRunde) Object.assign(zaehlEntwurf, { zeichen: zaehlRunde.zeichen, aufgabe: zaehlRunde.aufgabe });
+            f.classList.remove('hidden');
+            f.classList.add('flex');
+            zaehlFensterZeichnen();
+        }
+        function zaehlFensterSchliessen() {
+            zaehlEntwurfSichern();
+            const f = getEl('zaehl-fenster');
+            if (!f) return;
+            f.classList.add('hidden');
+            f.classList.remove('flex');
+        }
+        function zaehlFensterZeichnen() {
+            const wahl = getEl('zaehl-taktwahl');
+            if (wahl) wahl.innerHTML = ['2/4', '3/4', '4/4'].map(z =>
+                `<button type="button" class="rhy-knopf${z === zaehlEntwurf.zeichen ? ' an' : ''}" onclick="zaehlTaktartSetzen('${z}')">${z}</button>`).join('');
+            const zahl = getEl('zaehl-taktzahl');
+            if (zahl) zahl.textContent = zaehlEntwurf.takte || 1;
+            const ziel = getEl('zaehl-wahl');
+            if (ziel) {
+                ziel.innerHTML = '';
+                [['Noten', false], ['Pausen', true]].forEach(([titel, pausen]) => {
+                    const zeile = document.createElement('div');
+                    zeile.className = 'rhy-wahl-zeile';
+                    zeile.innerHTML = `<span class="rhy-wahl-titel">${titel}</span>`;
+                    RHYTHMUS_BAUSTEINE.filter(w => !!w.pausenreihe === pausen).forEach(w => {
+                        const b = document.createElement('button');
+                        b.type = 'button';
+                        b.className = 'rhy-chip' + (zaehlEntwurf.werte.includes(w.code) ? ' an' : '');
+                        b.title = w.wort;
+                        b.innerHTML = rhythmusSvg([w], null, true);
+                        b.addEventListener('click', () => {
+                            const i = zaehlEntwurf.werte.indexOf(w.code);
+                            if (i >= 0) zaehlEntwurf.werte.splice(i, 1); else zaehlEntwurf.werte.push(w.code);
+                            zaehlEntwurfSichern();
+                            zaehlFensterZeichnen();
+                        });
+                        zeile.appendChild(b);
+                    });
+                    ziel.appendChild(zeile);
+                });
+            }
+            zaehlVorschauZeichnen();
+            zaehlKnoepfeAktualisieren();
+        }
+        function zaehlTaktartSetzen(z) { zaehlEntwurf.zeichen = z; zaehlEntwurf.aufgabe = ''; zaehlEntwurfSichern(); zaehlFensterZeichnen(); }
+        function zaehlTakteAendern(d) {
+            zaehlEntwurf.takte = Math.max(1, Math.min(2, (zaehlEntwurf.takte || 1) + d));
+            zaehlEntwurf.aufgabe = '';
+            zaehlEntwurfSichern();
+            zaehlFensterZeichnen();
+        }
+        function zaehlVorschauZeichnen() {
+            const feld = getEl('zaehl-vorschau');
+            if (!feld) return;
+            // Passt der gemerkte Rhythmus nicht mehr zur Taktart/Taktzahl, neu wuerfeln
+            const takte = zaehlTakte(zaehlEntwurf.aufgabe);
+            const soll = zaehlSchlaege(zaehlEntwurf.zeichen);
+            const passt = takte.length === (zaehlEntwurf.takte || 1) && takte.every(t => Math.abs(rhythmusDauer(t) - soll) < 0.001);
+            if (!passt) { feld.innerHTML = '<p class="text-[11px] text-slate-500 text-center py-3">Noch kein Rhythmus – auf „Würfeln“ tippen.</p>'; zaehlEntwurf.aufgabe = ''; return; }
+            feld.innerHTML = zaehlSvg(zaehlEntwurf, zaehlLoesung(zaehlEntwurf.aufgabe).map(w => ({ wert: w, klasse: 'loesung' })));
+        }
+        function zaehlKnoepfeAktualisieren() {
+            const start = getEl('zaehl-start-btn'), stop = getEl('zaehl-stop-btn'), knopf = getEl('zaehl-btn');
+            if (start) start.innerHTML = zaehlRunde
+                ? '<i class="fa-solid fa-rotate mr-1"></i> Diesen Rhythmus übernehmen'
+                : '<i class="fa-solid fa-play mr-1"></i> Zählzeiten-Runde starten';
+            if (stop) stop.classList.toggle('hidden', !zaehlRunde);
+            if (knopf) {
+                knopf.className = zaehlRunde
+                    ? "rhy-aktiv bg-violet-600 hover:bg-violet-500 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
+                    : "bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans";
+                knopf.title = zaehlRunde ? 'Zählzeiten-Runde läuft - hier ändern oder beenden'
+                                         : 'Zählzeiten-Runde: Die Klasse schreibt die Zählzeiten über die Noten';
+            }
+        }
+        function zaehlRundeStarten() {
+            if (!zaehlEntwurf.aufgabe && !zaehlWuerfeln()) return;
+            if (rhythmusRunde) {   // nur eine Sonderrunde zur Zeit
+                rhythmusRunde = null;
+                metronomStoppen();
+                metronomLeisteZeigen(false);
+                rhythmusKnoepfeAktualisieren();
+            }
+            zaehlRunde = { zeichen: zaehlEntwurf.zeichen, soll: zaehlSchlaege(zaehlEntwurf.zeichen),
+                           aufgabe: zaehlEntwurf.aufgabe, loesung: zaehlLoesung(zaehlEntwurf.aufgabe) };
+            broadcastControlState();
+            renderIncomingAnswersList();
+            zaehlKnoepfeAktualisieren();
+            zaehlFensterSchliessen();
+            showToast("1 e + Zählzeiten-Runde läuft - die Teams sehen jetzt die Noten mit Kästchen.", "success");
+            playSound('up');
+        }
+        function zaehlRundeBeenden() {
+            zaehlRunde = null;
+            broadcastControlState();
+            renderIncomingAnswersList();
+            zaehlKnoepfeAktualisieren();
+            zaehlFensterSchliessen();
+            showToast("Zählzeiten-Runde beendet - die Teams haben wieder das Antwortfeld.", "info");
+        }
+
+        /* ---------- Schuelergeraet ---------- */
+        function zaehlSchuelerZeigen(stand) {
+            const kasten = getEl('zaehl-eingabe'), text = getEl('text-eingabe'), rhy = getEl('rhythmus-eingabe');
+            if (!kasten || !text) return;
+            if (!stand || !stand.aufgabe) {
+                kasten.classList.add('hidden');
+                if (!rhy || rhy.classList.contains('hidden')) text.classList.remove('hidden');
+                zaehlSchueler = null;
+                return;
+            }
+            kasten.classList.remove('hidden');
+            text.classList.add('hidden');
+            const schluessel = stand.zeichen + ':' + stand.aufgabe;
+            // Nur neu aufbauen, wenn es ein neuer Rhythmus ist - sonst waere die
+            // halb fertige Eingabe bei jedem Rundensignal weg.
+            if (!zaehlSchueler || zaehlSchueler.schluessel !== schluessel) {
+                zaehlSchueler = { schluessel, stand, werte: zaehlLoesung(stand.aufgabe).map(() => ''), aktiv: 0 };
+                zaehlSchuelerZeichnen();
+            }
+        }
+        function zaehlSchuelerZeichnen() {
+            const feld = getEl('zaehl-eingabe-feld');
+            if (!feld || !zaehlSchueler) return;
+            const z = zaehlSchueler;
+            const schlaege = zaehlSchlaege(z.stand.zeichen);
+            const zahlen = [1, 2, 3, 4].map(n => n <= schlaege
+                ? `<button type="button" onclick="zaehlTippen('${n}')">${n}</button>`
+                : `<button type="button" class="leer" tabindex="-1">${n}</button>`).join('');
+            feld.innerHTML = `<div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800 text-slate-100" onclick="zaehlFeldAngetippt(event)">` +
+                zaehlSvg(z.stand, z.werte.map((w, i) => ({ wert: w, klasse: i === z.aktiv ? 'aktiv' : '', waehlbar: true }))) + `</div>` +
+                `<div class="zz-pad">${zahlen}` +
+                `<button type="button" class="klein" onclick="zaehlLoeschen()" title="Löschen"><i class="fa-solid fa-delete-left"></i></button>` +
+                `<button type="button" class="silbe" onclick="zaehlTippen('e')">e</button>` +
+                `<button type="button" class="silbe" onclick="zaehlTippen('+')" title="und">+</button>` +
+                `<button type="button" class="klein" onclick="zaehlBewegen(-1)" title="Kästchen davor"><i class="fa-solid fa-chevron-left"></i></button>` +
+                `<button type="button" class="klein" onclick="zaehlBewegen(1)" title="Kästchen danach"><i class="fa-solid fa-chevron-right"></i></button>` +
+                `<span></span></div>`;
+        }
+        function zaehlFeldAngetippt(e) {
+            const g = e.target.closest('[data-feld]');
+            if (!g || !zaehlSchueler) return;
+            zaehlSchueler.aktiv = Number(g.dataset.feld);
+            zaehlSchuelerZeichnen();
+        }
+        function zaehlTippen(zeichen) {
+            const z = zaehlSchueler;
+            if (!z || studentRoundLocked) return;
+            z.werte[z.aktiv] = zeichen;
+            // weiter zum naechsten leeren Kaestchen, sonst einfach eins weiter
+            const leer = z.werte.findIndex((w, i) => i > z.aktiv && !w);
+            z.aktiv = leer >= 0 ? leer : Math.min(z.werte.length - 1, z.aktiv + 1);
+            zaehlSchuelerZeichnen();
+        }
+        function zaehlLoeschen() {
+            const z = zaehlSchueler;
+            if (!z) return;
+            if (!z.werte[z.aktiv] && z.aktiv > 0) z.aktiv--;
+            z.werte[z.aktiv] = '';
+            zaehlSchuelerZeichnen();
+        }
+        function zaehlBewegen(d) {
+            const z = zaehlSchueler;
+            if (!z) return;
+            z.aktiv = Math.max(0, Math.min(z.werte.length - 1, z.aktiv + d));
+            zaehlSchuelerZeichnen();
         }
 
         /* ============================================================ */
@@ -5773,9 +6144,15 @@
         /* Gezeichnet wird in currentColor: Die Noten nehmen damit die Textfarbe
            ihres Kastens an und sind im hellen wie im dunklen Theme zu sehen.
            Vorher stand hier ein festes Hellgrau - auf weissem Grund unsichtbar. */
-        function rhythmusSvg(liste, farbe, nackt, taktzeichen, taktLaenge) {
+        /* kaestchen (optional, Zaehlzeiten-Runde): je Note (ohne Pausen) ein
+           {wert, klasse, waehlbar} - dann steht ueber jeder Note ein Kaestchen
+           (g.zz-feld[data-feld]), die Abstaende werden groesser, damit die
+           Kaestchen sich nicht beruehren, und das Bild darf breiter werden. */
+        function rhythmusSvg(liste, farbe, nackt, taktzeichen, taktLaenge, kaestchen) {
             const tinte = farbe || 'currentColor';
-            const vorschub = { 4: 96, 2: 62, 1: 38, 0.75: 30, 0.5: 24, 0.25: 17 };
+            const vorschub = kaestchen ? { 4: 100, 2: 66, 1: 44, 0.75: 36, 0.5: 30, 0.25: 24 }
+                                       : { 4: 96, 2: 62, 1: 38, 0.75: 30, 0.5: 24, 0.25: 17 };
+            let notenNr = 0;
             const links = 16, halsOben = 13, linie = 46, balkenDicke = 5;
             const teile = [];
             // Im Takt beginnt das erste Zeichen mit Abstand zum Taktstrich - sonst
@@ -5907,6 +6284,14 @@
                         return;
                     }
                     const hohl = t.d >= 2;
+                    if (kaestchen) {
+                        const k = kaestchen[notenNr] || { wert: '' };
+                        const kx = px + 1, kOben = halsOben - 34;
+                        teile.push(`<g class="zz-feld ${k.klasse || ''}"${k.waehlbar ? ` data-feld="${notenNr}"` : ''}>` +
+                                   `<rect x="${kx - 10}" y="${kOben}" width="20" height="22" rx="4"/>` +
+                                   `<text x="${kx}" y="${kOben + 12}" text-anchor="middle" dominant-baseline="middle" font-size="13">${escapeHtml(k.wert || '')}</text></g>`);
+                        notenNr++;
+                    }
                     teile.push(`<ellipse cx="${px}" cy="${linie}" rx="7.5" ry="5.4" transform="rotate(-18 ${px} ${linie})"` +
                                (hohl ? ` fill="none" stroke="${tinte}" stroke-width="2.6"/>` : ` fill="${tinte}"/>`));
                     ink(px - 9, px + 9, linie - 7, linie + 7);
@@ -5928,6 +6313,9 @@
                 teile.unshift(`<line x1="${linieVon}" y1="${linie}" x2="${rechts + 8}" y2="${linie}" stroke="${tinte}" stroke-width="1.5" opacity=".45"/>`);
                 teile.push(`<line x1="${rechts + 8}" y1="${linie - 17}" x2="${rechts + 8}" y2="${linie + 15}" stroke="${tinte}" stroke-width="3"/>`);
                 const breite = rechts + 18;
+                if (kaestchen) {
+                    return `<svg viewBox="0 -24 ${breite} 98" width="100%" style="max-width:${Math.round(breite * 2.2)}px; height:auto; display:block; margin:0 auto">${teile.join('')}</svg>`;
+                }
                 return `<svg viewBox="0 0 ${breite} 74" width="100%" style="max-width:${Math.round(breite * 1.5)}px; height:auto; display:block; margin:0 auto">${teile.join('')}</svg>`;
             }
             /* Keine Hoehe im Stil: Die legt das CSS der jeweiligen Karte fest.
@@ -7628,6 +8016,8 @@
                     sammelspielSchuelerZeigen(payload.sammel || null);
                     snpSchuelerZeigen(payload.snp || null);
                     rhythmusSchuelerZeigen(payload.rhythmus || null);
+                    // nach der Rhythmus-Runde: beide schalten dasselbe Textfeld
+                    zaehlSchuelerZeigen(payload.zaehl || null);
                     freigabePruefen(payload.freigabe);
                     /* Fehlt das Feld (aeltere Sitzung), gilt "an" - so verhaelt sich
                        ein alter Raum wie bisher. */
@@ -8010,7 +8400,14 @@
                "RHY:V-A-A" durch dasselbe Feld wie jede andere - so bleiben Joker,
                Sperre, Zaehler und Archiv unveraendert. */
             const rhythmusAktiv = rhythmusSchuelerEditor && !getEl('rhythmus-eingabe').classList.contains('hidden');
-            const answer = rhythmusAktiv ? 'RHY:' + rhythmusSchuelerEditor.lesen()
+            /* Zaehlzeiten-Runde genauso: "ZZ:1 + e 2 ..." - eine Silbe je Note */
+            const zaehlAktiv = zaehlSchueler && !getEl('zaehl-eingabe').classList.contains('hidden');
+            if (zaehlAktiv && zaehlSchueler.werte.some(w => !w)) {
+                showToast("Fülle erst alle Kästchen aus!", "danger");
+                return;
+            }
+            const answer = zaehlAktiv ? 'ZZ:' + zaehlSchueler.werte.join(' ')
+                         : rhythmusAktiv ? 'RHY:' + rhythmusSchuelerEditor.lesen()
                                          : (answerEl ? answerEl.value.trim() : "");
             const btn = getEl('student-submit-btn');
 
@@ -8706,6 +9103,19 @@
                 list.appendChild(loesungsKarte);
             }
 
+            if (!beamerProtectionActive && zaehlRunde) {
+                const loesungsKarte = document.createElement('div');
+                loesungsKarte.className = "w-full col-span-full mb-1";
+                loesungsKarte.innerHTML = `
+                    <div class="bg-emerald-950/30 border border-emerald-800/50 rounded-xl p-2 animate-scaleIn">
+                        <div class="text-[11px] font-black text-emerald-300 mb-1 flex items-center gap-1.5 font-sans">
+                            <span class="font-black">1 e +</span> Lösung – so wird gezählt
+                        </div>
+                        <div class="text-slate-100">${zaehlSvg(zaehlRunde, zaehlRunde.loesung.map(w => ({ wert: w, klasse: 'loesung' })), 1.5)}</div>
+                    </div>`;
+                list.appendChild(loesungsKarte);
+            }
+
             // Chronologische Kärtchen rendern (Kompakte Kärtchen im mehrspaltigen Grid)
             incomingAnswers.forEach((ans, index) => {
                 const item = document.createElement('div');
@@ -8771,7 +9181,25 @@
                             </div>
                         </div>
                     `;
-                    if (String(ans.answer || '').startsWith('RHY:')) {
+                    if (String(ans.answer || '').startsWith('ZZ:')) {
+                        /* Zaehlzeiten-Antwort: die Silben in ihre Kaestchen, gruen/rot
+                           gegen die Loesung. Auch hier nur ein Hinweis - gepunktet
+                           wird mit den Knoepfen wie immer. */
+                        const werte = String(ans.answer).slice(3).split(' ');
+                        let inhalt;
+                        if (zaehlRunde) {
+                            const richtig = werte.filter((w, i) => w === zaehlRunde.loesung[i]).length;
+                            const alle = zaehlRunde.loesung.length;
+                            const urteil = richtig === alle && werte.length === alle
+                                ? `<span class="text-[10px] font-black text-emerald-400"><i class="fa-solid fa-check"></i> alle ${alle} richtig</span>`
+                                : `<span class="text-[10px] font-black text-rose-400">${richtig} von ${alle} richtig</span>`;
+                            inhalt = zaehlSvg(zaehlRunde, zaehlRunde.loesung.map((l, i) => ({ wert: werte[i] || '', klasse: werte[i] === l ? 'richtig' : 'falsch' })), 1.1)
+                                   + `<div class="text-center mt-1">${urteil}</div>`;
+                        } else {
+                            inhalt = `<div class="text-center text-sm font-bold text-slate-200">${escapeHtml(werte.join(' '))}</div>`;
+                        }
+                        answerTextContent = `<div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800">${inhalt}</div>`;
+                    } else if (String(ans.answer || '').startsWith('RHY:')) {
                         /* Rhythmus-Antwort: als Noten zeigen und gegen die Loesung
                            halten. Das Urteil ist ein Hinweis, kein Urteilsspruch -
                            die Punkteknoepfe bleiben unveraendert, du kannst also
