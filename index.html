@@ -202,7 +202,12 @@
             position: fixed; inset: 0; z-index: 60;
             display: none; flex-direction: column;
             align-items: center; justify-content: center; gap: 1.1rem;
-            text-align: center; padding: 2rem; overflow: hidden;
+            /* "safe": Passt der Inhalt nicht (viele Teams im Endstand), beginnt er
+               oben und laesst sich scrollen - sonst ragte er oben und unten aus dem
+               Bild, und die Knoepfe zum Schliessen waren nicht mehr erreichbar. */
+            justify-content: safe center;
+            text-align: center; padding: 2rem; overflow-x: hidden; overflow-y: auto;
+            overscroll-behavior: contain;
             color: #f8fafc;
             /* Russo One traegt die Arcade-Anmutung; faellt sie aus (Schul-WLAN),
                uebernimmt Comfortaa und es sieht nur ruhiger aus, nicht kaputt. */
@@ -210,6 +215,11 @@
             background: radial-gradient(circle at 50% 36%, #24315c 0%, #0e1230 52%, #05060f 100%);
         }
         .minispiel-buehne.sichtbar { display: flex; }
+
+        /* Meldungen oben rechts statt unten links: Unten liegen beim Bewerten
+           die Antwortkarten, und ein Stapel "Punkte vorgemerkt" deckte genau
+           die zu, die man als Naechstes lesen wollte. */
+        #toast-container { top: .75rem; right: .75rem; max-width: min(22rem, calc(100vw - 1.5rem)); }
         /* Auf dem Schuelergeraet ist der Schirm schmal - dort zaehlt jeder Punkt Breite. */
         @media (max-width: 640px) {
             .minispiel-buehne { padding: 1rem; gap: .8rem; }
@@ -224,15 +234,16 @@
 
         /* Zwei Lagen hinter dem Inhalt, ohne zusaetzliches Markup:
            ::before ist das wandernde Neongitter, ::after die dunkle Ecke. */
+        /* fixed statt absolute: Die Buehne scrollt, die Lagen sollen stehen bleiben. */
         .minispiel-buehne::before {
-            content: ''; position: absolute; inset: 0; pointer-events: none;
+            content: ''; position: fixed; inset: 0; pointer-events: none;
             background:
                 repeating-linear-gradient(0deg,  rgba(125,211,252,.10) 0 1px, transparent 1px 48px),
                 repeating-linear-gradient(90deg, rgba(125,211,252,.10) 0 1px, transparent 1px 48px);
             animation: gitterZug 3s linear infinite;
         }
         .minispiel-buehne::after {
-            content: ''; position: absolute; inset: 0; pointer-events: none;
+            content: ''; position: fixed; inset: 0; pointer-events: none;
             box-shadow: inset 0 0 min(26vw, 280px) rgba(0,0,0,.7);
         }
         .minispiel-buehne > * { position: relative; z-index: 1; }
@@ -755,6 +766,17 @@
         .minispiel-rang.platz3 { border-left-color: #f0a46b; }
         .minispiel-rang.platz3 .punkte { background: #f0a46b; color: #432004; border-color: #fed7aa; }
         .minispiel-rang.fehlstart { opacity: .5; border-left-color: #f43f5e; }
+        /* Viele Teams: die Liste laeuft in Spalten (oben nach unten, dann
+           rechts weiter), damit der Endstand auf den Beamer passt. --spalten
+           ist die Hoechstzahl, schmale Schirme bekommen weniger. */
+        .minispiel-rangliste {
+            columns: var(--spalten, 1) 320px; column-gap: 1.2rem;
+            width: min(calc(var(--spalten, 1) * 540px), 94vw);
+        }
+        .minispiel-rangliste .minispiel-rang {
+            width: 100%; break-inside: avoid; margin-bottom: .55rem;
+        }
+        .minispiel-rangliste.mehrspaltig .minispiel-rang { font-size: min(2vw, 22px); padding: .35rem 1rem; margin-bottom: .4rem; }
 
         /* Wer es nicht mag oder nicht verträgt, bekommt dieselbe Bühne still. */
         @media (prefers-reduced-motion: reduce) {
@@ -2253,7 +2275,7 @@
 
     <!-- Toast Benachrichtigungen -->
     <!-- Unten links, damit die große Restzeit unten rechts frei bleibt -->
-    <div id="toast-container" class="fixed bottom-4 left-2 z-50 space-y-2 pointer-events-none"></div>
+    <div id="toast-container" class="fixed z-50 space-y-2 pointer-events-none"></div>
 
     <!-- Bestätigungs-Modal für Reset & Deletion (Eigene, schicke Modals) -->
     <div id="confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50 font-sans">
@@ -3169,7 +3191,7 @@
                            kommt zeilenweise, damit die Siegerliste Spannung behaelt. */
                         const art = e.ms < 0 ? ' fehlstart' : punkte ? ' platz' + (i + 1) : '';
                         const zeichen = e.ms < 0 ? '–' : ['🥇', '🥈', '🥉'][i] || (i + 1) + '.';
-                        return `<div class="minispiel-rang${art}" style="animation-delay: ${(i * 0.18).toFixed(2)}s">
+                        return `<div class="minispiel-rang${art}" style="animation-delay: ${(Math.min(i, 10) * 0.18).toFixed(2)}s">
                             <span class="platz">${zeichen}</span>
                             <span>${escapeHtml(e.team)}</span>
                             <span class="zeit">${e.ms < 0 ? 'Fehlstart' : (e.ms / 1000).toFixed(2).replace('.', ',') + ' s'}</span>
@@ -3180,7 +3202,7 @@
                 /* Die Buehne deckt die ganze Seite ab - die Rundenleiste liegt darunter.
                    Deshalb muessen die zwei Knoepfe hier stehen, sonst kommt man nach
                    dem Spiel nicht mehr heraus. */
-                b.innerHTML = `<div class="minispiel-titel">🏆 Ergebnis</div>${zeilen}
+                b.innerHTML = `<div class="minispiel-titel">🏆 Ergebnis</div>${minispielRanglisteHtml(zeilen, liste.length)}
                     <div class="minispiel-knopfreihe">
                         <button type="button" onclick="event.stopPropagation(); minispielPunkteVergeben();"
                                 class="minispiel-knopf gruen-knopf">Punkte vergeben (3 · 2 · 1)</button>
@@ -3189,6 +3211,14 @@
                     </div>`;
             }
             updateMinispielKnopf();
+        }
+
+        /* Rahmen um die Zeilen eines Endstands: ab sieben Teams zwei Spalten, ab
+           fuenfzehn drei. "Niemand hat ..." kommt ohne Rahmen durch. */
+        function minispielRanglisteHtml(zeilen, anzahl) {
+            if (!anzahl) return zeilen;
+            const spalten = anzahl > 14 ? 3 : anzahl > 6 ? 2 : 1;
+            return `<div class="minispiel-rangliste${spalten > 1 ? ' mehrspaltig' : ''}" style="--spalten: ${spalten}">${zeilen}</div>`;
         }
 
         function minispielRegelnHtml() {
@@ -4210,7 +4240,7 @@
                         const punkte = i < MINISPIEL_PUNKTE.length ? MINISPIEL_PUNKTE[i] : 0;
                         const art = punkte ? ' platz' + (i + 1) : '';
                         const zeichen = ['🥇', '🥈', '🥉'][i] || (i + 1) + '.';
-                        return `<div class="minispiel-rang${art}" style="animation-delay: ${(i * 0.18).toFixed(2)}s">
+                        return `<div class="minispiel-rang${art}" style="animation-delay: ${(Math.min(i, 10) * 0.18).toFixed(2)}s">
                             <span class="platz">${zeichen}</span>
                             <span>${escapeHtml(e.team)}</span>
                             <span class="zeit">${e.punkte} Pkt · ${zahlWort(e.extra, spiel.einheit[0], spiel.einheit[1])}</span>
@@ -4218,7 +4248,7 @@
                         </div>`;
                     }).join('')
                     : `<div class="mittel">Niemand hat gepunktet.</div>`;
-                b.innerHTML = `<div class="minispiel-titel">&#127942; Ergebnis</div>${zeilen}
+                b.innerHTML = `<div class="minispiel-titel">&#127942; Ergebnis</div>${minispielRanglisteHtml(zeilen, liste.length)}
                     <div class="minispiel-knopfreihe">
                         <button type="button" onclick="event.stopPropagation(); sammelspielPunkteVergeben();"
                                 class="minispiel-knopf gruen-knopf">Punkte vergeben (3 · 2 · 1)</button>
@@ -10447,6 +10477,9 @@
             if (messageSpan) messageSpan.textContent = message;
             
             container.appendChild(toast);
+            // Hoechstens zwei auf einmal - beim schnellen Bewerten wuchs sonst eine
+            // ganze Saeule, die drei Sekunden lang stehen blieb.
+            while (container.children.length > 2) container.firstElementChild.remove();
             
             setTimeout(() => {
                 toast.classList.remove('translate-y-2', 'opacity-0');
