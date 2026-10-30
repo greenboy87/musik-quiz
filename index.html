@@ -1202,6 +1202,11 @@
                         class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs transition-all active:scale-95">
                     <i class="fa-solid fa-play mr-1"></i> Rhythmus-Runde starten
                 </button>
+                <button onclick="rhythmusStartenUndVorspielen()"
+                        class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded-xl text-xs transition-all active:scale-95"
+                        title="Gibt den Rhythmus an die Klasse und klatscht ihn gleich dreimal vor">
+                    <i class="fa-solid fa-paper-plane mr-1"></i> Absenden + 3× vorspielen
+                </button>
                 <button onclick="rhythmusRundeBeenden()" id="rhythmus-stop-btn"
                         class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold py-2 px-3 rounded-xl text-xs transition-all active:scale-95">
                     Beenden
@@ -1366,6 +1371,9 @@
                 <button type="button" id="fern-senden" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs active:scale-95">
                     <i class="fa-solid fa-paper-plane mr-1"></i> An die Klasse geben
                 </button>
+                <button type="button" id="fern-senden-vorspielen" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded-xl text-xs active:scale-95">
+                    <i class="fa-solid fa-paper-plane mr-1"></i> Absenden + 3×
+                </button>
                 <button type="button" id="fern-beenden" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold py-2 px-3 rounded-xl text-xs active:scale-95">
                     Beenden
                 </button>
@@ -1377,13 +1385,10 @@
                 <button type="button" id="fern-tempo-minus" class="rhy-knopf">−</button>
                 <span id="fern-tempo" class="text-sm font-black text-violet-300 w-16 text-center">90 bpm</span>
                 <button type="button" id="fern-tempo-plus" class="rhy-knopf">+</button>
-                <span class="text-[11px] font-bold text-slate-400">Takte</span>
+                <span class="text-[11px] font-bold text-slate-400">Vorlauf</span>
                 <span id="fern-takte" class="flex gap-1"></span>
             </div>
             <div class="flex gap-2">
-                <button type="button" id="fern-metronom" class="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-bold py-2 rounded-xl text-xs active:scale-95">
-                    <i class="fa-solid fa-play mr-1"></i> Metronom
-                </button>
                 <button type="button" id="fern-vorklatsch" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded-xl text-xs active:scale-95"
                         title="Startet das Vorklatschen am Beamer - noch einmal drücken hält es an">
                     <i class="fa-solid fa-hands-clapping mr-1"></i> Vorklatschen / Stopp
@@ -3013,6 +3018,8 @@
                     reset: resetToken,
                     jokerStand: jokerStand,
                     locked: roundLocked,
+                    // Gesperrt, weil eine Sonderrunde gleich kommt - die Geraete sagen das dazu
+                    vorbereitung: (roundLocked && sonderrundeWartet) || null,
                     gestartet: spielLaeuft,
                     minispiel: minispiel ? { id: minispiel.id, phase: minispiel.phase } : null,
                     sammel: sammelspiel ? { art: sammelspiel.art, id: sammelspiel.id, phase: sammelspiel.phase } : null,
@@ -3044,14 +3051,17 @@
            gesperrt - in der Zwischenzeit tippten die Teams sonst Unsinn ins
            normale Antwortfeld, den niemand braucht. Mit dem Start der Runde, ob
            am Beamer oder von der Fernbedienung, geht die Eingabe wieder auf. */
-        function sonderrundeVorbereiten(laeuftSchon) {
+        let sonderrundeWartet = null;   // 'rhythmus' / 'zaehl', solange die Klasse wartet
+        function sonderrundeVorbereiten(laeuftSchon, art) {
             if (laeuftSchon || roundLocked) return;
+            sonderrundeWartet = art;
             roundLocked = true;
             updateLockButtonUI();
             broadcastControlState();
             showToast("🔒 Eingaben gesperrt, bis du die Aufgabe an die Klasse gibst.", "info");
         }
         function sonderrundeFreigeben() {
+            sonderrundeWartet = null;
             if (!roundLocked) return;
             roundLocked = false;     // die Runde selbst sendet gleich den neuen Stand
             updateLockButtonUI();
@@ -3060,6 +3070,7 @@
         /* Sperrt/entsperrt Schüler-Eingaben für die aktuelle Runde (z.B. bevor man Antworten aufdeckt) */
         function toggleRoundLock() {
             roundLocked = !roundLocked;
+            sonderrundeWartet = null;   // von Hand gesperrt heisst: keine Sonderrunde in Vorbereitung
             updateLockButtonUI();
             broadcastControlState();
             showToast(
@@ -5009,15 +5020,10 @@
                             title="Spielt den Rhythmus dreimal vor, mit fünf Sekunden Pause dazwischen">
                         <i class="fa-solid fa-repeat mr-1"></i> 3×
                     </button>
-                    <button type="button" data-rolle="start"
-                            class="bg-violet-600 hover:bg-violet-500 text-white font-bold py-1.5 px-4 rounded-lg text-xs transition-all active:scale-95">
-                        <i class="fa-solid fa-play mr-1"></i> Start
-                    </button>
                 </div>`;
             const teil = (rolle) => wurzel.querySelector(`[data-rolle="${rolle}"]`);
             teil('minus').addEventListener('click', () => metronomTempo(-5));
             teil('plus').addEventListener('click', () => metronomTempo(5));
-            teil('start').addEventListener('click', () => metronomUmschalten());
             teil('mit').addEventListener('click', () => metronomMitUmschalten());
             teil('vorklatsch').addEventListener('click', () => rhythmusVorklatschen());
             teil('autoplay').addEventListener('click', () => rhythmusVorklatschen('', VORKLATSCH_WIEDERHOLUNGEN));
@@ -5058,16 +5064,16 @@
                 const ziel = teil('takte');
                 if (!ziel) return;
                 ziel.innerHTML = '';
-                [['ohne', 0], ['1', 1], ['2', 2], ['3', 3], ['4', 4], ['∞', Infinity]].forEach(([wort, n]) => {
+                /* Ein freies Metronom gibt es nicht mehr - es zaehlt nur noch vor dem
+                   Vorklatschen ein. Mehr als zwei Takte Vorlauf braucht dafuer niemand. */
+                [['ohne', 0], ['1', 1], ['2', 2]].forEach(([wort, n]) => {
                     const b = document.createElement('button');
                     b.type = 'button';
                     b.className = 'rhy-knopf';
                     b.textContent = wort;
                     b.title = n === 0
                         ? 'Kein Vorlauf - das Vorklatschen beginnt sofort mit dem Rhythmus'
-                        : (isFinite(n)
-                            ? `${n} ${n === 1 ? 'Takt' : 'Takte'} Vorlauf vor dem Vorklatschen; „Start" schlägt ebenso lang`
-                            : 'Metronom läuft mit „Start" durch, bis du es anhältst - vorgezählt wird dann ein Takt');
+                        : `${n} ${n === 1 ? 'Takt' : 'Takte'} Vorlauf vor dem Vorklatschen`;
                     if (metronom.takte === n) b.className = 'rhy-knopf an';
                     b.addEventListener('click', () => { metronom.takte = n; metronomTakteZeichnen(); });
                     ziel.appendChild(b);
@@ -5360,7 +5366,7 @@
             }
             f.classList.remove('hidden');
             f.classList.add('flex');
-            sonderrundeVorbereiten(!!rhythmusRunde);
+            sonderrundeVorbereiten(!!rhythmusRunde, 'rhythmus');
             /* Hier schon die Tonausgabe aufwecken: Der Klick, der dieses Fenster
                oeffnet, ist die Nutzergeste, die der Browser dafuer verlangt. Bis
                zum ersten Vorklatschen ist das Geraet dann laengst offen. */
@@ -5541,7 +5547,13 @@
                 renderIncomingAnswersList();
                 rhythmusKnoepfeAktualisieren();
                 showToast("📱 Rhythmus vom Handy übernommen - die Teams sehen die Notenwerte.", "success");
-                playSound('up');
+                if (p.vorspielen) {
+                    if (p.bpm) metronomTempoSetzen(p.bpm);
+                    fernVorlaufSetzen(p.vorlauf);
+                    rhythmusVorklatschen('', VORKLATSCH_WIEDERHOLUNGEN);
+                } else {
+                    playSound('up');
+                }
             } else if (p.befehl === 'beenden') {
                 rhythmusRundeBeenden();
             } else if (p.befehl === 'metronom') {
@@ -5553,6 +5565,7 @@
                 metronomUmschalten();
             } else if (p.befehl === 'vorklatsch') {
                 if (p.bpm) metronomTempoSetzen(p.bpm);
+                fernVorlaufSetzen(p.vorlauf);
                 /* Der Rhythmus kommt mit: So kann man vom Handy vorhoeren, bevor man
                    ihn der Klasse gibt. Kommt keiner mit, gilt der der laufenden Runde. */
                 if (p.zeichen) rhythmusEntwurf.zeichen = p.zeichen;
@@ -5573,6 +5586,14 @@
             } else if (p.befehl === 'zaehl-beenden') {
                 if (zaehlRunde) zaehlRundeBeenden();
             }
+        }
+
+        /* Den Vorlauf stellt die Fernbedienung ein - am Beamer muss er dann
+           genauso dastehen, sonst zaehlt er anders vor als gedacht. */
+        function fernVorlaufSetzen(wert) {
+            if (wert === undefined || wert === null) return;
+            metronom.takte = Math.max(0, Math.min(2, Number(wert) || 0));
+            metronomTakteZeichnen();
         }
 
         /* ---------- Auf dem Handy ---------- */
@@ -5621,29 +5642,30 @@
                 rhythmusLoesungsEditor = alterEditor;
                 rhythmusEntwurf = alt;
             });
-            getEl('fern-senden').addEventListener('click', () => {
+            const senden = (vorspielen) => {
                 fernEntwurf.loesung = fernEditor ? fernEditor.lesen() : '';
                 if (!fernEntwurf.loesung) { showToast("Trage erst einen Rhythmus ein.", "danger"); return; }
                 fernEntwurf.klatsch = getEl('fern-klatsch').checked;
-                fernSenden('uebernehmen', {
+                fernSenden('uebernehmen', Object.assign({
                     soll: fernEntwurf.soll, zeichen: fernEntwurf.zeichen, takte: fernEntwurf.takte,
                     klatsch: fernEntwurf.klatsch,
                     werte: fernEntwurf.werte, loesung: fernEntwurf.loesung
-                });
-            });
+                }, vorspielen ? { vorspielen: true, bpm: fernMetronom.bpm, vorlauf: fernMetronom.takte } : {}));
+            };
+            getEl('fern-senden').addEventListener('click', () => senden(false));
+            getEl('fern-senden-vorspielen').addEventListener('click', () => senden(true));
             getEl('fern-beenden').addEventListener('click', () => fernSenden('beenden'));
-            /* Unendlich ueberlebt den Weg durch JSON nicht (es wird zu null),
-               deshalb geht die Taktzahl als Wort ueber die Leitung. */
-            getEl('fern-metronom').addEventListener('click', () => fernSenden('metronom', { bpm: fernMetronom.bpm, takte: String(fernMetronom.takte) }));
             getEl('fern-vorklatsch').addEventListener('click', () => {
                 fernEntwurf.loesung = fernEditor ? fernEditor.lesen() : '';
                 if (!fernEntwurf.loesung) { showToast("Trage erst einen Rhythmus ein.", "danger"); return; }
-                fernSenden('vorklatsch', { bpm: fernMetronom.bpm, loesung: fernEntwurf.loesung, zeichen: fernEntwurf.zeichen });
+                fernSenden('vorklatsch', { bpm: fernMetronom.bpm, vorlauf: fernMetronom.takte,
+                                           loesung: fernEntwurf.loesung, zeichen: fernEntwurf.zeichen });
             });
             getEl('fern-autoplay').addEventListener('click', () => {
                 fernEntwurf.loesung = fernEditor ? fernEditor.lesen() : '';
                 if (!fernEntwurf.loesung) { showToast("Trage erst einen Rhythmus ein.", "danger"); return; }
-                fernSenden('vorklatsch', { bpm: fernMetronom.bpm, loesung: fernEntwurf.loesung,
+                fernSenden('vorklatsch', { bpm: fernMetronom.bpm, vorlauf: fernMetronom.takte,
+                                           loesung: fernEntwurf.loesung,
                                            zeichen: fernEntwurf.zeichen, male: VORKLATSCH_WIEDERHOLUNGEN });
             });
             getEl('fern-tempo-minus').addEventListener('click', () => { fernMetronom.bpm = Math.max(40, fernMetronom.bpm - 5); fernTempoAnzeigen(); });
@@ -5710,7 +5732,7 @@
             const ziel = getEl('fern-takte');
             if (!ziel) return;
             ziel.innerHTML = '';
-            [['ohne', 0], ['1', 1], ['2', 2], ['3', 3], ['4', 4], ['∞', Infinity]].forEach(([wort, n]) => {
+            [['ohne', 0], ['1', 1], ['2', 2]].forEach(([wort, n]) => {
                 const b = document.createElement('button');
                 b.type = 'button'; b.className = 'rhy-knopf'; b.textContent = wort;
                 if (fernMetronom.takte === n) b.className = 'rhy-knopf an';
@@ -5888,6 +5910,14 @@
             rhythmusFensterSchliessen();
             showToast("🥁 Rhythmus-Runde läuft - die Teams sehen jetzt die Notenwerte.", "success");
             playSound('up');
+        }
+
+        /* Ein Klick fuer den ueblichen Ablauf: an die Klasse geben, dann dreimal
+           vorklatschen. Startet die Runde nicht (leerer Rhythmus), wird auch
+           nichts vorgespielt. */
+        function rhythmusStartenUndVorspielen() {
+            rhythmusRundeStarten();
+            if (rhythmusRunde) rhythmusVorklatschen('', VORKLATSCH_WIEDERHOLUNGEN);
         }
 
         function rhythmusRundeBeenden() {
@@ -6077,7 +6107,7 @@
             if (zaehlRunde) Object.assign(zaehlEntwurf, { zeichen: zaehlRunde.zeichen, aufgabe: zaehlRunde.aufgabe });
             f.classList.remove('hidden');
             f.classList.add('flex');
-            sonderrundeVorbereiten(!!zaehlRunde);
+            sonderrundeVorbereiten(!!zaehlRunde, 'zaehl');
             zaehlFensterZeichnen();
             fernQrZeichnen('fern-qr-zaehl', 'zaehl');
         }
@@ -8200,7 +8230,7 @@
                     }
                     // Zuletzt prüfen: eine aktive Sperre hat immer das letzte Wort,
                     // auch wenn Runde/Timer den Button gerade erst wieder freigegeben hätten.
-                    updateStudentLockState(payload.locked === true);
+                    updateStudentLockState(payload.locked === true, payload.vorbereitung || null);
                     /* Ganz zuletzt: Solange nicht gestartet ist, hat die Wartehalle das
                        letzte Wort – fehlt das Feld (aeltere Sitzung), gilt gestartet. */
                     updateStudentStartState(payload.gestartet !== false);
@@ -8326,7 +8356,7 @@
         }
 
         /* Erzwingt eine gesperrte Eingabe auf dem Schülergerät (z.B. während die Lehrkraft aufdeckt) */
-        function updateStudentLockState(locked) {
+        function updateStudentLockState(locked, vorbereitung) {
             studentRoundLocked = locked;
             if (!locked) return; // Freigabe übernehmen updateStudentRound/updateStudentTimer bereits selbst
 
@@ -8347,7 +8377,11 @@
             if (textarea) textarea.disabled = true;
             if (feedback) {
                 feedback.className = "p-3 rounded-xl border text-center text-xs font-semibold bg-slate-800/60 border-slate-700 text-slate-300";
-                feedback.innerHTML = `<i class="fa-solid fa-lock text-slate-400"></i> Die Lehrkraft hat die Eingabe für diese Runde gesperrt.`;
+                feedback.innerHTML = vorbereitung === 'rhythmus'
+                    ? `<i class="fa-solid fa-drum text-violet-400"></i> Gleich kommt eine Rhythmus-Runde – bitte kurz warten.`
+                    : vorbereitung === 'zaehl'
+                    ? `<i class="fa-solid fa-hourglass-half text-violet-400"></i> Gleich kommt eine Zählzeiten-Runde – bitte kurz warten.`
+                    : `<i class="fa-solid fa-lock text-slate-400"></i> Die Lehrkraft hat die Eingabe für diese Runde gesperrt.`;
                 feedback.classList.remove('hidden');
             }
         }
@@ -9184,6 +9218,7 @@
                abgibt, schreibt ab. Deshalb sperrt das Aufdecken gleich mit. */
             const sperrtJetzt = !beamerProtectionActive && !roundLocked;
             if (sperrtJetzt) {
+                sonderrundeWartet = null;
                 roundLocked = true;
                 updateLockButtonUI();
                 broadcastControlState();
