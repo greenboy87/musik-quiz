@@ -1339,6 +1339,12 @@
             <div class="flex items-center gap-2 flex-wrap text-[11px] font-bold text-slate-300">
                 <span>Taktart:</span>
                 <span id="fern-taktwahl" class="flex gap-1"></span>
+                <span>Takte:</span>
+                <span class="flex items-center gap-1">
+                    <button type="button" class="rhy-knopf" onclick="fernTakteAendern(-1)" title="Einen Takt weniger">−</button>
+                    <span id="fern-taktzahl" class="font-black text-violet-300 w-4 text-center">1</span>
+                    <button type="button" class="rhy-knopf" onclick="fernTakteAendern(1)" title="Einen Takt mehr">+</button>
+                </span>
                 <label class="flex items-center gap-1.5 cursor-pointer ml-auto">
                     <input type="checkbox" id="fern-klatsch" checked class="sr-only peer">
                     <div class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600 relative"></div>
@@ -3028,6 +3034,23 @@
             } catch(e) {
                 console.error("Fehler beim Senden des Updates:", e);
             }
+        }
+
+        /* Sonderrunden (Rhythmus, Zaehlzeiten): Sobald das Fenster aufgeht, wird
+           gesperrt - in der Zwischenzeit tippten die Teams sonst Unsinn ins
+           normale Antwortfeld, den niemand braucht. Mit dem Start der Runde, ob
+           am Beamer oder von der Fernbedienung, geht die Eingabe wieder auf. */
+        function sonderrundeVorbereiten(laeuftSchon) {
+            if (laeuftSchon || roundLocked) return;
+            roundLocked = true;
+            updateLockButtonUI();
+            broadcastControlState();
+            showToast("🔒 Eingaben gesperrt, bis du die Aufgabe an die Klasse gibst.", "info");
+        }
+        function sonderrundeFreigeben() {
+            if (!roundLocked) return;
+            roundLocked = false;     // die Runde selbst sendet gleich den neuen Stand
+            updateLockButtonUI();
         }
 
         /* Sperrt/entsperrt Schüler-Eingaben für die aktuelle Runde (z.B. bevor man Antworten aufdeckt) */
@@ -5333,6 +5356,7 @@
             }
             f.classList.remove('hidden');
             f.classList.add('flex');
+            sonderrundeVorbereiten(!!rhythmusRunde);
             /* Hier schon die Tonausgabe aufwecken: Der Klick, der dieses Fenster
                oeffnet, ist die Nutzergeste, die der Browser dafuer verlangt. Bis
                zum ersten Vorklatschen ist das Geraet dann laengst offen. */
@@ -5494,10 +5518,12 @@
                     loesung: String(p.loesung || '')
                 };
                 if (!rhythmusEntwurf.loesung) { showToast("Vom Handy kam ein leerer Rhythmus.", "danger"); return; }
-                /* Das Handy kennt keine Taktzahl - sie steckt in der Laenge: Wer
-                   dort acht Viertel eingibt, meint zwei Viervierteltakte. */
+                /* Die Taktzahl schickt das Handy mit. Aeltere Fassungen kannten
+                   sie nicht - dann steckt sie in der Laenge: Wer dort acht Viertel
+                   eingibt, meint zwei Viervierteltakte. */
                 const laenge = rhythmusDauer(rhythmusLesen(rhythmusEntwurf.loesung));
-                rhythmusEntwurf.takte = Math.max(1, Math.min(4, Math.round(laenge / rhythmusEntwurf.soll) || 1));
+                rhythmusEntwurf.takte = Math.max(1, Math.min(4,
+                    Number(p.takte) || Math.round(laenge / rhythmusEntwurf.soll) || 1));
                 if (zaehlRunde) { zaehlRunde = null; zaehlKnoepfeAktualisieren(); }   // nur eine Sonderrunde zur Zeit
                 rhythmusRunde = {
                     soll: rhythmusEntwurf.soll, zeichen: rhythmusEntwurf.zeichen,
@@ -5506,6 +5532,7 @@
                     loesung: rhythmusEntwurf.loesung
                 };
                 metronomLeisteZeigen(true);
+                sonderrundeFreigeben();
                 broadcastControlState();
                 renderIncomingAnswersList();
                 rhythmusKnoepfeAktualisieren();
@@ -5546,7 +5573,7 @@
 
         /* ---------- Auf dem Handy ---------- */
         let fernRaum = '', fernEditor = null;
-        let fernEntwurf = { soll: 4, zeichen: '4/4', klatsch: true, werte: ['V', 'AA', 'Vp', 'H'], loesung: '' };
+        let fernEntwurf = { soll: 4, zeichen: '4/4', takte: 1, klatsch: true, werte: ['V', 'AA', 'Vp', 'H'], loesung: '' };
         let fernMetronom = { bpm: 90, takte: 1 };
 
         function fernSenden(befehl, daten) {
@@ -5595,7 +5622,8 @@
                 if (!fernEntwurf.loesung) { showToast("Trage erst einen Rhythmus ein.", "danger"); return; }
                 fernEntwurf.klatsch = getEl('fern-klatsch').checked;
                 fernSenden('uebernehmen', {
-                    soll: fernEntwurf.soll, zeichen: fernEntwurf.zeichen, klatsch: fernEntwurf.klatsch,
+                    soll: fernEntwurf.soll, zeichen: fernEntwurf.zeichen, takte: fernEntwurf.takte,
+                    klatsch: fernEntwurf.klatsch,
                     werte: fernEntwurf.werte, loesung: fernEntwurf.loesung
                 });
             });
@@ -5728,9 +5756,21 @@
             const feld = getEl('fern-editor');
             if (!feld) return;
             const alt = fernEditor ? fernEditor.lesen() : '';
-            fernEditor = rhythmusEditor(feld, fernEntwurf.soll, fernEntwurf.werte, 1, fernEntwurf.zeichen);
+            const takte = fernEntwurf.takte || 1;
+            fernEditor = rhythmusEditor(feld, fernEntwurf.soll, fernEntwurf.werte, takte, fernEntwurf.zeichen);
             const gerettet = rhythmusLesen(alt).filter(w => fernEntwurf.werte.includes(w.code));
+            /* Was ueber die (neue) Laenge hinausragt, faellt weg - wie am Beamer. */
+            while (gerettet.length && rhythmusDauer(gerettet) > fernEntwurf.soll * takte + 0.001) gerettet.pop();
             if (gerettet.length) fernEditor.setzen(rhythmusSchreiben(gerettet));
+        }
+        /* Wie am Beamer: ein bis vier Takte. */
+        function fernTakteAendern(schritt) {
+            const neu = Math.max(1, Math.min(4, (fernEntwurf.takte || 1) + schritt));
+            if (neu === fernEntwurf.takte) return;
+            fernEntwurf.takte = neu;
+            const z = getEl('fern-taktzahl');
+            if (z) z.textContent = neu;
+            fernEditorNeu();
         }
 
         /* Wuerfelt aus den gewaehlten Bausteinen einen Takt, der genau aufgeht.
@@ -5837,6 +5877,7 @@
                               klatsch: rhythmusEntwurf.klatsch !== false,
                               werte: rhythmusEntwurf.werte.slice(), loesung: loesung };
             metronomLeisteZeigen(true);
+            sonderrundeFreigeben();
             broadcastControlState();
             renderIncomingAnswersList();
             rhythmusKnoepfeAktualisieren();
@@ -6032,6 +6073,7 @@
             if (zaehlRunde) Object.assign(zaehlEntwurf, { zeichen: zaehlRunde.zeichen, aufgabe: zaehlRunde.aufgabe });
             f.classList.remove('hidden');
             f.classList.add('flex');
+            sonderrundeVorbereiten(!!zaehlRunde);
             zaehlFensterZeichnen();
             fernQrZeichnen('fern-qr-zaehl', 'zaehl');
         }
@@ -6121,6 +6163,7 @@
             }
             zaehlRunde = { zeichen: zaehlEntwurf.zeichen, soll: zaehlSchlaege(zaehlEntwurf.zeichen),
                            aufgabe: zaehlEntwurf.aufgabe, loesung: zaehlLoesung(zaehlEntwurf.aufgabe) };
+            sonderrundeFreigeben();
             broadcastControlState();
             renderIncomingAnswersList();
             zaehlKnoepfeAktualisieren();
