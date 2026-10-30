@@ -9174,9 +9174,19 @@
         /* Beamer Sichtschutz steuern */
         function toggleBeamerProtection() {
             beamerProtectionActive = !beamerProtectionActive;
+            /* Wer aufdeckt, zeigt der Klasse die Antworten - wer dann noch
+               abgibt, schreibt ab. Deshalb sperrt das Aufdecken gleich mit. */
+            const sperrtJetzt = !beamerProtectionActive && !roundLocked;
+            if (sperrtJetzt) {
+                roundLocked = true;
+                updateLockButtonUI();
+                broadcastControlState();
+            }
             saveState();
             renderIncomingAnswersList();
-            showToast(beamerProtectionActive ? "Sichtschutz aktiv (Teams & Antworten verdeckt)" : "Sichtschutz deaktiviert (Alles aufgedeckt)", "info");
+            showToast(beamerProtectionActive ? "Sichtschutz aktiv (Teams & Antworten verdeckt)"
+                : sperrtJetzt ? "🔒 Aufgedeckt - die Eingaben sind jetzt gesperrt."
+                : "Sichtschutz deaktiviert (Alles aufgedeckt)", "info");
         }
 
         /* Zählt, wie viele Teams in der aktuellen Runde schon geantwortet haben
