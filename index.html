@@ -2357,6 +2357,10 @@
         let activeClass = "Standard-Sitzung";
         let teacherPassword = "musik"; 
         let beamerProtectionActive = true; 
+        /* Unter dem Sichtschutz nur die Namen zeigen: wer zuerst war, wer
+           danach - die Antworten bleiben zu. Gilt nur bis zum naechsten
+           Verdecken oder Rundenwechsel und wird deshalb nicht gespeichert. */
+        let teamsAufgedeckt = false;
         
         let classes = {
             "Standard-Sitzung": { teams: [], currentRound: 1, spielLaeuft: false }
@@ -7873,6 +7877,7 @@
                         teacherPassword = parsed.teacherPassword || "musik";
                         // Immer verdeckt starten - unabhängig davon, wie die letzte Sitzung beendet wurde.
                         beamerProtectionActive = true;
+                        teamsAufgedeckt = false;
 
                         const autoSortEl = getEl('auto-sort-toggle');
                         if (autoSortEl) autoSortEl.checked = parsed.autoSort !== false;
@@ -9174,6 +9179,7 @@
         /* Beamer Sichtschutz steuern */
         function toggleBeamerProtection() {
             beamerProtectionActive = !beamerProtectionActive;
+            teamsAufgedeckt = false;
             /* Wer aufdeckt, zeigt der Klasse die Antworten - wer dann noch
                abgibt, schreibt ab. Deshalb sperrt das Aufdecken gleich mit. */
             const sperrtJetzt = !beamerProtectionActive && !roundLocked;
@@ -9187,6 +9193,11 @@
             showToast(beamerProtectionActive ? "Sichtschutz aktiv (Teams & Antworten verdeckt)"
                 : sperrtJetzt ? "🔒 Aufgedeckt - die Eingaben sind jetzt gesperrt."
                 : "Sichtschutz deaktiviert (Alles aufgedeckt)", "info");
+        }
+
+        function toggleTeamsAufdecken() {
+            teamsAufgedeckt = !teamsAufgedeckt;
+            renderIncomingAnswersList();
         }
 
         /* Zählt, wie viele Teams in der aktuellen Runde schon geantwortet haben
@@ -9260,11 +9271,17 @@
                     <div class="bg-violet-950/40 border border-violet-800/60 p-2 rounded-xl flex flex-col sm:flex-row gap-2 justify-between items-center animate-scaleIn">
                         <span class="text-[11px] text-violet-300 font-bold flex items-center gap-1.5 font-sans">
                             <i class="fa-solid fa-user-secret text-violet-400 text-sm animate-pulse"></i> 
-                            Sichtschutz aktiv: Teamnamen & Antworten sind auf dem Beamer unsichtbar.
+                            ${teamsAufgedeckt ? 'Sichtschutz aktiv: Teams sind aufgedeckt, die Antworten noch verdeckt.' : 'Sichtschutz aktiv: Teamnamen & Antworten sind auf dem Beamer unsichtbar.'}
                         </span>
-                        <button onclick="toggleBeamerProtection()" class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black px-3.5 py-1.5 rounded-lg transition-all shadow-lg active:scale-95 font-sans">
-                            <i class="fa-solid fa-eye mr-1"></i> Alles aufdecken 🔓
-                        </button>
+                        <div class="flex gap-1.5">
+                            <button onclick="toggleTeamsAufdecken()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold px-3.5 py-1.5 rounded-lg transition-all active:scale-95 font-sans"
+                                    title="Zeigt nur, welches Team welche Antwort gegeben hat - die Antworten bleiben verdeckt">
+                                <i class="fa-solid ${teamsAufgedeckt ? 'fa-user-secret' : 'fa-users'} mr-1"></i> ${teamsAufgedeckt ? 'Teams verbergen' : 'Nur Teams aufdecken'}
+                            </button>
+                            <button onclick="toggleBeamerProtection()" class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black px-3.5 py-1.5 rounded-lg transition-all shadow-lg active:scale-95 font-sans">
+                                <i class="fa-solid fa-eye mr-1"></i> Alles aufdecken 🔓
+                            </button>
+                        </div>
                     </div>
                 `;
             } else {
@@ -9342,7 +9359,12 @@
                 const hasJoker = ans.joker ? true : false;
 
                 if (beamerProtectionActive) {
-                    teamHeader = `
+                    teamHeader = teamsAufgedeckt ? `
+                        <div class="flex justify-between items-center gap-1.5 font-sans">
+                            <span class="font-black text-violet-400 text-base truncate max-w-[160px]" title="${escapeHtml(ans.team)}">${escapeHtml(ans.team)}</span>
+                            ${placementBadge}
+                        </div>
+                    ` : `
                         <div class="flex justify-between items-center gap-1.5 font-sans">
                             <span class="font-bold text-slate-500 text-sm flex items-center gap-1">
                                 <i class="fa-solid fa-user-secret text-violet-500/80"></i> Team verdeckt
@@ -10708,6 +10730,7 @@
             incomingAnswers = [];
             // Sichtschutz für die neue Runde immer wieder aktivieren - manuelles Aufdecken nötig!
             beamerProtectionActive = true;
+            teamsAufgedeckt = false;
 
             currentRound++;
 
@@ -11440,6 +11463,7 @@
             updateLockButtonUI();
             updateStartButtonUI();
             beamerProtectionActive = true; // Neue Sitzung startet immer verdeckt
+            teamsAufgedeckt = false;
 
             // Alte Nachrichten des Raums in Firebase mitlöschen, damit dort nichts
             // unbegrenzt anwächst (Antworten/Beitritte/Spickzettel vergangener Sitzungen).
