@@ -38,6 +38,21 @@ selben Projekt. School-Tool hat ein eigenes Projekt (`school-tool-cbbf9`) und is
 davon nicht berührt. Die nötige Regel-Freigabe steht in `firebase-regeln.md` —
 den `rooms`-Block dabei niemals ersetzen.
 
+## Fernbedienung: Befehle dürfen beim Neuladen nicht zweimal wirken
+
+Der Beamer liest beim Verbinden alle Nachrichten der letzten drei Stunden neu
+ein (`connectLiveRoom`, `RUECKBLICK_MS`). Für Befehle vom Lehrerhandy
+(`action: 'fern'`) heißt das: Nach einem Neuladen kämen sie alle noch einmal.
+Deshalb merkt sich der Beamer-Tab in `sessionStorage` (`fern-sitzung`) den
+Schlüssel und den Zeitstempel des zuletzt ausgeführten Befehls, und
+`fernBefehlPruefen` lässt nur Neueres durch. Neue Befehle immer über diesen Weg
+führen und so bauen, dass sie den Zielzustand nennen (an/aus, welche Runde,
+welche Antwort) statt umzuschalten.
+
+Der Schlüssel aus dem QR-Code steht nie in der Datenbank: Das Handy schickt nur
+die abgeleitete `marke`, und den Stand fürs Handy (Songs des präsentierenden
+Teams, Antworten) legt der Beamer AES-verschlüsselt unter `rooms/<raum>/fern` ab.
+
 ## Tonprobleme: erst den Browser neu starten, dann suchen
 
 Die Tonausgabe des Browsers kann in einen Zustand geraten, aus dem ein

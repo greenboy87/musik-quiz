@@ -1103,6 +1103,92 @@
         html[data-theme="light"] #finale-podium-overlay .text-slate-400 {
             color: #94a3b8 !important;
         }
+
+        /* ============================================================ */
+        /* FERNBEDIENUNG, Reiter "Runde": das Lehrerhandy in der         */
+        /* normalen Runde. Eigene Klassen statt Tailwind - tailwind.css  */
+        /* ist vorgeneriert, neue Tailwind-Klassen blieben wirkungslos.  */
+        /* ============================================================ */
+        .fr-karte { background: rgba(15, 23, 42, .88); border: 1px solid rgba(71, 85, 105, .6); border-radius: 1rem; padding: .75rem; }
+        .fr-dran { border-color: rgba(139, 92, 246, .75); background: rgba(46, 16, 101, .5); }
+        .fr-leer { color: #94a3b8; font-size: .8rem; line-height: 1.5; }
+        .fr-kopf { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; font-size: .8rem; font-weight: 700; color: #e2e8f0; margin-bottom: .5rem; }
+        .fr-kopf b { font-size: 1rem; color: #f8fafc; }
+        .fr-kopf-fest { flex-wrap: nowrap; min-height: 2rem; white-space: nowrap; }
+        .fr-blass { color: #94a3b8; font-size: .72rem; font-weight: 700; }
+        .fr-klein { color: #94a3b8; font-size: .7rem; line-height: 1.4; margin-top: .4rem; }
+        .fr-pille { background: rgba(139, 92, 246, .25); border: 1px solid rgba(167, 139, 250, .5); color: #ddd6fe; border-radius: 999px; padding: .05rem .5rem; font-size: .68rem; font-weight: 800; }
+        .fr-pille.fr-offen { background: rgba(16, 185, 129, .2); border-color: rgba(52, 211, 153, .5); color: #a7f3d0; }
+        .fr-songs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
+        .fr-songs li { display: flex; gap: .5rem; align-items: baseline; font-size: 1rem; font-weight: 700; color: #f8fafc; background: rgba(2, 6, 23, .5); border-radius: .6rem; padding: .45rem .6rem; word-break: break-word; }
+        .fr-songs li.fr-ohne { color: #64748b; font-style: italic; font-weight: 600; }
+        .fr-nr { flex: 0 0 auto; width: 1.35rem; height: 1.35rem; border-radius: 999px; background: rgba(139, 92, 246, .55); color: #fff; font-size: .7rem; font-weight: 900; font-style: normal; display: inline-flex; align-items: center; justify-content: center; transform: translateY(-.1rem); }
+        .fr-reihe { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; margin-top: .55rem; }
+        .fr-abstand { margin-top: .55rem; }
+        .fr-knopf {
+            font-family: inherit; font-size: .8rem; font-weight: 800; line-height: 1.15;
+            min-height: 2.6rem; min-width: 2.7rem; padding: .35rem .7rem; border-radius: .7rem; cursor: pointer;
+            background: rgba(255, 255, 255, .08); border: 1px solid rgba(148, 163, 184, .35); color: #e2e8f0;
+            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+        }
+        .fr-knopf:active { transform: scale(.96); }
+        .fr-gruen, .fr-knopf.fr-an { background: #059669; border-color: #34d399; color: #fff; }
+        .fr-rot { background: rgba(159, 18, 57, .55); border-color: rgba(251, 113, 133, .6); color: #ffe4e6; }
+        .fr-gold { background: #f59e0b; border-color: #fbbf24; color: #0f172a; }
+        .fr-violett { background: #7c3aed; border-color: #a78bfa; color: #fff; }
+        .fr-mini { min-height: 2rem; min-width: 0; font-size: .7rem; padding: .2rem .6rem; }
+        .fr-rechts { margin-left: auto; }
+        .fr-wartet { opacity: .4; pointer-events: none; }
+        .fr-antwort { border-top: 1px solid rgba(71, 85, 105, .5); padding-top: .6rem; margin-top: .6rem; }
+        .fr-antwort-kopf { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; font-size: .8rem; color: #e2e8f0; }
+        .fr-antwort-text { font-size: 1.15rem; font-weight: 800; color: #f8fafc; word-break: break-word; margin-top: .2rem; }
+        .fr-noten { color: #f8fafc; }
+        .fr-noten svg { max-width: 100%; height: auto; }
+        .fr-erste { color: #fbbf24; font-weight: 900; font-size: .75rem; }
+        .fr-joker { background: #f59e0b; color: #0f172a; font-size: .6rem; font-weight: 900; border-radius: .3rem; padding: .05rem .35rem; }
+        .fr-gut { color: #34d399; font-weight: 800; font-size: .75rem; }
+        .fr-schlecht { color: #fb7185; font-weight: 800; font-size: .75rem; }
+        .fr-team { border-top: 1px solid rgba(71, 85, 105, .45); padding-top: .6rem; margin-top: .6rem; }
+        .fr-kopf + .fr-team { border-top: 0; padding-top: 0; margin-top: 0; }
+        .fr-team-kopf { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; font-size: .85rem; color: #e2e8f0; }
+        .fr-punkte { margin-left: auto; font-weight: 900; font-size: 1.05rem; color: #f8fafc; }
+        .fr-trenner { flex: 1 1 auto; }
+        .fr-warnung { background: rgba(159, 18, 57, .45); border: 1px solid rgba(251, 113, 133, .6); color: #ffe4e6; border-radius: .8rem; padding: .55rem .7rem; font-size: .75rem; font-weight: 700; line-height: 1.45; margin-bottom: .6rem; }
+        /* Unten fest: die vier Griffe, die jede Runde braucht. Platz darunter
+           frei halten, sonst verdeckt die Leiste die letzte Karte. */
+        .fr-mit-leiste { padding-bottom: 7rem !important; }
+        .fr-leiste {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; margin: 0 auto; max-width: 32rem;
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: .4rem;
+            padding: .55rem .75rem calc(.55rem + env(safe-area-inset-bottom));
+            background: rgba(9, 13, 22, .95); border-top: 1px solid rgba(71, 85, 105, .6);
+            -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+        }
+        .fr-leiste:empty { display: none; }
+        .fr-leiste .fr-knopf { min-height: 3.4rem; min-width: 0; font-size: .7rem; padding: .3rem .2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; }
+        .fr-leiste .fr-knopf i { font-size: 1.05rem; }
+        /* Am Beamer: QR-Code im Fenster und der Knopf, solange ein Handy steuert */
+        #fern-qr-runde img, #fern-qr-runde canvas { width: 100% !important; height: 100% !important; }
+        .fern-verbunden { color: #34d399 !important; border-color: #10b981 !important; }
+
+        html[data-theme="light"] .fr-karte { background: #fff; border-color: #cbd5e1; }
+        html[data-theme="light"] .fr-dran { background: #f5f3ff; border-color: #a78bfa; }
+        html[data-theme="light"] .fr-kopf, html[data-theme="light"] .fr-team-kopf, html[data-theme="light"] .fr-antwort-kopf { color: #1e293b; }
+        html[data-theme="light"] .fr-kopf b, html[data-theme="light"] .fr-punkte,
+        html[data-theme="light"] .fr-antwort-text, html[data-theme="light"] .fr-noten { color: #0f172a; }
+        html[data-theme="light"] .fr-songs li { background: #ede9fe; color: #0f172a; }
+        html[data-theme="light"] .fr-blass, html[data-theme="light"] .fr-klein, html[data-theme="light"] .fr-leer { color: #475569; }
+        html[data-theme="light"] .fr-knopf { background: #f1f5f9; border-color: #94a3b8; color: #1e293b; }
+        html[data-theme="light"] .fr-gruen, html[data-theme="light"] .fr-knopf.fr-an { background: #059669; border-color: #047857; color: #fff; }
+        html[data-theme="light"] .fr-violett { background: #7c3aed; border-color: #6d28d9; color: #fff; }
+        html[data-theme="light"] .fr-gold { background: #f59e0b; border-color: #d97706; color: #0f172a; }
+        html[data-theme="light"] .fr-rot { background: #fff1f2; border-color: #fda4af; color: #be123c; }
+        html[data-theme="light"] .fr-pille { background: #ede9fe; border-color: #c4b5fd; color: #5b21b6; }
+        html[data-theme="light"] .fr-pille.fr-offen { background: #d1fae5; border-color: #6ee7b7; color: #065f46; }
+        html[data-theme="light"] .fr-leiste { background: rgba(255, 255, 255, .96); border-color: #cbd5e1; }
+        html[data-theme="light"] .fr-warnung { background: #fff1f2; border-color: #fda4af; color: #9f1239; }
+        html[data-theme="light"] .fr-gut { color: #047857; }
+        html[data-theme="light"] .fr-schlecht { color: #be123c; }
     </style>
 </head>
 <body class="text-slate-100 flex flex-col justify-between overflow-x-hidden relative selection:bg-violet-500/30">
@@ -1286,6 +1372,39 @@
         </div>
     </div>
 
+    <!-- Fernbedienung fuer die normale Runde: derselbe Schluessel wie bei
+         Rhythmus und Zaehlzeiten, nur dass das Handy beim Reiter "Runde" aufgeht.
+         Der Code bleibt verwischt, bis man ihn braucht. -->
+    <div id="fern-runde-fenster" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/90 backdrop-blur-md p-4" onclick="if (event.target === this) fernRundeFensterSchliessen();">
+        <div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3 font-sans">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-black text-violet-300"><i class="fa-solid fa-mobile-screen-button mr-1"></i> Fernbedienung fürs Handy</h3>
+                <button onclick="fernRundeFensterSchliessen()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+            </div>
+            <div class="flex items-center gap-3">
+                <div id="fern-qr-runde" class="bg-white rounded-lg flex items-center justify-center transition-all" style="width: 9.5rem; height: 9.5rem; flex-shrink: 0; padding: .4rem; filter: blur(7px)"></div>
+                <div class="flex-1 space-y-2">
+                    <p class="text-[11px] text-slate-300 leading-normal">
+                        Scannen, und du hast die Runde in der Hand: Timer, Sperren, Aufdecken, Antworten bewerten,
+                        Punkte, Joker und die nächste Runde.
+                    </p>
+                    <p class="text-[11px] text-slate-400 leading-normal">
+                        Vom Team, das gerade präsentiert, siehst du die vorbereiteten Songs – nur auf dem Handy.
+                    </p>
+                    <button type="button" id="fern-qr-runde-knopf" onclick="fernQrUmschalten('fern-qr-runde', 'fern-qr-runde-knopf')"
+                            class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[10px] font-bold rounded-lg px-2 py-1">
+                        <i class="fa-solid fa-eye"></i> Kurz zeigen
+                    </button>
+                </div>
+            </div>
+            <p id="fern-runde-status" class="text-[11px] font-bold text-slate-400"></p>
+            <p class="text-[10px] text-slate-500 leading-normal">
+                Wer den Code abfotografiert, kann mitsteuern – deshalb ist er verwischt. Rhythmus und Zählzeiten
+                stecken in derselben Fernbedienung (Reiter oben auf dem Handy).
+            </p>
+        </div>
+    </div>
+
     <!-- Sammelspiele: eigene Buehne, gleiche Optik. Hier wird nicht getippt,
          sondern gezielt und gezogen - deshalb kein onclick auf der ganzen Flaeche. -->
     <div id="sammel-buehne" class="minispiel-buehne"></div>
@@ -1323,21 +1442,30 @@
     <!-- ========================================== -->
     <!-- SCHÜLER-ANSICHT (DEFAULT VIEW)             -->
     <!-- ========================================== -->
-    <!-- Fernbedienung fuers Lehrerhandy: Sie zeigt nur den Rhythmusteil und
-         schickt Befehle an das Geraet am Beamer - dort stehen die Lautsprecher
+    <!-- Fernbedienung fuers Lehrerhandy: normale Runde, Rhythmus und Zaehlzeiten.
+         Sie schickt Befehle an das Geraet am Beamer - dort stehen die Lautsprecher
          und dort liegt der Spielstand. -->
     <div id="fern-view" class="hidden container mx-auto px-3 py-4 max-w-lg flex-grow font-sans">
         <div class="flex items-center justify-between mb-3">
-            <h1 class="text-base font-black text-violet-300"><i class="fa-solid fa-drum mr-1"></i> Fernbedienung</h1>
+            <h1 class="text-base font-black text-violet-300"><i class="fa-solid fa-mobile-screen-button mr-1"></i> Fernbedienung</h1>
             <span id="fern-raum" class="text-[11px] font-bold text-slate-400"></span>
         </div>
         <div id="fern-modus" class="flex gap-1 mb-2">
+            <button type="button" data-modus="runde" class="rhy-knopf" onclick="fernModusWaehlen('runde')"><i class="fa-solid fa-flag-checkered mr-1"></i> Runde</button>
             <button type="button" data-modus="rhythmus" class="rhy-knopf an" onclick="fernModusWaehlen('rhythmus')"><i class="fa-solid fa-hands-clapping mr-1"></i> Rhythmus</button>
             <button type="button" data-modus="zaehl" class="rhy-knopf" onclick="fernModusWaehlen('zaehl')"><span class="font-black">1 e +</span> Zählzeiten</button>
         </div>
         <div id="fern-stand" class="text-[11px] mb-2 flex items-center gap-1.5 flex-wrap"></div>
+        <div id="fern-warnung" class="fr-warnung hidden"></div>
         <div id="fern-hinweis" class="text-[11px] text-slate-400 mb-3 leading-normal">
             Was du hier einstellst, führt das Gerät am Beamer aus.
+        </div>
+        <!-- Normale Runde: Wer dran ist (mit seinen Songs), die Antworten zum
+             Bewerten, die Teams. Gezeichnet aus dem verschluesselten Stand, den
+             der Beamer unter rooms/<raum>/fern ablegt. -->
+        <div id="fern-runde-teil" class="hidden">
+            <div id="fern-runde-inhalt" class="space-y-3"></div>
+            <div id="fern-runde-leiste" class="fr-leiste"></div>
         </div>
         <div id="fern-rhythmus-teil">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl p-3 space-y-3">
@@ -2101,6 +2229,15 @@
             </div>
             <div class="flex items-center gap-2 justify-end">
                 <button
+                    id="fern-runde-btn"
+                    onclick="fernRundeFensterZeigen()"
+                    class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
+                    title="Fernbedienung fürs Handy: Runde steuern, Antworten bewerten, Songs des präsentierenden Teams sehen"
+                    aria-label="Fernbedienung fürs Handy"
+                >
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                </button>
+                <button
                     id="rhythmus-btn"
                     onclick="rhythmusFensterZeigen()"
                     class="bg-slate-800 hover:bg-slate-700 border border-slate-700/60 text-slate-300 font-bold py-1.5 px-3 rounded-lg text-[11px] transition-all active:scale-95 flex items-center gap-1.5 font-sans"
@@ -2477,6 +2614,7 @@
             } catch (err) {
                 console.error("Fehler beim Speichern des Zustands:", err);
             }
+            fernStandMelden();   // steuert ein Handy mit, bekommt es den neuen Stand
         }
 
 
@@ -2985,6 +3123,7 @@
 
         /* Rundenwechsel/Timer-Synchronisierung auf die Schüler-iPads (über Firebase) */
         async function broadcastControlState(timerSeconds = -1, resetToken = null) {
+            fernStandMelden();   // Sperre, Timer, Spielstart - auch das Handy will es wissen
             /* Maßgeblich ist der Raum, mit dem tatsächlich VERBUNDEN ist - nicht der Text
                im Eingabefeld. Das Feld lässt sich jederzeit ändern oder leeren; war es
                leer, brach diese Funktion stillschweigend ab. Empfangen wurde weiter
@@ -5470,24 +5609,94 @@
         /* dort werden die Antworten bewertet. Das Handy schickt also    */
         /* nur Befehle durch denselben Nachrichtenkanal wie die          */
         /* Schuelergeraete.                                              */
-        /* Der Schluessel im QR-Code gilt nur fuer diese Sitzung: Er     */
-        /* entsteht beim Oeffnen des Fensters neu und steht nirgends     */
-        /* gespeichert. Wer den Code abfotografiert, kann mitsteuern -   */
-        /* deshalb ist er verwischt, bis man ihn braucht.                */
+        /* Der Schluessel im QR-Code entsteht mit dem ersten Code und    */
+        /* bleibt nur in diesem Tab (sessionStorage): Ein Neuladen am    */
+        /* Beamer haengt das Handy nicht ab, ein neuer Tab schon. Wer    */
+        /* den Code abfotografiert, kann mitsteuern - deshalb ist er     */
+        /* verwischt, bis man ihn braucht.                               */
+        /* In die Datenbank kommt der Schluessel nie. Das Handy schickt  */
+        /* nur eine daraus abgeleitete Marke mit, und was das Handy      */
+        /* sehen soll (Songs, Antworten), legt der Beamer verschluesselt */
+        /* unter rooms/<raum>/fern ab - mit einem zweiten, ebenfalls     */
+        /* abgeleiteten Schluessel. Wer dort mitliest, sieht nichts.     */
         /* ============================================================ */
+        const FERN_SITZUNG = 'fern-sitzung';
         let fernSchluessel = '';
+        let fernMarke = '';              // geht mit jedem Befehl mit
+        let fernStandKey = null;         // verschluesselt den Stand fuers Handy
+        let fernBereit = Promise.resolve();
+        // nur am Beamer:
+        let fernAktiv = false;           // ein Handy hat sich in diesem Tab gemeldet
+        let fernBisZeit = 0, fernBisNr = '';   // bis hierher ist alles ausgefuehrt
+        let fernQuittungen = [];         // Nummern der letzten Befehle - gehen im Stand mit
+
+        function fernHex(puffer) {
+            return Array.from(new Uint8Array(puffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function fernAbleiten(schluessel) {
+            fernMarke = '';
+            fernStandKey = null;
+            if (!schluessel || !window.crypto || !window.crypto.subtle) {
+                fernBereit = Promise.resolve();
+                return fernBereit;
+            }
+            const text = new TextEncoder();
+            fernBereit = (async () => {
+                const marke = await crypto.subtle.digest('SHA-256', text.encode('musik-quiz-fern-marke|' + schluessel));
+                const roh = await crypto.subtle.digest('SHA-256', text.encode('musik-quiz-fern-stand|' + schluessel));
+                const key = await crypto.subtle.importKey('raw', roh, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+                if (schluessel !== fernSchluessel) return;     // inzwischen ein anderer
+                fernMarke = fernHex(marke).slice(0, 32);
+                fernStandKey = key;
+                if (fernAktiv) fernStandMelden(true);
+            })().catch(e => console.error("Fernbedienung: Schlüssel nicht ableitbar:", e));
+            return fernBereit;
+        }
+
+        function fernSitzungMerken() {
+            try {
+                sessionStorage.setItem(FERN_SITZUNG, JSON.stringify({
+                    schluessel: fernSchluessel, aktiv: fernAktiv, bisZeit: fernBisZeit, bisNr: fernBisNr
+                }));
+            } catch (e) { /* privates Fenster: dann gilt der Schluessel eben bis zum Neuladen */ }
+        }
+
+        /* Am Beamer nach dem Neuladen: denselben Schluessel weiter benutzen. Gibt
+           es keinen, stand ein frischer Tab an - dann den alten Stand fuers Handy
+           wegraeumen, damit ein Handy von gestern nicht weiter einen Spielstand
+           anzeigt, den niemand mehr fortschreibt. */
+        function fernSitzungLaden() {
+            if (fernSchluessel) return;
+            let s = null;
+            try { s = JSON.parse(sessionStorage.getItem(FERN_SITZUNG) || 'null'); } catch (e) { s = null; }
+            if (!s || !/^[0-9a-f]{32}$/.test(String(s.schluessel || ''))) {
+                if (liveRoomCode && window.fbRemove) {
+                    try { window.fbRemove(window.fbRef(window.fbDb, `rooms/${liveRoomCode}/fern`)); } catch (e) { /* egal */ }
+                }
+                return;
+            }
+            fernSchluessel = s.schluessel;
+            fernAktiv = !!s.aktiv;
+            fernBisZeit = Number(s.bisZeit) || 0;
+            fernBisNr = String(s.bisNr || '');
+            fernAbleiten(fernSchluessel);
+        }
 
         function fernSchluesselHolen() {
+            fernSitzungLaden();
             if (!fernSchluessel) {
-                const zufall = new Uint8Array(8);
+                const zufall = new Uint8Array(16);
                 (window.crypto || {}).getRandomValues ? window.crypto.getRandomValues(zufall)
                     : zufall.forEach((_, i) => zufall[i] = Math.floor(Math.random() * 256));
                 fernSchluessel = Array.from(zufall).map(b => b.toString(16).padStart(2, '0')).join('');
+                fernAbleiten(fernSchluessel);
+                fernSitzungMerken();
             }
             return fernSchluessel;
         }
 
-        // modus 'zaehl': das Handy geht gleich bei den Zaehlzeiten auf
+        // modus 'zaehl' / 'runde': das Handy geht gleich bei diesem Reiter auf
         function fernQrZeichnen(zielId, modus) {
             const ziel = getEl(zielId || 'fern-qr');
             if (!ziel || typeof QRCode === 'undefined') return;
@@ -5498,10 +5707,81 @@
                 return;
             }
             const adresse = window.location.href.split('?')[0];
+            /* v= wie beim Schueler-Code: Das Handy laedt frisch und spricht
+               dieselbe Fassung wie der Beamer. */
             new QRCode(ziel, {
-                text: `${adresse}?fern=${encodeURIComponent(raum)}&s=${fernSchluesselHolen()}${modus ? '&m=' + modus : ''}`,
+                text: `${adresse}?fern=${encodeURIComponent(raum)}&s=${fernSchluesselHolen()}${modus ? '&m=' + modus : ''}&v=${Math.floor(Date.now() / 1000)}`,
                 width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M
             });
+        }
+
+        /* Das Fenster mit dem Code fuer die normale Runde */
+        function fernRundeFensterZeigen() {
+            const f = getEl('fern-runde-fenster');
+            if (!f) return;
+            const qr = getEl('fern-qr-runde'), knopf = getEl('fern-qr-runde-knopf');
+            if (qr) qr.style.filter = 'blur(7px)';      // jedes Mal wieder verwischt
+            if (knopf) knopf.innerHTML = '<i class="fa-solid fa-eye"></i> Kurz zeigen';
+            fernQrZeichnen('fern-qr-runde', 'runde');
+            fernKnopfZeigen();
+            f.classList.remove('hidden');
+            f.classList.add('flex');
+        }
+        function fernRundeFensterSchliessen() {
+            const f = getEl('fern-runde-fenster');
+            if (!f) return;
+            f.classList.add('hidden');
+            f.classList.remove('flex');
+            const qr = getEl('fern-qr-runde');
+            if (qr) qr.style.filter = 'blur(7px)';
+        }
+
+        // Am Beamer sichtbar machen, ob ein Handy mitsteuert
+        function fernKnopfZeigen() {
+            const knopf = getEl('fern-runde-btn');
+            if (knopf) {
+                knopf.classList.toggle('fern-verbunden', fernAktiv);
+                knopf.title = fernAktiv
+                    ? "Fernbedienung fürs Handy – ein Handy ist verbunden"
+                    : "Fernbedienung fürs Handy: Runde steuern, Antworten bewerten, Songs des präsentierenden Teams sehen";
+            }
+            const status = getEl('fern-runde-status');
+            if (status) status.innerHTML = fernAktiv
+                ? '<span class="text-emerald-400"><i class="fa-solid fa-circle-check"></i> Ein Handy ist verbunden.</span>'
+                : '<i class="fa-solid fa-circle-info"></i> Noch kein Handy verbunden.';
+        }
+
+        /* Am Beamer: Befehle der Reihe nach annehmen. Gewartet wird auf die
+           abgeleitete Marke - nach einem Neuladen kommen die Befehle der letzten
+           Stunden sofort wieder herein, und die duerfen nicht ein zweites Mal
+           wirken. Dafuer merkt sich der Tab, bis wohin er schon war. Was laenger
+           als eine Minute unterwegs war, gilt ebenfalls als erledigt: Stand die
+           Lehreransicht eine Weile nicht offen, soll nicht auf einmal nachgeholt
+           werden, was man laengst anders geloest hat. */
+        let fernKette = Promise.resolve();
+        function fernBefehlEinreihen(p) {
+            fernKette = fernKette.then(() => fernBereit).then(() => fernBefehlPruefen(p))
+                .catch(e => console.error("Fernbedienung: Befehl gescheitert:", e));
+        }
+
+        function fernBefehlPruefen(p) {
+            if (!p || !fernSchluessel || !fernMarke || p.marke !== fernMarke) return;
+            const zeit = Number(p.timestamp) || 0;
+            const nr = String(p.nr || '');
+            if (zeit && (zeit < fernBisZeit || (zeit === fernBisZeit && nr === fernBisNr))) return;
+            if (zeit) { fernBisZeit = zeit; fernBisNr = nr; }
+            const war = fernAktiv;
+            fernAktiv = true;
+            fernSitzungMerken();
+            if (!war) fernKnopfZeigen();
+            if (zeit && (Date.now() + fbServerTimeOffset) - zeit > 60000) return;
+            // Mehrere, damit auch ein zweites Handy seine Quittung findet
+            fernQuittungen = fernQuittungen.concat(nr).slice(-8);
+            try {
+                fernBefehlAusfuehren(p);
+            } finally {
+                fernStandMelden(true);   // die Quittung soll schnell zurueck
+            }
         }
 
         function fernQrUmschalten(zielId, knopfId) {
@@ -5514,12 +5794,13 @@
                 : '<i class="fa-solid fa-eye"></i> Kurz zeigen';
         }
 
-        /* Am Beamer: Befehl vom Handy ausfuehren. Der Schluessel muss stimmen,
-           sonst passiert nichts - kommentarlos, damit Herumprobieren nichts
-           verraet. */
+        /* Am Beamer: Befehl vom Handy ausfuehren. Geprueft ist er schon
+           (fernBefehlPruefen): Stimmt die Marke nicht, passiert nichts -
+           kommentarlos, damit Herumprobieren nichts verraet. */
         function fernBefehlAusfuehren(p) {
-            if (!fernSchluessel || p.schluessel !== fernSchluessel) return;
-            if (p.befehl === 'uebernehmen') {
+            if (p.befehl === 'hallo') {
+                return;   // nur anmelden - der Stand geht gleich hinterher
+            } else if (p.befehl === 'uebernehmen') {
                 rhythmusEntwurf = {
                     soll: Number(p.soll) || 4,
                     zeichen: p.zeichen || '4/4',
@@ -5585,7 +5866,196 @@
                 zaehlRundeStarten();
             } else if (p.befehl === 'zaehl-beenden') {
                 if (zaehlRunde) zaehlRundeBeenden();
+            } else {
+                fernRundenBefehl(p);
             }
+        }
+
+        /* Normale Runde. Jeder Befehl nennt den Zustand, den er herstellen will
+           (an/aus, welche Runde, welche Antwort) - so wirkt ein doppelt
+           getippter Knopf nur einmal, auch wenn das Handy noch den alten Stand
+           zeigte. Ausgefuehrt wird ueber dieselben Funktionen wie am Beamer,
+           mit denselben Meldungen und Toenen. */
+        function fernRundenBefehl(p) {
+            const team = p.id ? teams.find(t => t.id === p.id) : null;
+            const an = p.an === true;
+            const timerLaeuft = !!(timerInterval || preTimerCountdownInterval);
+            switch (p.befehl) {
+                case 'runde-weiter':
+                    if (Number(p.runde) === currentRound) nextRound();
+                    break;
+                case 'runde-zurueck':
+                    if (Number(p.runde) === currentRound) prevRound();
+                    break;
+                case 'sperre':
+                    if (an !== roundLocked) toggleRoundLock();
+                    break;
+                case 'aufdecken':   // an = alles aufdecken, also Sichtschutz aus
+                    if (an === beamerProtectionActive) toggleBeamerProtection();
+                    break;
+                case 'teams-aufdecken':
+                    if (beamerProtectionActive && an !== teamsAufgedeckt) toggleTeamsAufdecken();
+                    break;
+                case 'timer':
+                    if (an && !timerLaeuft) {
+                        const sekunden = Math.round(Number(p.sekunden));
+                        const feld = getEl('timer-duration');
+                        if (feld && sekunden >= 5 && sekunden <= 120) feld.value = sekunden;
+                        startTimer();
+                    } else if (!an && timerLaeuft) {
+                        stopTimer();
+                    }
+                    break;
+                case 'bewerten': {
+                    // Die Antwort ist am Team und am Zeitstempel des Servers zu erkennen
+                    const i = incomingAnswers.findIndex(a => String(a.team || '') === String(p.wer || '')
+                                                          && (Number(a.timestamp) || 0) === (Number(p.zeit) || 0));
+                    if (i < 0) break;    // schon bewertet oder verworfen
+                    const antwort = incomingAnswers[i];
+                    if (p.punkte === 'weg') removeLiveAnswerByIndex(i);
+                    else if (Number(p.punkte) === 0) markLiveAnswerWrong(antwort.team, i, !!antwort.joker);
+                    else if ([1, 2, 3].includes(Number(p.punkte))) applyLiveAnswer(antwort.team, Number(p.punkte), i, !!antwort.joker);
+                    break;
+                }
+                case 'bewertung-zurueck':
+                    if (scoringUndoStack.length && Number(p.stapel) === scoringUndoStack.length) undoLastScoring();
+                    break;
+                case 'vormerken': {
+                    if (!team || team.presenting) break;
+                    const punkte = Number(p.punkte);
+                    if (punkte === 0) {
+                        if (team.activeThisRound) {   // wie der zweite Klick auf denselben Knopf
+                            team.activeThisRound = false;
+                            team.pendingPoints = 0;
+                            playSound('down');
+                            saveState();
+                            renderScoreboard();
+                        }
+                    } else if ([1, 2, 3].includes(punkte) && !(team.activeThisRound && team.pendingPoints === punkte)) {
+                        setPendingRoundPoints(team.id, punkte);
+                    }
+                    break;
+                }
+                case 'punkte':
+                    if (team && (Number(p.wert) === 1 || Number(p.wert) === -1)) adjustScore(team.id, Number(p.wert));
+                    break;
+                case 'praesentieren':
+                    if (team && !!team.presenting !== an) toggleTeamPresenter(team.id);
+                    break;
+                case 'joker':
+                    if (team && Number(p.wert) === 1) grantJoker(team.id);
+                    else if (team && Number(p.wert) === -1) revokeJoker(team.id);
+                    break;
+                case 'spiel':
+                    if (an !== spielLaeuft) toggleSpielStart();
+                    break;
+                case 'punkte-verdecken': {
+                    const schalter = getEl('hide-scores-toggle');
+                    if (schalter && schalter.checked !== an) {
+                        schalter.checked = an;
+                        toggleScoreHiding();
+                    }
+                    break;
+                }
+            }
+        }
+
+        /* Was das Handy in der normalen Runde braucht. Klein halten: Der Stand geht
+           bei jeder Aenderung einmal ganz uebers Netz. Songs gibt es nur vom Team,
+           das gerade dran ist - oder als Naechstes dran waere -, nicht die ganze
+           Liste. Die Antworten stehen hier offen, egal ob der Beamer sie verdeckt:
+           Das Handy ist das Geraet der Lehrkraft. */
+        function fernStandBauen() {
+            const rang = [...teams].sort(vergleicheTeams);
+            const platz = {};
+            rang.forEach((t, i) => { platz[t.id] = i + 1; });
+            const songsVon = t => {
+                const eintrag = t ? teamSongs[teamName(t).toLowerCase()] : null;
+                return eintrag && Array.isArray(eintrag.songs)
+                    ? eintrag.songs.slice(0, 4).map(s => String(s || '').trim().slice(0, 120)) : [];
+            };
+            const dran = teams.find(t => t.presenting) || null;
+            const naechster = dran ? null : naechsterAuftritt();
+            const dauerFeld = getEl('timer-duration');
+            return {
+                q: fernQuittungen,
+                runde: currentRound,
+                gesperrt: !!roundLocked,
+                laeuft: !!spielLaeuft,
+                verdeckt: !!beamerProtectionActive,
+                teamsAuf: !!teamsAufgedeckt,
+                punkteVerdeckt: punkteSindVerdeckt(),
+                timer: !!(timerInterval || preTimerCountdownInterval),
+                dauer: (dauerFeld && parseInt(dauerFeld.value, 10)) || 30,
+                sonder: rhythmusRunde ? 'rhythmus' : zaehlRunde ? 'zaehl' : null,
+                rhy: rhythmusRunde ? { zeichen: rhythmusRunde.zeichen, soll: rhythmusRunde.soll } : null,
+                zurueck: scoringUndoStack.length,
+                antworten: incomingAnswers.map(a => ({
+                    t: String(a.team || ''), e: String(a.emoji || '🎵'), a: String(a.answer || '').slice(0, 300),
+                    j: !!a.joker, z: Number(a.timestamp) || 0, u: fernUrteil(a)
+                })),
+                bewertet: answerHistory.filter(h => h.round === currentRound).map(h => ({
+                    t: String(h.teamName || ''), e: String(h.emoji || '🎵'), a: String(h.answer || '').slice(0, 60),
+                    p: Number(h.points) || 0, j: !!h.hasJoker
+                })),
+                teams: rang.map(t => ({
+                    id: t.id, n: teamName(t), e: String(t.emoji || '🎵'), p: t.score || 0, pl: platz[t.id],
+                    v: t.activeThisRound ? (t.pendingPoints || 1) : 0,
+                    j: t.jokerCount || 0, jr: !!t.jokerActiveThisRound, g: t.presentGrants || 0,
+                    pr: !!t.presenting, war: !!t.hatPraesentiert, s: hatSongsAbgegeben(t)
+                })),
+                dran: dran ? { id: dran.id, songs: songsVon(dran) } : null,
+                naechster: naechster ? { id: naechster.id, songs: songsVon(naechster) } : null
+            };
+        }
+
+        // Rhythmus- und Zaehlantworten: derselbe Hinweis wie auf der Antwortkarte
+        function fernUrteil(a) {
+            const text = String(a.answer || '');
+            try {
+                if (text.startsWith('RHY:') && rhythmusRunde && rhythmusRunde.loesung) {
+                    const stimmt = rhythmusGleich(text.slice(4), rhythmusRunde.loesung, rhythmusRunde.klatsch);
+                    return { ok: stimmt, text: stimmt ? 'stimmt mit deiner Vorgabe' : 'weicht ab' };
+                }
+                if (text.startsWith('ZZ:') && zaehlRunde) {
+                    const werte = text.slice(3).split(' ');
+                    const alle = zaehlRunde.loesung.length;
+                    const richtig = werte.filter((w, i) => w === zaehlRunde.loesung[i]).length;
+                    const ok = richtig === alle && werte.length === alle;
+                    return { ok, text: ok ? `alle ${alle} richtig` : `${richtig} von ${alle} richtig` };
+                }
+            } catch (e) { /* dann eben ohne Hinweis */ }
+            return null;
+        }
+
+        /* Den Stand fuers Handy schreiben - gebuendelt und nur, wenn sich etwas
+           geaendert hat: Aufgerufen wird das von saveState, renderScoreboard und
+           Co., also oft, und jede Sekunde des Timers. Geschrieben wird ein
+           einziger Knoten, der sich selbst ueberschreibt - er waechst nicht. */
+        let fernStandWarte = null, fernStandZuletzt = '', fernStandKette = Promise.resolve();
+        function fernStandMelden(bald) {
+            if (!fernAktiv || currentView !== 'teacher' || !liveRoomCode) return;
+            clearTimeout(fernStandWarte);
+            fernStandWarte = setTimeout(fernStandSenden, bald ? 40 : 250);
+        }
+        function fernStandSenden() {
+            const raum = liveRoomCode, key = fernStandKey;
+            if (!raum || !key || !window.fbSet) return;
+            let roh;
+            try { roh = JSON.stringify(fernStandBauen()); }
+            catch (e) { console.error("Fernbedienung: Stand nicht gebaut:", e); return; }
+            if (roh === fernStandZuletzt) return;
+            fernStandZuletzt = roh;
+            fernStandKette = fernStandKette.then(async () => {
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+                const chiffre = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(roh));
+                await window.fbSet(window.fbRef(window.fbDb, `rooms/${raum}/fern`), {
+                    iv: CloudTresor.nachB64(iv), daten: CloudTresor.nachB64(new Uint8Array(chiffre))
+                });
+            }).catch(e => {
+                console.error("Fernbedienung: Stand nicht gesendet:", e);
+                fernStandZuletzt = '';    // beim naechsten Anlass noch einmal
+            });
         }
 
         /* Den Vorlauf stellt die Fernbedienung ein - am Beamer muss er dann
@@ -5601,18 +6071,70 @@
         let fernEntwurf = { soll: 4, zeichen: '4/4', takte: 1, klatsch: true, werte: ['V', 'AA', 'Vp', 'H'], loesung: '' };
         let fernMetronom = { bpm: 90, takte: 1 };
 
-        function fernSenden(befehl, daten) {
+        /* Jeder Befehl bekommt eine Nummer. Der Beamer nennt im naechsten Stand
+           die Nummer des zuletzt ausgefuehrten Befehls - so weiss das Handy, dass
+           er angekommen ist, und merkt es, wenn am Beamer niemand mehr zuhoert.
+           leise = ohne "Geschickt"-Meldung: Im Reiter Runde sieht man die Wirkung. */
+        let fernOffen = [];
+        let fernWachhundTimer = null;
+        function fernSenden(befehl, daten, leise) {
             if (!fernRaum) return;
+            if (!fernMarke) {
+                showToast(window.crypto && window.crypto.subtle
+                    ? "Die Fernbedienung ist noch nicht bereit – gleich noch einmal."
+                    : "Dieser Browser kann die Fernbedienung nicht absichern (nur über https).", "danger");
+                return;
+            }
+            const nr = Math.random().toString(36).slice(2, 10);
             try {
-                window.fbPush(window.fbRef(window.fbDb, `rooms/${fernRaum}/messages`), Object.assign({
-                    action: 'fern', befehl: befehl, schluessel: fernSchluessel,
+                window.fbPush(window.fbRef(window.fbDb, `rooms/${fernRaum}/messages`), Object.assign({}, daten || {}, {
+                    action: 'fern', befehl: befehl, marke: fernMarke, nr: nr,
                     team: 'Fernbedienung', timestamp: window.fbServerTimestamp()
-                }, daten || {}));
-                showToast("An den Beamer geschickt.", "success");
+                }));
+                fernOffen.push({ nr, zeit: Date.now() });
+                fernWachhund();
+                if (!leise) showToast("An den Beamer geschickt.", "success");
             } catch (e) {
                 console.error("Befehl konnte nicht gesendet werden:", e);
                 showToast("Der Befehl kam nicht durch - steht das Gerät am Beamer noch im Raum?", "danger");
             }
+        }
+
+        function fernWachhund() {
+            clearTimeout(fernWachhundTimer);
+            if (!fernOffen.length) return;
+            fernWachhundTimer = setTimeout(() => {
+                if (fernOffen.some(o => Date.now() - o.zeit > 4000)) fernWarnungZeigen('stumm');
+                fernWachhund();
+            }, 4500);
+        }
+
+        function fernQuittungPruefen(nummern) {
+            const liste = Array.isArray(nummern) ? nummern : [nummern];
+            let i = -1;
+            fernOffen.forEach((o, j) => { if (liste.includes(o.nr)) i = j; });
+            if (i >= 0) fernOffen.splice(0, i + 1);   // was davor geschickt wurde, ist auch durch
+            if (!fernOffen.length) {
+                clearTimeout(fernWachhundTimer);
+                fernWarnungZeigen('');
+            }
+        }
+
+        let fernWarnungArt = '', fernStartZeit = 0;
+        function fernWarnungZeigen(art) {
+            const kasten = getEl('fern-warnung');
+            if (!kasten) return;
+            const texte = {
+                stumm: '<i class="fa-solid fa-triangle-exclamation mr-1"></i> Der Beamer reagiert nicht. Ist dort die Lehreransicht offen und der Raum gestartet? ' +
+                       'Wurde der Beamer neu geöffnet, den QR-Code dort neu scannen (📱 in der Rundenleiste).',
+                schluessel: '<i class="fa-solid fa-key mr-1"></i> Der Beamer hat inzwischen einen neuen Schlüssel. ' +
+                            'Bitte den QR-Code dort neu scannen (📱 in der Rundenleiste).',
+                technik: '<i class="fa-solid fa-lock mr-1"></i> Dieser Browser kann die Fernbedienung nicht absichern. ' +
+                         'Bitte die Seite über den QR-Code öffnen (https).'
+            };
+            fernWarnungArt = texte[art] ? art : '';
+            kasten.innerHTML = texte[art] || '';
+            kasten.classList.toggle('hidden', !texte[art]);
         }
 
         function fernModusStarten(raum, schluessel, modus) {
@@ -5624,6 +6146,19 @@
             const raumAnzeige = getEl('fern-raum');
             if (raumAnzeige) raumAnzeige.textContent = 'Raum ' + fernRaum.toUpperCase();
             fernMithoeren();
+            // Erst ableiten, dann beim Beamer melden und seinen Stand abhoeren
+            fernStartZeit = Date.now();
+            fernAbleiten(fernSchluessel).then(() => {
+                if (!fernMarke || !fernStandKey) { fernWarnungZeigen('technik'); return; }
+                fernStandHoeren();
+                fernSenden('hallo', null, true);
+            });
+            // Liegt noch ein Stand mit altem Schluessel da, ersetzt ihn der Beamer
+            // gleich nach dem Hallo - erst danach ist eine Warnung angebracht.
+            setTimeout(() => { if (fernStandFehler === 'schluessel') { fernWarnungZeigen('schluessel'); fernRundeZeichnen(); } }, 5500);
+            const rundenTeil = getEl('fern-runde-teil');
+            if (rundenTeil) rundenTeil.addEventListener('click', fernRundeKlick);
+            fernRundeZeichnen();
 
             fernTaktwahlZeichnen();
             fernWahlZeichnen();
@@ -5631,7 +6166,7 @@
             fernTakteZeichnen();
             fernTempoAnzeigen();
             zaehlFensterZeichnen();   // zeichnet auf dem Handy in den Zaehlteil
-            fernModusWaehlen(modus === 'zaehl' ? 'zaehl' : 'rhythmus');
+            fernModusWaehlen(modus === 'zaehl' ? 'zaehl' : modus === 'runde' ? 'runde' : 'rhythmus');
 
             getEl('fern-zufall').addEventListener('click', () => {
                 const alt = rhythmusEntwurf;
@@ -5672,11 +6207,20 @@
             getEl('fern-tempo-plus').addEventListener('click', () => { fernMetronom.bpm = Math.min(200, fernMetronom.bpm + 5); fernTempoAnzeigen(); });
         }
 
+        let fernModus = 'rhythmus';
         function fernModusWaehlen(modus) {
+            fernModus = modus;
+            getEl('fern-runde-teil').classList.toggle('hidden', modus !== 'runde');
             getEl('fern-rhythmus-teil').classList.toggle('hidden', modus !== 'rhythmus');
             getEl('fern-zaehl-teil').classList.toggle('hidden', modus !== 'zaehl');
+            // In der Runde zaehlt jeder Zentimeter - der Hinweis steht dann ueber den Karten nicht
+            const hinweis = getEl('fern-hinweis');
+            if (hinweis) hinweis.classList.toggle('hidden', modus === 'runde');
+            const sicht = getEl('fern-view');
+            if (sicht) sicht.classList.toggle('fr-mit-leiste', modus === 'runde');
             document.querySelectorAll('#fern-modus [data-modus]').forEach(b =>
                 b.classList.toggle('an', b.dataset.modus === modus));
+            fernKopfZeichnen();
         }
 
         function fernZaehlStarten() {
@@ -5689,25 +6233,394 @@
            anzuzeigen, in welcher Runde man gerade ist und ob der Rhythmusmodus
            laeuft. Ohne das verliert man beim Hin und Her zwischen Beamer und Hand
            den Faden. */
+        let fernControl = {};
         function fernMithoeren() {
             if (!fernRaum || !window.fbOnValue) return;
             try {
                 window.fbOnValue(window.fbRef(window.fbDb, `rooms/${fernRaum}/control`), (schnappschuss) => {
-                    const stand = schnappschuss.val() || {};
-                    const anzeige = getEl('fern-stand');
-                    if (!anzeige) return;
-                    const runde = stand.round !== undefined ? stand.round : '–';
-                    const laeuft = stand.rhythmus ? 'Rhythmus läuft' : stand.zaehl ? 'Zählzeiten laufen' : '';
-                    anzeige.innerHTML = `<span class="bg-violet-500/25 text-violet-200 border border-violet-500/40 px-2 py-0.5 rounded-lg font-black">Runde ${runde}</span>` +
-                        (laeuft
-                            ? ` <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-lg font-bold">${laeuft}</span>`
-                            : ` <span class="text-slate-500">keine Sonderrunde aktiv</span>`) +
-                        (stand.locked ? ` <span class="text-rose-300 font-bold">gesperrt</span>` : '');
-                    fernZaehlStandZeigen(stand.zaehl || null);
+                    fernControl = schnappschuss.val() || {};
+                    fernKopfZeichnen();
+                    fernLeisteZeichnen();     // die Restzeit des Timers kommt von hier
+                    fernZaehlStandZeigen(fernControl.zaehl || null);
                 });
             } catch (e) {
                 console.error("Fernbedienung konnte den Raum nicht mithören:", e);
             }
+        }
+
+        function fernKopfZeichnen() {
+            const anzeige = getEl('fern-stand');
+            if (!anzeige) return;
+            const stand = fernControl || {};
+            const runde = stand.round !== undefined ? stand.round : '–';
+            const laeuft = stand.rhythmus ? 'Rhythmus läuft' : stand.zaehl ? 'Zählzeiten laufen' : '';
+            anzeige.innerHTML = `<span class="bg-violet-500/25 text-violet-200 border border-violet-500/40 px-2 py-0.5 rounded-lg font-black">Runde ${runde}</span>` +
+                (laeuft
+                    ? ` <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-lg font-bold">${laeuft}</span>`
+                    : fernModus === 'runde' ? '' : ` <span class="text-slate-500">keine Sonderrunde aktiv</span>`) +
+                (stand.gestartet === false ? ` <span class="text-amber-300 font-bold">Wartehalle</span>` : '') +
+                (Number(stand.timer) > 0 ? ` <span class="text-amber-300 font-bold"><i class="fa-solid fa-hourglass-half"></i> ${Number(stand.timer)} s</span>` : '') +
+                (stand.locked ? ` <span class="text-rose-300 font-bold">gesperrt</span>` : '');
+        }
+
+        /* ---------- Reiter "Runde" ---------- */
+        /* Der Beamer legt seinen Stand verschluesselt ab; nur dieses Handy kennt
+           den Schluessel. Kommen zwei Staende kurz hintereinander, zaehlt nur der
+           juengste - das Entschluesseln ist asynchron. */
+        let fernStand = null, fernStandFehler = '', fernStandZaehler = 0;
+        let fernAufgeklappt = {};      // welche Teams / Songlisten offen sind
+        let fernBestaetigen = 0;       // bis wann "Naechste Runde" auf den zweiten Tipp wartet
+        let fernTimerDauer = 0;        // 0 = die Dauer vom Beamer nehmen
+
+        function fernStandHoeren() {
+            if (!fernRaum || !window.fbOnValue) return;
+            try {
+                window.fbOnValue(window.fbRef(window.fbDb, `rooms/${fernRaum}/fern`), async (schnappschuss) => {
+                    const meine = ++fernStandZaehler;
+                    const paket = schnappschuss.val();
+                    let stand = null, fehler = '';
+                    if (!paket || !paket.iv || !paket.daten) {
+                        fehler = 'warten';
+                    } else {
+                        try {
+                            const klar = await crypto.subtle.decrypt(
+                                { name: 'AES-GCM', iv: CloudTresor.vonB64(paket.iv) },
+                                fernStandKey, CloudTresor.vonB64(paket.daten));
+                            stand = JSON.parse(new TextDecoder().decode(klar));
+                        } catch (e) {
+                            fehler = 'schluessel';
+                        }
+                    }
+                    if (meine !== fernStandZaehler) return;    // laengst ueberholt
+                    fernStand = stand;
+                    fernStandFehler = fehler;
+                    if (stand) {
+                        if (fernWarnungArt === 'schluessel') fernWarnungZeigen('');
+                        fernQuittungPruefen(stand.q);
+                    } else if (fehler === 'schluessel' && Date.now() - fernStartZeit > 5000) {
+                        fernWarnungZeigen('schluessel');
+                    }
+                    fernRundeZeichnen();
+                });
+            } catch (e) {
+                console.error("Fernbedienung konnte den Stand nicht abhören:", e);
+            }
+        }
+
+        function fernTeam(s, id) { return (s.teams || []).find(t => t.id === id) || null; }
+
+        function fernSongsHtml(songs) {
+            const liste = (songs || []).map((song, i) => song
+                ? `<li><span class="fr-nr">${i + 1}</span><span>${escapeHtml(song)}</span></li>`
+                : `<li class="fr-ohne"><span class="fr-nr">${i + 1}</span><span>kein Song</span></li>`).join('');
+            return liste ? `<ol class="fr-songs">${liste}</ol>`
+                         : '<div class="fr-leer">Dieses Team hat keine Songs abgegeben.</div>';
+        }
+
+        function fernDranHtml(s) {
+            const dran = s.dran ? fernTeam(s, s.dran.id) : null;
+            if (dran) {
+                const id = escapeHtml(dran.id);
+                return `
+                    <div class="fr-karte fr-dran">
+                        <div class="fr-kopf">
+                            <span><i class="fa-solid fa-microphone"></i> Dran:</span>
+                            <b>${escapeHtml(dran.e)} ${escapeHtml(dran.n)}</b>
+                            <span class="fr-blass">Platz ${dran.pl} · ${dran.p} Pkt</span>
+                        </div>
+                        ${fernSongsHtml(s.dran.songs)}
+                        <div class="fr-reihe">
+                            <button type="button" class="fr-knopf fr-gold" data-b="joker" data-id="${id}" data-wert="1"
+                                    title="Pro richtig erratenem Song einen Joker">
+                                <i class="fa-solid fa-masks-theater"></i> Joker + ${dran.g}
+                            </button>
+                            <button type="button" class="fr-knopf" data-b="joker" data-id="${id}" data-wert="-1"
+                                    title="Einen Joker zurücknehmen">−</button>
+                            <button type="button" class="fr-knopf fr-rechts" data-b="praesentieren" data-id="${id}" data-an="0"
+                                    title="Präsentieren beenden – das Team rät wieder mit">
+                                <i class="fa-solid fa-check"></i> Fertig
+                            </button>
+                        </div>
+                        <div class="fr-klein">Pro richtig erratenem Song einen Joker. Vorrat jetzt: ${dran.j}.</div>
+                    </div>`;
+            }
+            const naechster = s.naechster ? fernTeam(s, s.naechster.id) : null;
+            if (naechster) {
+                const id = escapeHtml(naechster.id);
+                const offen = !!fernAufgeklappt['songs-' + naechster.id];
+                return `
+                    <div class="fr-karte">
+                        <div class="fr-kopf">
+                            <span><i class="fa-solid fa-microphone-lines"></i> Nächster Auftritt:</span>
+                            <b>${escapeHtml(naechster.e)} ${escapeHtml(naechster.n)}</b>
+                            <span class="fr-blass">Platz ${naechster.pl}</span>
+                        </div>
+                        <div class="fr-reihe">
+                            <button type="button" class="fr-knopf fr-violett" data-b="praesentieren" data-id="${id}" data-an="1">
+                                <i class="fa-solid fa-microphone"></i> Auftritt starten
+                            </button>
+                            <button type="button" class="fr-knopf" data-b="auf" data-id="songs-${id}">
+                                <i class="fa-solid fa-${offen ? 'eye-slash' : 'eye'}"></i> Songs
+                            </button>
+                        </div>
+                        ${offen ? `<div class="fr-abstand">${fernSongsHtml(s.naechster.songs)}</div>` : ''}
+                        <div class="fr-klein">Ein anderes Team? 🎤 bei den Teams unten.</div>
+                    </div>`;
+            }
+            if (!(s.teams || []).length) {
+                return '<div class="fr-karte fr-leer"><i class="fa-solid fa-people-group"></i> Noch keine Teams im Raum.</div>';
+            }
+            return `<div class="fr-karte fr-leer"><i class="fa-solid fa-microphone-slash"></i> Gerade präsentiert niemand, und alle Teams waren schon dran.
+                    Über 🎤 bei den Teams unten lässt sich trotzdem eins auswählen.</div>`;
+        }
+
+        function fernAntwortInhalt(a, s) {
+            const text = String(a.a || '');
+            if (text.startsWith('RHY:')) {
+                try {
+                    const noten = rhythmusLesen(text.slice(4));
+                    if (noten.length) return `<div class="fr-noten">${rhythmusSvg(noten, null, false, s.rhy && s.rhy.zeichen, s.rhy && s.rhy.soll)}</div>`;
+                } catch (e) { /* dann als Text */ }
+                return '<span class="fr-blass">Rhythmus</span>';
+            }
+            if (text.startsWith('ZZ:')) return escapeHtml(text.slice(3));
+            return escapeHtml(text);
+        }
+
+        function fernAntwortenHtml(s) {
+            const antworten = s.antworten || [];
+            const bewertet = s.bewertet || [];
+            const praesentiert = new Set((s.teams || []).filter(t => t.pr).map(t => t.n.toLowerCase()));
+            const erwartet = (s.teams || []).length - praesentiert.size;
+            const abgegeben = new Set();
+            antworten.forEach(a => abgegeben.add(a.t.toLowerCase()));
+            bewertet.forEach(h => abgegeben.add(h.t.toLowerCase()));
+            praesentiert.forEach(n => abgegeben.delete(n));
+
+            const karten = antworten.map((a, i) => `
+                <div class="fr-antwort">
+                    <div class="fr-antwort-kopf">
+                        <span class="${i === 0 ? 'fr-erste' : 'fr-blass'}">${i === 0 ? '⚡ 1.' : (i + 1) + '.'}</span>
+                        <b>${escapeHtml(a.e)} ${escapeHtml(a.t)}</b>
+                        ${a.j ? '<span class="fr-joker"><i class="fa-solid fa-masks-theater"></i> JOKER ×2</span>' : ''}
+                    </div>
+                    <div class="fr-antwort-text">${fernAntwortInhalt(a, s)}</div>
+                    ${a.u ? `<div class="${a.u.ok ? 'fr-gut' : 'fr-schlecht'}">${escapeHtml(a.u.text)}</div>` : ''}
+                    <div class="fr-reihe">
+                        <button type="button" class="fr-knopf fr-gruen" data-b="bewerten" data-i="${i}" data-punkte="3">+3</button>
+                        <button type="button" class="fr-knopf fr-gruen" data-b="bewerten" data-i="${i}" data-punkte="2">+2</button>
+                        <button type="button" class="fr-knopf" data-b="bewerten" data-i="${i}" data-punkte="1">+1</button>
+                        <button type="button" class="fr-knopf fr-rot" data-b="bewerten" data-i="${i}" data-punkte="0"
+                                title="Falsch (0 Punkte${a.j ? ', Joker-Risiko greift' : ''})">0</button>
+                        <button type="button" class="fr-knopf fr-rechts" data-b="bewerten" data-i="${i}" data-punkte="weg"
+                                title="Verwerfen – das Team darf neu abgeben"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </div>`).join('');
+
+            let leer = '';
+            if (!antworten.length) {
+                leer = !s.laeuft
+                    ? '<div class="fr-leer">Wartehalle: Die Teams können noch nicht antworten. Unten links startest du das Spiel.</div>'
+                    : bewertet.length
+                        ? '<div class="fr-leer fr-gut"><i class="fa-solid fa-circle-check"></i> Alle Antworten dieser Runde sind bewertet – weiter mit „Nächste Runde“.</div>'
+                        : '<div class="fr-leer">Noch keine Antworten in dieser Runde.</div>';
+            }
+            const schon = bewertet.length ? `
+                <div class="fr-klein">Schon bewertet: ${bewertet.map(h =>
+                    `${escapeHtml(h.e)} ${escapeHtml(h.t)} <b class="${h.p > 0 ? 'fr-gut' : 'fr-schlecht'}">${h.p > 0 ? '+' + h.p : '0'}${h.j ? ' 🃏' : ''}</b>`).join(' · ')}</div>` : '';
+            const zurueck = s.zurueck ? `
+                <div class="fr-reihe">
+                    <button type="button" class="fr-knopf fr-mini" data-b="bewertung-zurueck">
+                        <i class="fa-solid fa-rotate-left"></i> Bewertung zurück
+                    </button>
+                </div>` : '';
+            /* Kopfzeile in einer Zeile und gleich hoch, ob verdeckt oder nicht:
+               Sonst rutschen beim Aufdecken alle Antworten nach oben, und der
+               naechste Tipp - meist ein Punkteknopf - trifft daneben. */
+            const beamerSicht = s.verdeckt
+                ? `<button type="button" class="fr-knopf fr-mini fr-rechts" data-b="teams-aufdecken"
+                           title="${s.teamsAuf ? 'Am Beamer wieder alles verdecken' : 'Am Beamer nur zeigen, wer geantwortet hat – die Antworten bleiben verdeckt'}">
+                       <i class="fa-solid fa-${s.teamsAuf ? 'user-secret' : 'users'}"></i> ${s.teamsAuf ? 'Verbergen' : 'Nur Teams'}</button>`
+                : '<span class="fr-pille fr-offen fr-rechts"><i class="fa-solid fa-eye"></i> am Beamer offen</span>';
+            return `
+                <div class="fr-karte">
+                    <div class="fr-kopf fr-kopf-fest">
+                        <span><i class="fa-solid fa-comment-dots"></i> Antworten</span>
+                        <span class="fr-pille">${abgegeben.size}/${Math.max(0, erwartet)}</span>
+                        ${beamerSicht}
+                    </div>
+                    ${leer}${karten}${schon}${zurueck}
+                </div>`;
+        }
+
+        function fernTeamsHtml(s) {
+            const teamsListe = s.teams || [];
+            if (!teamsListe.length) return '';
+            const zeilen = teamsListe.map(t => {
+                const id = escapeHtml(t.id);
+                const offen = !!fernAufgeklappt[t.id];
+                const vorgemerkt = t.v ? ` <span class="fr-gut">+${t.v}${t.jr ? ' ×2' : ''}</span>` : '';
+                return `
+                    <div class="fr-team">
+                        <div class="fr-team-kopf">
+                            <span class="fr-blass">${t.pl}.</span>
+                            <b>${escapeHtml(t.e)} ${escapeHtml(t.n)}</b>
+                            ${t.pr ? '<span class="fr-pille"><i class="fa-solid fa-microphone"></i> dran</span>'
+                                   : t.war ? '<span class="fr-blass"><i class="fa-solid fa-microphone"></i> war dran</span>' : ''}
+                            ${t.jr ? '<span class="fr-joker">JOKER</span>' : ''}
+                            ${!s.laeuft ? (t.s ? '<span class="fr-gut"><i class="fa-solid fa-music"></i> Songs da</span>' : '<span class="fr-blass">Songs fehlen</span>') : ''}
+                            <span class="fr-punkte">${t.p}${vorgemerkt}</span>
+                        </div>
+                        <div class="fr-reihe">
+                            ${t.pr ? '<span class="fr-blass">präsentiert gerade</span>' : [1, 2, 3].map(n =>
+                                `<button type="button" class="fr-knopf${t.v === n ? ' fr-an' : ''}" data-b="vormerken" data-id="${id}"
+                                         data-punkte="${t.v === n ? 0 : n}" title="Für diese Runde vormerken">+${n}</button>`).join('')}
+                            <span class="fr-trenner"></span>
+                            <button type="button" class="fr-knopf${t.pr ? ' fr-an' : ''}" data-b="praesentieren" data-id="${id}" data-an="${t.pr ? 0 : 1}"
+                                    title="${t.pr ? 'Präsentieren beenden' : 'Dieses Team präsentiert jetzt'}"><i class="fa-solid fa-microphone"></i></button>
+                            <button type="button" class="fr-knopf" data-b="auf" data-id="${id}" title="Sofort-Punkte und Joker">
+                                <i class="fa-solid fa-ellipsis"></i></button>
+                        </div>
+                        ${offen ? `
+                        <div class="fr-reihe">
+                            <span class="fr-blass">Sofort:</span>
+                            <button type="button" class="fr-knopf" data-b="punkte" data-id="${id}" data-wert="-1">−1</button>
+                            <button type="button" class="fr-knopf" data-b="punkte" data-id="${id}" data-wert="1">+1</button>
+                            <span class="fr-trenner"></span>
+                            <span class="fr-blass"><i class="fa-solid fa-masks-theater"></i> ${t.j}</span>
+                            <button type="button" class="fr-knopf" data-b="joker" data-id="${id}" data-wert="-1" title="Joker zurücknehmen">−</button>
+                            <button type="button" class="fr-knopf fr-gold" data-b="joker" data-id="${id}" data-wert="1" title="Joker schenken">+</button>
+                        </div>` : ''}
+                    </div>`;
+            }).join('');
+            return `
+                <div class="fr-karte">
+                    <div class="fr-kopf">
+                        <span><i class="fa-solid fa-people-group"></i> Teams</span>
+                        ${s.punkteVerdeckt ? '<span class="fr-pille">Punkte am Beamer verdeckt</span>' : ''}
+                    </div>
+                    ${zeilen}
+                    <div class="fr-klein">+1 bis +3 merken Punkte für diese Runde vor – gutgeschrieben wird mit „Nächste Runde“.</div>
+                </div>`;
+        }
+
+        function fernMehrHtml(s) {
+            const dauer = fernTimerDauer || s.dauer || 30;
+            return `
+                <div class="fr-karte">
+                    <div class="fr-kopf"><span><i class="fa-solid fa-sliders"></i> Mehr</span></div>
+                    <div class="fr-reihe">
+                        <span class="fr-blass">Timer</span>
+                        <button type="button" class="fr-knopf" data-b="dauer" data-wert="-5">−</button>
+                        <b class="fr-punkte" style="margin-left:0">${dauer} s</b>
+                        <button type="button" class="fr-knopf" data-b="dauer" data-wert="5">+</button>
+                    </div>
+                    <div class="fr-reihe">
+                        <button type="button" class="fr-knopf" data-b="runde-zurueck" title="Nur die Rundenzahl – vergebene Punkte bleiben">
+                            <i class="fa-solid fa-arrow-left"></i> Runde zurück</button>
+                        <button type="button" class="fr-knopf" data-b="spiel">
+                            <i class="fa-solid fa-${s.laeuft ? 'pause' : 'play'}"></i> ${s.laeuft ? 'Wartehalle' : 'Spiel starten'}</button>
+                        <button type="button" class="fr-knopf${s.punkteVerdeckt ? ' fr-an' : ''}" data-b="punkte-verdecken"
+                                title="Punkte und Plätze am Beamer verdecken – fürs Finale">
+                            <i class="fa-solid fa-eye-slash"></i> Punkte verdecken</button>
+                    </div>
+                </div>`;
+        }
+
+        function fernRundeZeichnen() {
+            const inhalt = getEl('fern-runde-inhalt');
+            if (!inhalt) return;
+            const s = fernStand;
+            if (!s) {
+                // Was zu tun ist, sagt die Warnung darueber - hier nur der Zustand
+                inhalt.innerHTML = fernStandFehler === 'schluessel' && Date.now() - fernStartZeit > 5000
+                    ? '<div class="fr-karte fr-leer"><i class="fa-solid fa-link-slash"></i> Keine Verbindung zum Beamer.</div>'
+                    : '<div class="fr-karte fr-leer"><i class="fa-solid fa-spinner animate-spin"></i> Warte auf den Beamer … Dort muss die Lehreransicht offen und der Raum gestartet sein.</div>';
+                fernLeisteZeichnen();
+                return;
+            }
+            inhalt.innerHTML = fernDranHtml(s) + fernAntwortenHtml(s) + fernTeamsHtml(s) + fernMehrHtml(s);
+            fernLeisteZeichnen();
+        }
+
+        /* Die feste Leiste unten: Timer (in der Wartehalle: Spielstart), Sperren,
+           Aufdecken, Naechste Runde. Die Knoepfe nennen, was sie tun; die Farbe
+           sagt, wie es gerade steht. */
+        function fernLeisteZeichnen() {
+            const leiste = getEl('fern-runde-leiste');
+            if (!leiste) return;
+            const s = fernStand;
+            if (!s) { leiste.innerHTML = ''; return; }
+            const rest = Number((fernControl || {}).timer);
+            const erster = !s.laeuft
+                ? '<button type="button" class="fr-knopf fr-gruen" data-b="spiel"><i class="fa-solid fa-play"></i>Spiel starten</button>'
+                : s.timer
+                    ? `<button type="button" class="fr-knopf fr-gold" data-b="timer"><i class="fa-solid fa-stop"></i>${rest > 0 ? rest + ' s · Stopp' : '3 · 2 · 1'}</button>`
+                    : `<button type="button" class="fr-knopf" data-b="timer"><i class="fa-solid fa-hourglass-start"></i>Timer ${fernTimerDauer || s.dauer} s</button>`;
+            const sperre = s.gesperrt
+                ? '<button type="button" class="fr-knopf fr-rot" data-b="sperre"><i class="fa-solid fa-lock"></i>Entsperren</button>'
+                : '<button type="button" class="fr-knopf" data-b="sperre"><i class="fa-solid fa-lock-open"></i>Sperren</button>';
+            const auf = s.verdeckt
+                ? '<button type="button" class="fr-knopf fr-violett" data-b="aufdecken"><i class="fa-solid fa-eye"></i>Aufdecken</button>'
+                : '<button type="button" class="fr-knopf" data-b="aufdecken"><i class="fa-solid fa-eye-slash"></i>Verdecken</button>';
+            const sicher = fernBestaetigen > Date.now();
+            const weiter = sicher
+                ? '<button type="button" class="fr-knopf fr-gold" data-b="weiter"><i class="fa-solid fa-circle-question"></i>Sicher? Tippen</button>'
+                : '<button type="button" class="fr-knopf fr-gruen" data-b="weiter"><i class="fa-solid fa-arrow-right"></i>Nächste Runde</button>';
+            leiste.innerHTML = erster + sperre + auf + weiter;
+        }
+
+        function fernRundeKlick(ev) {
+            const knopf = ev.target.closest('[data-b]');
+            const s = fernStand;
+            if (!knopf || !s) return;
+            const d = knopf.dataset;
+            switch (d.b) {
+                case 'auf':      // nur auf dem Handy: aufklappen
+                    fernAufgeklappt[d.id] = !fernAufgeklappt[d.id];
+                    fernRundeZeichnen();
+                    return;
+                case 'dauer':
+                    fernTimerDauer = Math.max(5, Math.min(120, (fernTimerDauer || s.dauer || 30) + Number(d.wert)));
+                    fernRundeZeichnen();
+                    return;
+                case 'weiter':
+                    /* Zweimal tippen: Der Rundenwechsel schreibt die Punkte fest und
+                       laesst sich nicht zuruecknehmen - ein Tipp beim Scrollen soll
+                       ihn nicht ausloesen. */
+                    if (fernBestaetigen <= Date.now()) {
+                        fernBestaetigen = Date.now() + 3000;
+                        fernLeisteZeichnen();
+                        setTimeout(fernLeisteZeichnen, 3100);
+                        return;
+                    }
+                    fernBestaetigen = 0;
+                    fernSenden('runde-weiter', { runde: s.runde }, true);
+                    break;
+                case 'runde-zurueck': fernSenden('runde-zurueck', { runde: s.runde }, true); break;
+                case 'sperre': fernSenden('sperre', { an: !s.gesperrt }, true); break;
+                case 'aufdecken': fernSenden('aufdecken', { an: !!s.verdeckt }, true); break;
+                case 'teams-aufdecken': fernSenden('teams-aufdecken', { an: !s.teamsAuf }, true); break;
+                case 'timer': fernSenden('timer', { an: !s.timer, sekunden: fernTimerDauer || s.dauer }, true); break;
+                case 'spiel': fernSenden('spiel', { an: !s.laeuft }, true); break;
+                case 'punkte-verdecken': fernSenden('punkte-verdecken', { an: !s.punkteVerdeckt }, true); break;
+                case 'bewertung-zurueck': fernSenden('bewertung-zurueck', { stapel: s.zurueck }, true); break;
+                case 'bewerten': {
+                    const a = (s.antworten || [])[Number(d.i)];
+                    if (!a) return;
+                    fernSenden('bewerten', { wer: a.t, zeit: a.z, punkte: d.punkte === 'weg' ? 'weg' : Number(d.punkte) }, true);
+                    break;
+                }
+                case 'vormerken': fernSenden('vormerken', { id: d.id, punkte: Number(d.punkte) }, true); break;
+                case 'punkte': fernSenden('punkte', { id: d.id, wert: Number(d.wert) }, true); break;
+                case 'joker': fernSenden('joker', { id: d.id, wert: Number(d.wert) }, true); break;
+                case 'praesentieren': fernSenden('praesentieren', { id: d.id, an: d.an === '1' }, true); break;
+                default: return;
+            }
+            // Bis der Beamer den neuen Stand schickt, ist der Knopf blass - dann wird neu gezeichnet
+            knopf.classList.add('fr-wartet');
+            const karte = knopf.closest('.fr-antwort');
+            if (karte && d.b === 'bewerten') karte.classList.add('fr-wartet');
         }
 
         /* Die laufende Zaehlrunde mit Loesung: Der Rhythmus steht ohnehin auf
@@ -7979,7 +8892,7 @@
                 
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.get('fern') && urlParams.get('s')) {
-                    // Fernbedienung: nur der Rhythmusteil, alles andere bleibt aus
+                    // Fernbedienung: nur die Fernbedienung, alles andere bleibt aus
                     fernModusStarten(urlParams.get('fern'), urlParams.get('s'), urlParams.get('m'));
                 } else if (urlParams.get('k')) {
                     // Geheimer Direktlink: Prüfung passiert asynchron, daher erst
@@ -8828,6 +9741,11 @@
 
             activateClassForRoom(roomCode);
             liveRoomCode = roomCode;
+            /* Fernbedienung: Nach einem Neuladen gilt der Schluessel dieses Tabs
+               weiter - er muss stehen, bevor die ersten Befehle hereinkommen. */
+            fernSitzungLaden();
+            fernStandZuletzt = '';    // der Stand soll in diesen Raum, auch wenn er gleich blieb
+            fernKnopfZeigen();
 
             if (fbUnsubscribeMessages) {
                 fbUnsubscribeMessages();
@@ -8871,6 +9789,7 @@
             generateQRCode();
             broadcastControlState();
             updateLiveWarning();
+            fernStandMelden(true);
         }
 
         /* Verarbeitet ein einzelnes Quiz-Ereignis (Beitritt / Antwort / Spickzettel / Reaktion) */
@@ -8894,7 +9813,7 @@
                         if (quizPayload.art === 'wunsch') nimmSnpWunsch(quizPayload.team, quizPayload.wert, quizPayload.spielId);
                         else nimmSnpZug(quizPayload.team, quizPayload.wert, quizPayload.spielId);
                     } else if (quizPayload.action === "fern") {
-                        fernBefehlAusfuehren(quizPayload);
+                        fernBefehlEinreihen(quizPayload);
                     } else if (quizPayload.action === "sammelstand") {
                         nimmSammelstand(quizPayload.team, quizPayload.punkte, quizPayload.extra,
                                         quizPayload.folge, quizPayload.spielId);
@@ -9276,6 +10195,7 @@
 
         function renderIncomingAnswersList() {
             updateAnswerCounter();
+            fernStandMelden();
 
             const list = getEl('live-answers-list');
             const emptyDiv = getEl('live-answers-empty');
@@ -11017,6 +11937,7 @@
             if (!container) return;
 
             updateAnswerCounter();
+            fernStandMelden();
 
             // FLIP Animation: Vorherige Positionen sichern
             const cards = container.querySelectorAll('[data-team-id]');
