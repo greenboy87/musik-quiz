@@ -2528,6 +2528,10 @@
         
         // Schüler Runden Synchronisierung Variablen
         let studentCurrentRound = 1;
+        /* Erst wenn die Runde vom Lehrergeraet kam, geht sie mit der Antwort mit.
+           Vorher stuende hier die 1 vom Seitenstart - und der Beamer wuerfe die
+           Antwort in Runde 7 als verspaetet weg. */
+        let studentRundeBekannt = false;
         /* Bewusst -1 = "noch unbekannt" statt 1. Früher stand hier 1, und weil ein
            Neuladen diese Zeile erneut ausführt, hatte jedes iPad nach jedem Neuladen
            wieder einen Joker - unabhängig davon, wie viele es wirklich hatte. Solange
@@ -5912,7 +5916,7 @@
                                                           && (Number(a.timestamp) || 0) === (Number(p.zeit) || 0));
                     if (i < 0) break;    // schon bewertet oder verworfen
                     const antwort = incomingAnswers[i];
-                    if (p.punkte === 'weg') removeLiveAnswerByIndex(i);
+                    if (p.punkte === 'weg') removeLiveAnswerByIndex(i, true);
                     else if (Number(p.punkte) === 0) markLiveAnswerWrong(antwort.team, i, !!antwort.joker);
                     else if ([1, 2, 3].includes(Number(p.punkte))) applyLiveAnswer(antwort.team, Number(p.punkte), i, !!antwort.joker);
                     break;
@@ -9136,6 +9140,7 @@
                         handleSessionReset(payload.reset);
                     }
                     if (payload.round !== undefined) {
+                        studentRundeBekannt = typeof payload.round === 'number';
                         updateStudentRound(payload.round, payload.jokerStand || null);
                     }
                     if (payload.timer !== undefined) {
@@ -9575,6 +9580,9 @@
                     time: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                     timestamp: window.fbServerTimestamp()
                 };
+                // Fuer welche Runde: Kommt die Antwort erst nach dem Rundenwechsel an,
+                // landet sie so nicht in der falschen Runde
+                if (studentRundeBekannt) payload.round = studentCurrentRound;
 
                 await fbPushWithTimeout(`rooms/${room}/messages`, payload);
 
@@ -9746,6 +9754,8 @@
             fernSitzungLaden();
             fernStandZuletzt = '';    // der Stand soll in diesen Raum, auch wenn er gleich blieb
             fernKnopfZeigen();
+            // Was in diesem Raum schon erledigt war, kommt beim erneuten Lesen nicht zurueck
+            erledigtLaden(roomCode);
 
             if (fbUnsubscribeMessages) {
                 fbUnsubscribeMessages();
@@ -9828,7 +9838,42 @@
             }
         }
 
+        /* Antworten, die schon erledigt sind: bewertet, verworfen, mit „Liste leeren“
+           oder beim Rundenwechsel abgeraeumt. Beim Verbinden liest der Beamer die
+           Nachrichten der letzten drei Stunden noch einmal - ohne diese Liste kam
+           nach jedem Neuladen alles zurueck, und eine alte Joker-Antwort schaltete
+           den Joker in der laufenden Runde wieder scharf: beim Rundenwechsel dann
+           -1 Punkt fuer ein Team, das gar keinen Joker gesetzt hatte.
+           Gemerkt werden je Raum Team und Zeitstempel vom Server (localStorage). */
+        let erledigteAntworten = new Set();
+        let erledigtRaum = '';
+        function antwortSchluessel(a) {
+            return String((a && a.team) || '').toLowerCase() + '|' + (Number(a && a.timestamp) || 0);
+        }
+        function erledigtLaden(raum) {
+            erledigtRaum = raum;
+            try { erledigteAntworten = new Set(JSON.parse(localStorage.getItem('erledigt_' + raum) || '[]')); }
+            catch (e) { erledigteAntworten = new Set(); }
+        }
+        function erledigtSichern() {
+            if (!erledigtRaum) return;
+            const liste = [...erledigteAntworten].slice(-500);   // die juengsten reichen
+            erledigteAntworten = new Set(liste);
+            try { localStorage.setItem('erledigt_' + erledigtRaum, JSON.stringify(liste)); } catch (e) { /* voll: dann eben nicht */ }
+        }
+        function erledigtMerken(antworten) {
+            (antworten || []).forEach(a => { if (a && a.timestamp) erledigteAntworten.add(antwortSchluessel(a)); });
+            erledigtSichern();
+        }
+        function erledigtVergessen(a) {
+            if (a && erledigteAntworten.delete(antwortSchluessel(a))) erledigtSichern();
+        }
+
         function addIncomingAnswer(answerObj) {
+            if (answerObj.timestamp && erledigteAntworten.has(antwortSchluessel(answerObj))) return;
+            /* Die Runde schicken die iPads seit November 2026 mit. Eine Antwort aus
+               einer frueheren Runde kommt zu spaet - sie gehoert nicht in diese. */
+            if (typeof answerObj.round === 'number' && answerObj.round < currentRound) return;
             if (incomingAnswers.some(ans => ans.team === answerObj.team && ans.answer === answerObj.answer)) {
                 return;
             }
@@ -10461,7 +10506,7 @@
                 const discardBtn = item.querySelector('[data-action="discard"]');
                 if (discardBtn) {
                     discardBtn.addEventListener('click', () => {
-                        removeLiveAnswerByIndex(incomingAnswers.indexOf(ans));
+                        removeLiveAnswerByIndex(incomingAnswers.indexOf(ans), true);
                     });
                 }
 
@@ -10613,6 +10658,7 @@
             if (last.answerObj) {
                 const insertAt = Math.min(last.answerIndex, incomingAnswers.length);
                 incomingAnswers.splice(insertAt, 0, last.answerObj);
+                erledigtVergessen(last.answerObj);   // wieder offen - auch nach einem Neuladen
             }
 
             showToast(`Bewertung für "${last.teamName}" rückgängig gemacht.`, "info");
@@ -10672,21 +10718,27 @@
            Freigabe genau einmal wirkt, auch wenn das Rundensignal mehrfach kommt. */
         let letzteFreigabe = null;
 
-        function removeLiveAnswerByIndex(idx) {
+        /* freigeben = true nur beim Papierkorb. Bewerten laeuft ebenfalls hier
+           durch - und gab bis November 2026 das Team jedes Mal mit frei: Nach
+           jedem +3 oder 0 hiess es auf dem iPad „verworfen, du kannst noch einmal
+           abgeben“, und das Team durfte in derselben Runde ein zweites Mal. */
+        function removeLiveAnswerByIndex(idx, freigeben) {
             // Schutz vor -1: sonst würde splice die letzte Antwort löschen, wenn die
             // angeklickte Karte in der Zwischenzeit schon verschwunden ist.
             if (idx < 0 || idx >= incomingAnswers.length) return;
-            const verworfen = incomingAnswers[idx];
+            const weg = incomingAnswers[idx];
             incomingAnswers.splice(idx, 1);
+            erledigtMerken([weg]);
             renderIncomingAnswersList();
-            if (verworfen && verworfen.team) {
-                letzteFreigabe = { team: verworfen.team, runde: currentRound, marke: Date.now() };
+            if (freigeben && weg && weg.team) {
+                letzteFreigabe = { team: weg.team, runde: currentRound, marke: Date.now() };
                 broadcastControlState();
-                showToast(`Antwort von „${verworfen.team}" verworfen - das Team kann neu abgeben.`, "info");
+                showToast(`Antwort von „${weg.team}" verworfen - das Team kann neu abgeben.`, "info");
             }
         }
 
         function clearIncomingAnswers() {
+            erledigtMerken(incomingAnswers);
             incomingAnswers = [];
             renderIncomingAnswersList();
             showToast("Antworten-Liste geleert.", "info");
@@ -11682,6 +11734,7 @@
             });
 
             // ECHTZEITANZEIGE BEI RUNDENWECHSEL KOMPLETT LEEREN!
+            erledigtMerken(incomingAnswers);   // kommt beim Neuladen nicht zurueck
             incomingAnswers = [];
             // Sichtschutz für die neue Runde immer wieder aktivieren - manuelles Aufdecken nötig!
             beamerProtectionActive = true;
