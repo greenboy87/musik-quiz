@@ -1171,6 +1171,21 @@
         #fern-qr-runde img, #fern-qr-runde canvas { width: 100% !important; height: 100% !important; }
         .fern-verbunden { color: #34d399 !important; border-color: #10b981 !important; }
 
+        /* Anmeldung: vorhandene Teams zum Antippen */
+        .tw-liste { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+        .tw-knopf {
+            font-family: inherit; display: flex; align-items: center; gap: .5rem; text-align: left;
+            min-height: 3.2rem; padding: .5rem .75rem; border-radius: 1rem; cursor: pointer;
+            background: rgba(139, 92, 246, .16); border: 2px solid rgba(139, 92, 246, .45); color: #f8fafc;
+            font-size: .95rem; font-weight: 800; touch-action: manipulation; overflow: hidden;
+        }
+        .tw-knopf:active { transform: scale(.97); }
+        .tw-knopf .tw-emoji { font-size: 1.5rem; flex: 0 0 auto; }
+        .tw-knopf .tw-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .tw-trenner { display: flex; align-items: center; gap: .6rem; margin: 1rem 0 .25rem; color: #64748b; font-size: .7rem; font-weight: 700; }
+        .tw-trenner::before, .tw-trenner::after { content: ''; flex: 1; height: 1px; background: rgba(100, 116, 139, .4); }
+        html[data-theme="light"] .tw-knopf { background: #f5f3ff; border-color: #a78bfa; color: #0f172a; }
+
         html[data-theme="light"] .fr-karte { background: #fff; border-color: #cbd5e1; }
         html[data-theme="light"] .fr-dran { background: #f5f3ff; border-color: #a78bfa; }
         html[data-theme="light"] .fr-kopf, html[data-theme="light"] .fr-team-kopf, html[data-theme="light"] .fr-antwort-kopf { color: #1e293b; }
@@ -1604,6 +1619,13 @@
                     </div>
                 </div>
                 <input type="hidden" id="student-room-input" value="">
+                <!-- Teams, die es in diesem Raum schon gibt: antippen statt eintippen.
+                     Vertippt hiess bisher: ein zweites, leeres Team. -->
+                <div id="student-team-wahl" class="hidden">
+                    <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Euer Team antippen:</label>
+                    <div id="student-team-wahl-liste" class="tw-liste"></div>
+                    <div class="tw-trenner"><span>oder ein neues Team anlegen</span></div>
+                </div>
                 <div>
                     <label class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block mb-1">Dein Teamname (oder Vorname):</label>
                     <input 
@@ -2619,6 +2641,25 @@
                 console.error("Fehler beim Speichern des Zustands:", err);
             }
             fernStandMelden();   // steuert ein Handy mit, bekommt es den neuen Stand
+            teamlisteMelden();   // fuer die Anmeldung: vorhandene Teams zum Antippen
+        }
+
+        /* Am Beamer: Namen und Logos der Teams unter rooms/<raum>/teamliste - ein
+           kleiner Knoten, der sich selbst ueberschreibt. Gelesen wird er nur
+           einmal, wenn ein iPad die Anmeldung zeigt. Keine Songs, keine Punkte. */
+        let teamlisteZuletzt = '';
+        function teamlisteMelden() {
+            if (currentView !== 'teacher' || !liveRoomCode || !window.fbSet) return;
+            const liste = teams.filter(t => teamName(t))
+                .map(t => ({ n: teamName(t), e: String(t.emoji || '🎵'), s: hatSongsAbgegeben(t) }))
+                .sort((a, b) => a.n.localeCompare(b.n, 'de'));
+            const roh = liveRoomCode + '|' + JSON.stringify(liste);
+            if (roh === teamlisteZuletzt) return;
+            teamlisteZuletzt = roh;
+            try {
+                window.fbSet(window.fbRef(window.fbDb, `rooms/${liveRoomCode}/teamliste`), { t: liste })
+                    .catch(e => { console.error("Teamliste nicht gesendet:", e); teamlisteZuletzt = ''; });
+            } catch (e) { teamlisteZuletzt = ''; }
         }
 
 
@@ -8986,6 +9027,7 @@
                     updateStudentRoomDisplay();
                     if (studentJoinCard) studentJoinCard.classList.remove('hidden');
                     if (studentBuzzerCard) studentBuzzerCard.classList.add('hidden');
+                    teamWahlLaden();
                 }
             } else if (view === 'teacher') {
                 studentSection.classList.add('hidden');
@@ -9496,6 +9538,52 @@
             playSound('up');
         }
 
+        /* Auf dem Schuelergeraet: die Teams des Raums als Knoepfe ueber dem
+           Eingabefeld. Einmal lesen genuegt - wer neu dazukommt, legt ohnehin ein
+           neues Team an. Fehlt die Liste (alter Beamer-Stand), bleibt es beim Tippen. */
+        let teamWahlTeams = [];
+        async function teamWahlLaden() {
+            const kasten = getEl('student-team-wahl'), ziel = getEl('student-team-wahl-liste');
+            const roomEl = getEl('student-room-input');
+            const raum = roomEl ? normalisiereRaumCode(roomEl.value) : '';
+            if (!kasten || !ziel) return;
+            kasten.classList.add('hidden');
+            if (!raum || !window.fbGet) return;
+            try {
+                const daten = (await window.fbGet(window.fbRef(window.fbDb, `rooms/${raum}/teamliste`))).val();
+                teamWahlTeams = (daten && Array.isArray(daten.t)) ? daten.t.filter(t => t && t.n) : [];
+            } catch (e) {
+                teamWahlTeams = [];
+            }
+            if (!teamWahlTeams.length) return;
+            ziel.innerHTML = teamWahlTeams.map((t, i) =>
+                `<button type="button" class="tw-knopf" data-i="${i}"><span class="tw-emoji">${escapeHtml(t.e || '🎵')}</span><span class="tw-name">${escapeHtml(t.n)}</span></button>`
+            ).join('');
+            ziel.querySelectorAll('[data-i]').forEach(b => b.addEventListener('click', () => teamWaehlen(teamWahlTeams[Number(b.dataset.i)])));
+            kasten.classList.remove('hidden');
+        }
+
+        function teamWaehlen(t) {
+            if (!t) return;
+            const nameEl = getEl('student-name-input'), emojiEl = getEl('student-emoji-input');
+            const roomEl = getEl('student-room-input');
+            const raum = roomEl ? normalisiereRaumCode(roomEl.value) : '';
+            if (nameEl) nameEl.value = t.n;
+            if (emojiEl) emojiEl.value = t.e || '🎵';
+            /* Hat das Team seine Songs schon abgegeben, nicht noch einmal fragen -
+               was es sonst eintippte, ersetzte seine Liste am Beamer. */
+            // Die Merker gelten je Raum, nicht je Team - also fuer jedes Team neu setzen
+            if (raum && t.s) {
+                localStorage.setItem(`prep_songs_sent_${raum}`, 'true');
+                localStorage.setItem(`prep_songs_data_${raum}`, JSON.stringify(['', '', '', '']));
+            } else if (raum) {
+                localStorage.removeItem(`prep_songs_sent_${raum}`);
+                localStorage.removeItem(`prep_songs_data_${raum}`);
+                ['prep-song-1', 'prep-song-2', 'prep-song-3', 'prep-song-4'].forEach(id => { const f = getEl(id); if (f) f.value = ''; });
+            }
+            joinQuizRoom();
+        }
+
         function leaveQuizRoom() {
             localStorage.removeItem('student_team_name');
             localStorage.removeItem('student_room_code');
@@ -9510,6 +9598,7 @@
             if (studentJoinCard) studentJoinCard.classList.remove('hidden');
             if (studentBuzzerCard) studentBuzzerCard.classList.add('hidden');
             if (studentPrepCard) studentPrepCard.classList.add('hidden');
+            teamWahlLaden();
             showToast("Raum verlassen.", "info");
         }
 
@@ -9800,6 +9889,8 @@
             broadcastControlState();
             updateLiveWarning();
             fernStandMelden(true);
+            teamlisteZuletzt = '';
+            teamlisteMelden();   // die Anmeldung soll die Teams dieses Raums gleich anbieten
         }
 
         /* Verarbeitet ein einzelnes Quiz-Ereignis (Beitritt / Antwort / Spickzettel / Reaktion) */
