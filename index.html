@@ -1096,13 +1096,62 @@
             background-image: linear-gradient(to bottom, #334155, #0f172a) !important;
         }
 
-        /* Podest/Konfetti-Finale bleibt bewusst dunkel-dramatisch, unabhängig vom Theme */
-        html[data-theme="light"] #finale-podium-overlay {
-            background-color: rgba(2, 6, 23, 0.92) !important;
-        }
-        html[data-theme="light"] #finale-podium-overlay .text-slate-400 {
-            color: #94a3b8 !important;
-        }
+        /* ============================================================ */
+        /* FINALE: Siegerehrung mit Podest. Bewusst dunkel-dramatisch,  */
+        /* unabhängig vom Theme - und deshalb nur eigene Klassen: Die   */
+        /* Light-Theme-Regeln färben Tailwind-Textfarben (amber-300,    */
+        /* slate-200 ...) dunkel um, auf dem dunklen Grund unlesbar.    */
+        /* ============================================================ */
+        #finale-podium-overlay { background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: #f8fafc; }
+        .fin-schliessen { position: absolute; top: 18px; right: 22px; z-index: 5; background: none; border: 0; color: #94a3b8; font-size: 1.6rem; cursor: pointer; }
+        .fin-schliessen:hover { color: #fff; }
+        .fin-buehne { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; padding: 3vh 16px 2vh; box-sizing: border-box; overflow: hidden; cursor: pointer; }
+        .fin-titel { margin: 0; font-size: clamp(1.8rem, 6vh, 3.6rem); font-weight: 900; display: flex; gap: .35em; align-items: center; opacity: 0; transform: translateY(-24px); transition: opacity .8s, transform .8s; }
+        .fin-buehne.los .fin-titel { opacity: 1; transform: none; }
+        .fin-verlauf { background: linear-gradient(90deg, #fcd34d, #f9a8d4, #c4b5fd); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .fin-ansage { min-height: 1.4em; margin-top: .6vh; font-family: 'Comfortaa', sans-serif; font-weight: 900; font-size: clamp(1rem, 3.4vh, 2rem); color: #fde68a; text-align: center; opacity: 0; transition: opacity .4s; }
+        .fin-ansage.zeigen { opacity: 1; }
+        .fin-podest { flex: 1; min-height: 0; width: min(1100px, 100%); display: flex; align-items: flex-end; justify-content: center; gap: clamp(8px, 2vw, 28px); }
+        .fin-saeule { flex-grow: var(--n); flex-basis: 0; max-width: calc(var(--n) * 230px); display: flex; flex-direction: column; }
+        .fin-plaetze { position: relative; height: clamp(110px, 22vh, 230px); display: flex; }
+        .fin-platz { flex: 1; min-width: 0; }
+        .fin-frage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Comfortaa', sans-serif; font-size: clamp(2.5rem, 10vh, 6rem); font-weight: 900; color: rgba(248, 250, 252, .28); opacity: 0; transition: opacity .5s; pointer-events: none; }
+        .fin-saeule.steht .fin-frage { opacity: 1; animation: finFrage 1.4s ease-in-out infinite; }
+        .fin-saeule.aufgedeckt .fin-frage { opacity: 0; animation: none; }
+        .fin-stufe { position: relative; height: 0; overflow: hidden; border-radius: 18px 18px 0 0; display: flex; flex-direction: column; align-items: center; gap: .5vh; padding-top: 1.2vh; box-shadow: 0 20px 50px rgba(0, 0, 0, .5); transition: height 1s cubic-bezier(.2, 1.25, .4, 1); }
+        .fin-saeule.steht .fin-stufe { height: var(--h); }
+        .fin-stufe.p1 { background: linear-gradient(#fde68a, #f59e0b); }
+        .fin-stufe.p2 { background: linear-gradient(#e2e8f0, #94a3b8); }
+        .fin-stufe.p3 { background: linear-gradient(#fdba74, #ea580c); }
+        .fin-medaille { font-size: clamp(1.8rem, 5.5vh, 3.2rem); line-height: 1; }
+        .fin-punkte { background: rgba(15, 23, 42, .9); color: #fff; font-weight: 900; font-size: clamp(1.1rem, 3.8vh, 2.2rem); padding: .1em .75em; border-radius: 999px; white-space: nowrap; opacity: 0; transform: scale(.5); transition: opacity .4s, transform .4s cubic-bezier(.34, 1.6, .5, 1); }
+        .fin-punkte.zeigen { opacity: 1; transform: none; }
+        .fin-gleich { background: rgba(15, 23, 42, .9); color: #fde68a; font-weight: 900; font-size: clamp(.7rem, 1.8vh, 1rem); letter-spacing: .08em; text-transform: uppercase; padding: .2em .8em; border-radius: 999px; opacity: 0; transition: opacity .4s; }
+        .fin-saeule.aufgedeckt .fin-gleich { opacity: 1; }
+        .fin-saeule.spannung .fin-stufe { animation: finGluehen .7s ease-in-out infinite alternate; }
+        .fin-boden { width: min(1100px, 100%); height: 4px; flex-shrink: 0; border-radius: 2px; background: rgba(148, 163, 184, .3); }
+        .fin-menge { width: min(1100px, 100%); flex-shrink: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; padding-top: 1.5vh; min-height: 10vh; }
+        .fin-mslot { width: clamp(84px, 9vw, 124px); height: clamp(72px, 11vh, 104px); }
+        .fin-fuss { min-height: 1.4em; display: flex; gap: 1.5rem; align-items: center; justify-content: center; font-size: clamp(.7rem, 1.7vh, .95rem); font-weight: 700; }
+        .fin-joker { color: #fcd34d; }
+        .fin-skip { color: #64748b; }
+        .fin-figuren { position: absolute; inset: 0; pointer-events: none; }
+        .fin-figur { position: absolute; left: 0; top: 0; --s: .6; opacity: 0; display: flex; flex-direction: column; align-items: center; text-align: center; transition: transform .7s cubic-bezier(.34, 1.35, .5, 1), width .7s, opacity .5s; }
+        .fin-figur.da { opacity: 1; }
+        .fin-figur.flug { z-index: 2; transition: transform 1.2s cubic-bezier(.34, 1.3, .5, 1), width 1.2s, opacity .5s; }
+        .fin-huepf { width: 100%; display: flex; flex-direction: column; align-items: center; animation: finHuepf 1s ease-in-out infinite; animation-delay: var(--d); }
+        .fin-buehne.nervoes .fin-figur.menge .fin-huepf { animation-duration: .42s; }
+        .fin-figur.sieger .fin-huepf { animation: finJubel .9s ease-in-out infinite; }
+        .fin-emoji { font-size: calc(var(--s) * 4.4rem); line-height: 1.15; transition: font-size .9s; }
+        .fin-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 900; font-size: calc(var(--s) * 1.7rem); color: #f8fafc; text-shadow: 0 2px 8px rgba(0, 0, 0, .7); transition: font-size .9s; }
+        .fin-info { display: none; font-size: clamp(.65rem, 1.6vh, .85rem); font-weight: 800; color: #cbd5e1; white-space: nowrap; }
+        .fin-buehne.fertig .fin-figur.menge .fin-info { display: block; }
+        .fin-buehne.fertig .fin-figur.menge { opacity: .8; }
+        @keyframes finHuepf { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-9px) rotate(var(--r)); } }
+        @keyframes finJubel { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-16px) scale(1.07); } }
+        @keyframes finFrage { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+        @keyframes finGluehen { to { box-shadow: 0 0 46px 12px rgba(251, 191, 36, .6), 0 20px 50px rgba(0, 0, 0, .5); } }
+        @media (prefers-reduced-motion: reduce) { .fin-huepf, .fin-frage, .fin-stufe { animation: none !important; } }
 
         /* ============================================================ */
         /* FERNBEDIENUNG, Reiter "Runde": das Lehrerhandy in der         */
@@ -1428,15 +1477,23 @@
         <span id="timer-countdown-number" class="font-black text-amber-400" style="font-size: min(35vw, 320px); line-height: 1; text-shadow: 0 0 60px rgba(245, 158, 11, 0.6), 0 8px 24px rgba(0,0,0,0.6);"></span>
     </div>
 
-    <!-- Siegerpodest für das Finale -->
-    <div id="finale-podium-overlay" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/92 backdrop-blur-sm p-6" onclick="if (event.target === this) closeFinalePodium();">
-        <button onclick="closeFinalePodium()" class="absolute top-5 right-5 md:top-8 md:right-8 text-slate-400 hover:text-white text-2xl transition-colors">
+    <!-- Siegerpodest für das Finale: Podest baut sich auf, alle Teams wuseln
+         unten herum, dann werden Platz 3, 2 und 1 nacheinander aufgedeckt. -->
+    <div id="finale-podium-overlay" class="fixed inset-0 z-40 hidden" onclick="finaleKlick(event)">
+        <button class="fin-schliessen" onclick="event.stopPropagation(); closeFinalePodium()" title="Schließen (Esc)">
             <i class="fa-solid fa-xmark"></i>
         </button>
-        <div class="w-full max-w-3xl text-center space-y-10">
-            <h2 class="text-3xl md:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-pink-300 to-violet-300">🏆 Endstand 🏆</h2>
-            <div id="finale-podium-container" class="flex items-end justify-center gap-3 md:gap-6"></div>
-            <p id="finale-joker-hinweis" class="hidden text-amber-300 text-xs md:text-sm font-bold font-sans"></p>
+        <div id="finale-buehne" class="fin-buehne">
+            <h2 class="fin-titel"><span>🏆</span><span class="fin-verlauf">Endstand</span><span>🏆</span></h2>
+            <div id="finale-ansage" class="fin-ansage"></div>
+            <div id="finale-podium-container" class="fin-podest"></div>
+            <div class="fin-boden"></div>
+            <div id="finale-menge" class="fin-menge"></div>
+            <div class="fin-fuss">
+                <span id="finale-joker-hinweis" class="fin-joker hidden"></span>
+                <span id="finale-skip" class="fin-skip">Klicken = überspringen</span>
+            </div>
+            <div id="finale-figuren" class="fin-figuren"></div>
         </div>
     </div>
 
@@ -12452,68 +12509,99 @@
 
             // Muss VOR der Siegerermittlung laufen - die Punkte entscheiden ja mit.
             const restjoker = loeseRestjokerEin();
-
-            let winnerName = "Niemand";
-            const highestScore = Math.max(...teams.map(t => t.score));
-            const winners = teams.filter(t => t.score === highestScore);
-            if (highestScore > 0) {
-                winnerName = winners.map(w => w.name).join(" & ");
-            }
-
-            showToast(`🏆 Glückwunsch an das Siegerteam: ${winnerName}! 🎉`, 'success');
-            playSound('fanfare');
             showFinalePodium(restjoker);
-
-            resizeCanvas();
-            initConfetti();
-            isConfettiActive = true;
-            animateConfetti();
-
-            if (confettiInterval) clearTimeout(confettiInterval);
-            confettiInterval = setTimeout(() => {
-                isConfettiActive = false;
-                if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }, 8000);
         }
 
-        /* Siegerpodest mit den Top 3 Teams befüllen und anzeigen */
+        /* ---------- Finale: Siegerehrung als kleine Show (rund 15-18 Sekunden) ----------
+           1. Titel, alle Teams erscheinen unten als "Menge" und hüpfen herum
+           2. Die Podeststufen wachsen aus dem Boden, dann zählen die Punkte hoch
+              (man sieht also schon, WIE VIELE Punkte Platz 1 hat, aber nicht wer)
+           3. Die Menge mischt sich, Trommelwirbel, Platz 3 fliegt aufs Podest
+           4. Wieder mischen, Platz 2
+           5. Längste Pause: Platz-1-Stufe glüht, alle zappeln, dann der Sieger
+           Ein Klick überspringt die Show, danach schließt ein Klick (oder Esc).
+
+           Gleichstand: Teams mit gleicher Punktzahl teilen sich den Platz und
+           stehen nebeneinander auf derselben Stufe (Wettkampf-Zählung 1, 1, 3).
+           Früher entschied bei Gleichstand das Alphabet - das war Zufall. */
+        let finale = null;
+
+        function finaleGruppen(sortiert) {
+            const gruppen = [];
+            sortiert.forEach((t, i) => {
+                const punkte = t.score || 0;
+                const letzte = gruppen[gruppen.length - 1];
+                if (letzte && letzte.punkte === punkte) letzte.teams.push(t);
+                else gruppen.push({ platz: i + 1, punkte, teams: [t] });
+            });
+            return gruppen;
+        }
+
+        function finaleMische(liste) {
+            const a = liste.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            // Bei mehr als zwei soll sich auch sichtbar etwas tun
+            if (a.length > 2 && a.every((x, i) => x === liste[i])) a.push(a.shift());
+            return a;
+        }
+
         function showFinalePodium(restjoker) {
             const overlay = getEl('finale-podium-overlay');
             const container = getEl('finale-podium-container');
-            if (!overlay || !container) return;
+            const buehne = getEl('finale-buehne');
+            const figuren = getEl('finale-figuren');
+            const menge = getEl('finale-menge');
+            if (!overlay || !container || !buehne || !figuren || !menge) return;
+            finaleStoppen();
 
-            const sorted = [...teams].sort(vergleicheTeams);
-            const top3 = sorted.slice(0, 3);
+            const sortiert = [...teams].sort(vergleicheTeams);
+            const gruppen = finaleGruppen(sortiert);
+            const podest = gruppen.filter(g => g.platz <= 3);   // [Platz 1, nächster, nächster]
+            const anzeige = podest.length >= 3 ? [1, 0, 2] : podest.length === 2 ? [1, 0] : [0];
+            const hoehe = { 1: '31vh', 2: '22vh', 3: '15vh' };
+            const medaille = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
-            const placeStyles = {
-                1: { height: 'h-52 md:h-72', medal: '🥇', barColor: 'from-amber-300 to-amber-500', scoreColor: 'text-amber-300', textSize: 'text-lg md:text-2xl', emojiSize: 'text-4xl md:text-6xl' },
-                2: { height: 'h-36 md:h-52', medal: '🥈', barColor: 'from-slate-300 to-slate-400', scoreColor: 'text-slate-200', textSize: 'text-sm md:text-lg', emojiSize: 'text-3xl md:text-5xl' },
-                3: { height: 'h-28 md:h-40', medal: '🥉', barColor: 'from-orange-300 to-orange-500', scoreColor: 'text-orange-300', textSize: 'text-sm md:text-lg', emojiSize: 'text-3xl md:text-5xl' }
-            };
-
-            // Anzeigereihenfolge auf dem Podest: 2. Platz - 1. Platz - 3. Platz
-            const displayOrder = [];
-            if (top3[1]) displayOrder.push({ team: top3[1], place: 2 });
-            if (top3[0]) displayOrder.push({ team: top3[0], place: 1 });
-            if (top3[2]) displayOrder.push({ team: top3[2], place: 3 });
-
-            container.innerHTML = '';
-            displayOrder.forEach(({ team, place }) => {
-                const style = placeStyles[place];
-                const col = document.createElement('div');
-                col.className = "flex flex-col items-center gap-1.5 flex-1 max-w-[180px] animate-scaleIn";
-                col.innerHTML = `
-                    <div class="${style.emojiSize}">${escapeHtml(team.emoji || '🎵')}</div>
-                    <div class="font-black ${style.textSize} text-white truncate max-w-full px-1">${escapeHtml(teamName(team))}</div>
-                    <div class="font-black ${style.textSize} ${style.scoreColor}">${team.score} Pkt.</div>
-                    <div class="w-full ${style.height} bg-gradient-to-b ${style.barColor} rounded-t-2xl flex items-start justify-center pt-2 md:pt-4 shadow-2xl">
-                        <span class="text-2xl md:text-4xl">${style.medal}</span>
+            container.innerHTML = anzeige.map(gi => {
+                const g = podest[gi];
+                return `<div class="fin-saeule" data-g="${gi}" style="--n:${g.teams.length};--h:${hoehe[g.platz]}">
+                    <div class="fin-plaetze">${g.teams.map(() => '<div class="fin-platz"></div>').join('')}<div class="fin-frage">?</div></div>
+                    <div class="fin-stufe p${g.platz}">
+                        <div class="fin-medaille">${medaille[g.platz]}</div>
+                        <div class="fin-punkte">0 Pkt.</div>
+                        ${g.teams.length > 1 ? '<div class="fin-gleich">Gleichstand</div>' : ''}
                     </div>
-                `;
-                container.appendChild(col);
+                </div>`;
+            }).join('');
+
+            figuren.innerHTML = '';
+            menge.innerHTML = '';
+            const fig = new Map();
+            sortiert.forEach(t => {
+                const g = gruppen.find(gr => gr.teams.includes(t));
+                const el = document.createElement('div');
+                el.className = 'fin-figur menge';
+                el.style.setProperty('--d', (-Math.random()).toFixed(2) + 's');
+                el.style.setProperty('--r', (Math.random() * 10 - 5).toFixed(1) + 'deg');
+                el.innerHTML = `<div class="fin-huepf">
+                    <div class="fin-emoji">${escapeHtml(t.emoji || '🎵')}</div>
+                    <div class="fin-name">${escapeHtml(teamName(t))}</div>
+                    <div class="fin-info">${g.platz}. Platz · ${g.punkte} Pkt.</div>
+                </div>`;
+                figuren.appendChild(el);
+                fig.set(t.id, el);
             });
 
-            // Damit die Klasse versteht, warum sich Punkte kurz vor Schluss noch ändern.
+            finale = {
+                timer: [], toene: [], laeuft: true, fertig: false,
+                podest, fig,
+                reihe: finaleMische(sortiert.map(t => t.id)),   // Reihenfolge in der Menge verrät nichts
+                aufgedeckt: new Set(), aufIds: new Set()
+            };
+            const st = finale;
+
             const hinweis = getEl('finale-joker-hinweis');
             if (hinweis) {
                 if (restjoker && restjoker.length) {
@@ -12524,17 +12612,344 @@
                     hinweis.classList.add('hidden');
                 }
             }
+            const skip = getEl('finale-skip');
+            if (skip) skip.textContent = 'Klicken = überspringen';
+            finaleAnsage('');
 
+            /* Wächst eine Stufe noch, wenn ihre Figuren schon aufgedeckt sind (vor allem
+               beim Überspringen), stünden sie sonst in der Luft bzw. in der Stufe. */
+            if (!container.dataset.nachruecken) {
+                container.dataset.nachruecken = '1';
+                container.addEventListener('transitionend', e => {
+                    if (finale && e.propertyName === 'height' && e.target.classList.contains('fin-stufe')) finaleStellen();
+                });
+            }
+
+            buehne.className = 'fin-buehne';
             overlay.classList.remove('hidden');
-            overlay.classList.add('flex');
+            finaleStellen(true);
+
+            /* ---- Ablaufplan ---- */
+            const plane = (ms, fn) => st.timer.push(setTimeout(() => { if (finale === st && st.laeuft) fn(); }, ms));
+            const saeule = gi => container.querySelector(`.fin-saeule[data-g="${gi}"]`);
+
+            plane(60, () => buehne.classList.add('los'));
+            const ids = [...fig.keys()];
+            ids.forEach((id, k) => plane(250 + k * Math.min(90, 900 / ids.length), () => {
+                fig.get(id).classList.add('da');
+                if (k % 2 === 0) playSound('tick');
+            }));
+
+            let t = 1300;
+            // Stufen von Platz 3 nach Platz 1 aufbauen
+            for (let gi = podest.length - 1; gi >= 0; gi--) {
+                plane(t, () => { saeule(gi).classList.add('steht'); finaleKlang('stufe'); });
+                t += 380;
+            }
+            t += 900;
+            plane(t, () => finalePunkteHochzaehlen(1300));
+            t += 1900;
+
+            // Aufdecken: vom letzten Podestplatz zum Sieger
+            for (let gi = podest.length - 1; gi >= 0; gi--) {
+                const g = podest[gi];
+                const letzte = gi === 0;
+                const dauer = letzte ? 5200 : 2800;
+                const geteilt = g.teams.length > 1;
+                const text = geteilt ? `Platz ${g.platz} teilen sich …`
+                    : letzte ? 'Und der Sieg geht an …' : `Platz ${g.platz} geht an …`;
+                plane(t, () => {
+                    finaleAnsage(text);
+                    if (letzte) {
+                        buehne.classList.add('nervoes');
+                        saeule(gi).classList.add('spannung');
+                    }
+                    finaleTrommelwirbel(dauer / 1000, letzte ? 0.04 : 0.03, letzte ? 0.34 : 0.15);
+                });
+                const takt = letzte ? 430 : 650;
+                for (let s = 250; s < dauer - 500; s += takt) {
+                    plane(t + s, () => { st.reihe = finaleMische(st.reihe); finaleStellen(); });
+                }
+                plane(t + dauer, () => {
+                    finaleAufdecken(gi);
+                    if (letzte) finaleSieg();
+                    else { finaleKlang('platz'); finaleAnsage(''); }
+                });
+                t += dauer + (letzte ? 0 : 1200);
+            }
         }
 
-        function closeFinalePodium() {
-            const overlay = getEl('finale-podium-overlay');
-            if (overlay) {
-                overlay.classList.add('hidden');
-                overlay.classList.remove('flex');
+        function finaleAnsage(text) {
+            const el = getEl('finale-ansage');
+            if (!el) return;
+            if (text) el.textContent = text;
+            el.classList.toggle('zeigen', !!text);
+        }
+
+        /* Alle Figuren an ihre Plätze schieben: Podestfiguren auf ihre Stufe,
+           alle anderen in die Menge unten (in der Reihenfolge st.reihe). */
+        function finaleStellen(ohneUebergang) {
+            const st = finale;
+            const buehne = getEl('finale-buehne');
+            const menge = getEl('finale-menge');
+            const container = getEl('finale-podium-container');
+            if (!st || !buehne || !menge || !container) return;
+
+            const inMenge = st.reihe.filter(id => !st.aufIds.has(id));
+            while (menge.children.length < inMenge.length) {
+                const slot = document.createElement('div');
+                slot.className = 'fin-mslot';
+                menge.appendChild(slot);
             }
+            while (menge.children.length > inMenge.length) menge.lastElementChild.remove();
+
+            const b = buehne.getBoundingClientRect();
+            const setze = (el, slot, groesse) => {
+                const r = slot.getBoundingClientRect();
+                if (ohneUebergang) el.style.transition = 'none';
+                el.style.width = r.width + 'px';
+                el.style.setProperty('--s', groesse(r.width).toFixed(3));
+                el.style.transform = `translate(${(r.left - b.left).toFixed(1)}px, ${(r.bottom - b.top).toFixed(1)}px) translateY(-100%)`;
+                if (ohneUebergang) { void el.offsetWidth; el.style.transition = ''; }
+            };
+            const klein = w => Math.max(0.42, Math.min(0.66, w / 185));
+            const gross = w => Math.max(0.5, Math.min(1, w / 175));
+
+            inMenge.forEach((id, i) => setze(st.fig.get(id), menge.children[i], klein));
+            st.podest.forEach((g, gi) => {
+                if (!st.aufgedeckt.has(gi)) return;
+                const plaetze = container.querySelectorAll(`.fin-saeule[data-g="${gi}"] .fin-platz`);
+                g.teams.forEach((t, k) => setze(st.fig.get(t.id), plaetze[k], gross));
+            });
+        }
+
+        function finaleAufdecken(gi) {
+            const st = finale;
+            if (!st || st.aufgedeckt.has(gi)) return;
+            const g = st.podest[gi];
+            st.aufgedeckt.add(gi);
+            g.teams.forEach(t => {
+                st.aufIds.add(t.id);
+                const el = st.fig.get(t.id);
+                el.classList.remove('menge');
+                el.classList.add('flug', 'da');
+                if (g.platz === 1) el.classList.add('sieger');
+            });
+            const s = document.querySelector(`#finale-podium-container .fin-saeule[data-g="${gi}"]`);
+            if (s) { s.classList.add('steht', 'aufgedeckt'); s.classList.remove('spannung'); }
+            finaleStellen();
+        }
+
+        function finalePunkteHochzaehlen(dauer) {
+            const st = finale;
+            const felder = [...document.querySelectorAll('#finale-podium-container .fin-saeule')].map(s => ({
+                el: s.querySelector('.fin-punkte'), ziel: st.podest[+s.dataset.g].punkte
+            }));
+            felder.forEach(f => f.el.classList.add('zeigen'));
+            const start = performance.now();
+            let letzterTick = 0;
+            const schritt = jetzt => {
+                if (finale !== st || !st.laeuft) return;
+                const p = Math.min(1, (jetzt - start) / dauer);
+                const e = 1 - Math.pow(1 - p, 3);
+                felder.forEach(f => { f.el.textContent = Math.round(f.ziel * e) + ' Pkt.'; });
+                if (jetzt - letzterTick > 110 && p < 1) { playSound('tick'); letzterTick = jetzt; }
+                if (p < 1) requestAnimationFrame(schritt);
+            };
+            requestAnimationFrame(schritt);
+        }
+
+        function finaleSieg() {
+            const st = finale;
+            if (!st) return;
+            st.laeuft = false;
+            st.fertig = true;
+            st.timer.forEach(clearTimeout);
+            st.timer = [];
+            finaleToeneStoppen();
+
+            const buehne = getEl('finale-buehne');
+            buehne.classList.remove('nervoes');
+            buehne.classList.add('los', 'fertig');
+            const skip = getEl('finale-skip');
+            if (skip) skip.textContent = 'Klicken oder Esc = schließen';
+
+            const sieger = st.podest[0].teams.map(t => teamName(t));
+            const namen = sieger.join(' & ');
+            finaleAnsage(st.podest[0].punkte > 0 ? `Glückwunsch, ${namen}!` : 'Unentschieden!');
+            if (st.podest[0].punkte > 0) {
+                showToast(`🏆 Glückwunsch an ${sieger.length > 1 ? 'die Siegerteams' : 'das Siegerteam'}: ${namen}! 🎉`, 'success');
+            }
+
+            finaleKlang('becken');
+            playSound('fanfare');
+            resizeCanvas();
+            initConfetti();
+            isConfettiActive = true;
+            animateConfetti();
+            if (confettiInterval) clearTimeout(confettiInterval);
+            confettiInterval = setTimeout(() => {
+                isConfettiActive = false;
+                if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }, 8000);
+        }
+
+        /* Klick während der Show: sofort zum Ende springen. Danach: schließen. */
+        function finaleKlick(event) {
+            if (!finale) { closeFinalePodium(); return; }
+            if (finale.fertig) { closeFinalePodium(); return; }
+            finaleUeberspringen();
+        }
+
+        function finaleUeberspringen() {
+            const st = finale;
+            if (!st || st.fertig) return;
+            st.timer.forEach(clearTimeout);
+            st.timer = [];
+            finaleToeneStoppen();
+            getEl('finale-buehne').classList.add('los');
+            st.fig.forEach(el => el.classList.add('da'));
+            document.querySelectorAll('#finale-podium-container .fin-saeule').forEach(s => {
+                s.classList.add('steht');
+                const f = s.querySelector('.fin-punkte');
+                f.textContent = st.podest[+s.dataset.g].punkte + ' Pkt.';
+                f.classList.add('zeigen');
+            });
+            st.laeuft = false;   // stoppt das Hochzählen
+            for (let gi = st.podest.length - 1; gi >= 0; gi--) finaleAufdecken(gi);
+            finaleSieg();
+        }
+
+        function finaleStoppen() {
+            if (!finale) return;
+            finale.laeuft = false;
+            finale.timer.forEach(clearTimeout);
+            finale.timer = [];
+            finaleToeneStoppen();
+        }
+
+        /* ---- Töne fürs Finale (Web Audio, wie playSound) ---- */
+        function finaleTonBereit() {
+            const el = getEl('sound-toggle');
+            if (el && !el.checked) return false;
+            try {
+                if (!ensureAudioContext()) return false;
+                return audioCtx.state === 'running';
+            } catch (e) { return false; }
+        }
+
+        function finaleRauschen() {
+            if (finaleRauschen.puffer && finaleRauschen.ctx === audioCtx) return finaleRauschen.puffer;
+            const laenge = Math.floor(audioCtx.sampleRate * 1.6);
+            const puffer = audioCtx.createBuffer(1, laenge, audioCtx.sampleRate);
+            const d = puffer.getChannelData(0);
+            for (let i = 0; i < laenge; i++) d[i] = Math.random() * 2 - 1;
+            finaleRauschen.puffer = puffer;
+            finaleRauschen.ctx = audioCtx;
+            return puffer;
+        }
+
+        /* Trommelwirbel: viele kurze Rauschschläge durch einen Snare-Filter,
+           mit Crescendo von laut0 nach laut1. Alles vorab eingeplant und über
+           einen gemeinsamen Regler abschaltbar (Überspringen/Schließen). */
+        function finaleTrommelwirbel(dauer, laut0, laut1) {
+            if (!finale || !finaleTonBereit()) return;
+            const t0 = audioCtx.currentTime + 0.02;
+            const regler = audioCtx.createGain();
+            regler.connect(audioCtx.destination);
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 2400;
+            filter.Q.value = 0.7;
+            filter.connect(regler);
+            const puffer = finaleRauschen();
+            for (let t = 0; t < dauer; t += 0.042) {
+                const p = t / dauer;
+                const v = (laut0 + (laut1 - laut0) * p * p) * (0.75 + Math.random() * 0.5);
+                const quelle = audioCtx.createBufferSource();
+                quelle.buffer = puffer;
+                const g = audioCtx.createGain();
+                g.gain.setValueAtTime(0.0001, t0 + t);
+                g.gain.linearRampToValueAtTime(v, t0 + t + 0.004);
+                g.gain.exponentialRampToValueAtTime(0.0001, t0 + t + 0.06);
+                quelle.connect(g);
+                g.connect(filter);
+                quelle.start(t0 + t, Math.random() * 1.2, 0.08);
+            }
+            finale.toene.push(regler);
+        }
+
+        function finaleToeneStoppen() {
+            if (!finale) return;
+            finale.toene.forEach(regler => {
+                try {
+                    regler.gain.cancelScheduledValues(0);
+                    regler.gain.setValueAtTime(0, audioCtx.currentTime);
+                    regler.disconnect();
+                } catch (e) { /* schon weg */ }
+            });
+            finale.toene = [];
+        }
+
+        function finaleKlang(art) {
+            if (!finaleTonBereit()) return;
+            const jetzt = audioCtx.currentTime;
+            if (art === 'stufe') {
+                // dumpfer Schlag, wenn eine Stufe aus dem Boden kommt
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(140, jetzt);
+                osc.frequency.exponentialRampToValueAtTime(55, jetzt + 0.3);
+                g.gain.setValueAtTime(0.5, jetzt);
+                g.gain.exponentialRampToValueAtTime(0.001, jetzt + 0.35);
+                osc.connect(g); g.connect(audioCtx.destination);
+                osc.start(jetzt); osc.stop(jetzt + 0.36);
+            } else if (art === 'platz') {
+                // Becken-Schlag plus heller Doppelton
+                finaleKlang('becken-kurz');
+                [659.25, 987.77].forEach((f, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    const t = jetzt + i * 0.12;
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(f, t);
+                    g.gain.setValueAtTime(0, t);
+                    g.gain.linearRampToValueAtTime(0.18, t + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+                    osc.connect(g); g.connect(audioCtx.destination);
+                    osc.start(t); osc.stop(t + 0.52);
+                });
+            } else if (art === 'becken' || art === 'becken-kurz') {
+                const lang = art === 'becken' ? 1.8 : 0.7;
+                const quelle = audioCtx.createBufferSource();
+                quelle.buffer = finaleRauschen();
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 4500;
+                const g = audioCtx.createGain();
+                g.gain.setValueAtTime(art === 'becken' ? 0.3 : 0.16, jetzt);
+                g.gain.exponentialRampToValueAtTime(0.001, jetzt + lang);
+                quelle.connect(filter); filter.connect(g); g.connect(audioCtx.destination);
+                quelle.start(jetzt, 0, lang);
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            const overlay = getEl('finale-podium-overlay');
+            if (finale && overlay && !overlay.classList.contains('hidden')) finaleStellen(true);
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape' || !finale) return;
+            const overlay = getEl('finale-podium-overlay');
+            if (overlay && !overlay.classList.contains('hidden')) closeFinalePodium();
+        });
+
+        function closeFinalePodium() {
+            finaleStoppen();
+            finale = null;
+            const overlay = getEl('finale-podium-overlay');
+            if (overlay) overlay.classList.add('hidden');
         }
 
         function executeReset() {
