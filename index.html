@@ -1118,7 +1118,7 @@
         .fin-frage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Comfortaa', sans-serif; font-size: clamp(2.5rem, 10vh, 6rem); font-weight: 900; color: rgba(248, 250, 252, .28); opacity: 0; transition: opacity .5s; pointer-events: none; }
         .fin-saeule.steht .fin-frage { opacity: 1; animation: finFrage 1.4s ease-in-out infinite; }
         .fin-saeule.aufgedeckt .fin-frage { opacity: 0; animation: none; }
-        .fin-stufe { position: relative; height: 0; overflow: hidden; border-radius: 18px 18px 0 0; display: flex; flex-direction: column; align-items: center; gap: .5vh; padding-top: 1.2vh; box-shadow: 0 20px 50px rgba(0, 0, 0, .5); transition: height 1s cubic-bezier(.2, 1.25, .4, 1); }
+        .fin-stufe { position: relative; height: 0; overflow: hidden; border-radius: 18px 18px 0 0; display: flex; flex-direction: column; align-items: center; gap: .4vh; padding-top: 1vh; box-shadow: 0 20px 50px rgba(0, 0, 0, .5); transition: height 1s cubic-bezier(.2, 1.25, .4, 1); }
         .fin-saeule.steht .fin-stufe { height: var(--h); }
         .fin-stufe.p1 { background: linear-gradient(#fde68a, #f59e0b); }
         .fin-stufe.p2 { background: linear-gradient(#e2e8f0, #94a3b8); }
@@ -1136,15 +1136,17 @@
         .fin-joker { color: #fcd34d; }
         .fin-skip { color: #64748b; }
         .fin-figuren { position: absolute; inset: 0; pointer-events: none; }
-        .fin-figur { position: absolute; left: 0; top: 0; --s: .6; opacity: 0; display: flex; flex-direction: column; align-items: center; text-align: center; transition: transform .7s cubic-bezier(.34, 1.35, .5, 1), width .7s, opacity .5s; }
+        /* Feste Größe, nur transform (verschieben + skalieren, Ankerpunkt unten mittig):
+           so ist der Flug aufs Podest eine einzige Bewegung ohne Nachrutschen. */
+        .fin-figur { position: absolute; left: 0; top: 0; width: 180px; opacity: 0; display: flex; flex-direction: column; align-items: center; text-align: center; transform-origin: 50% 100%; transition: transform .8s cubic-bezier(.45, 0, .25, 1), opacity .5s; }
         .fin-figur.da { opacity: 1; }
-        .fin-figur.flug { z-index: 2; transition: transform 1.2s cubic-bezier(.34, 1.3, .5, 1), width 1.2s, opacity .5s; }
+        .fin-figur.flug { z-index: 2; transition: transform 1.4s cubic-bezier(.45, 0, .2, 1), opacity .5s; }
         .fin-huepf { width: 100%; display: flex; flex-direction: column; align-items: center; animation: finHuepf 1s ease-in-out infinite; animation-delay: var(--d); }
         .fin-buehne.nervoes .fin-figur.menge .fin-huepf { animation-duration: .42s; }
         .fin-figur.sieger .fin-huepf { animation: finJubel .9s ease-in-out infinite; }
-        .fin-emoji { font-size: calc(var(--s) * 4.4rem); line-height: 1.15; transition: font-size .9s; }
-        .fin-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 900; font-size: calc(var(--s) * 1.7rem); color: #f8fafc; text-shadow: 0 2px 8px rgba(0, 0, 0, .7); transition: font-size .9s; }
-        .fin-info { display: none; font-size: clamp(.65rem, 1.6vh, .85rem); font-weight: 800; color: #cbd5e1; white-space: nowrap; }
+        .fin-emoji { font-size: 4.4rem; line-height: 1.15; }
+        .fin-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 900; font-size: 1.7rem; color: #f8fafc; text-shadow: 0 2px 8px rgba(0, 0, 0, .7); }
+        .fin-info { display: none; font-size: 1.35rem; font-weight: 800; color: #cbd5e1; white-space: nowrap; }
         .fin-buehne.fertig .fin-figur.menge .fin-info { display: block; }
         .fin-buehne.fertig .fin-figur.menge { opacity: .8; }
         @keyframes finHuepf { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-9px) rotate(var(--r)); } }
@@ -12516,8 +12518,8 @@
            1. Titel, alle Teams erscheinen unten als "Menge" und hüpfen herum
            2. Die Podeststufen wachsen aus dem Boden, dann zählen die Punkte hoch
               (man sieht also schon, WIE VIELE Punkte Platz 1 hat, aber nicht wer)
-           3. Die Menge mischt sich, Trommelwirbel, Platz 3 fliegt aufs Podest
-           4. Wieder mischen, Platz 2
+           3. Trommelwirbel, Platz 3 fliegt aus der Menge aufs Podest
+           4. Dasselbe für Platz 2
            5. Längste Pause: Platz-1-Stufe glüht, alle zappeln, dann der Sieger
            Ein Klick überspringt die Show, danach schließt ein Klick (oder Esc).
 
@@ -12561,7 +12563,7 @@
             const gruppen = finaleGruppen(sortiert);
             const podest = gruppen.filter(g => g.platz <= 3);   // [Platz 1, nächster, nächster]
             const anzeige = podest.length >= 3 ? [1, 0, 2] : podest.length === 2 ? [1, 0] : [0];
-            const hoehe = { 1: '31vh', 2: '22vh', 3: '15vh' };
+            const hoehe = { 1: '32vh', 2: '24vh', 3: '18vh' };
             const medaille = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
             container.innerHTML = anzeige.map(gi => {
@@ -12666,10 +12668,6 @@
                     }
                     finaleTrommelwirbel(dauer / 1000, letzte ? 0.04 : 0.03, letzte ? 0.34 : 0.15);
                 });
-                const takt = letzte ? 430 : 650;
-                for (let s = 250; s < dauer - 500; s += takt) {
-                    plane(t + s, () => { st.reihe = finaleMische(st.reihe); finaleStellen(); });
-                }
                 plane(t + dauer, () => {
                     finaleAufdecken(gi);
                     if (letzte) finaleSieg();
@@ -12707,13 +12705,13 @@
             const setze = (el, slot, groesse) => {
                 const r = slot.getBoundingClientRect();
                 if (ohneUebergang) el.style.transition = 'none';
-                el.style.width = r.width + 'px';
-                el.style.setProperty('--s', groesse(r.width).toFixed(3));
-                el.style.transform = `translate(${(r.left - b.left).toFixed(1)}px, ${(r.bottom - b.top).toFixed(1)}px) translateY(-100%)`;
+                const x = r.left - b.left + r.width / 2 - el.offsetWidth / 2;
+                const y = r.bottom - b.top - el.offsetHeight;
+                el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${groesse(r.width).toFixed(3)})`;
                 if (ohneUebergang) { void el.offsetWidth; el.style.transition = ''; }
             };
-            const klein = w => Math.max(0.42, Math.min(0.66, w / 185));
-            const gross = w => Math.max(0.5, Math.min(1, w / 175));
+            const klein = w => Math.max(0.4, Math.min(0.62, w / 190));
+            const gross = w => Math.max(0.45, Math.min(1, w / 185));
 
             inMenge.forEach((id, i) => setze(st.fig.get(id), menge.children[i], klein));
             st.podest.forEach((g, gi) => {
@@ -12771,6 +12769,7 @@
             const buehne = getEl('finale-buehne');
             buehne.classList.remove('nervoes');
             buehne.classList.add('los', 'fertig');
+            finaleStellen();   // die Menge zeigt jetzt Platz und Punkte, ist also höher
             const skip = getEl('finale-skip');
             if (skip) skip.textContent = 'Klicken oder Esc = schließen';
 
